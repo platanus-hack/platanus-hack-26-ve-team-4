@@ -16,6 +16,7 @@ Documentación de la implementación vigente al 24 de octubre de 2026. Cada domi
 | [policies](./policies.md) | Catálogo, controles acumulativos, hashes, ciclo de vida, activación y reversión. |
 | [patches](./patches.md) | Scheduler de defensa, explicación de asesoría y validación contrafactual/conversacional. |
 | [arena](./arena.md) | Estado, clasificación, revelación, operación y reset archivado recuperable. |
+| [tablero](./tablero.md) | Visión de ataque en vivo: `GET /api/operator/live`, cinco KPI con su n, enmascarado antes de revelar, enjambre simulado y `/tablero`. |
 | [events](./events.md) | Eventos, outbox, proyección pública y SSE con cursor e historia durable. |
 | [guard](./guard.md) | Contrato de dominio declarativo y Guard de dos llamadas para agentes de cualquier negocio. |
 

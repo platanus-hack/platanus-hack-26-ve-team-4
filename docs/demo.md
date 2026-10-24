@@ -14,6 +14,7 @@ El mensaje central es la velocidad y verificabilidad del ciclo de seguridad. La 
 | --- | --- | --- |
 | Participante móvil | Audiencia y jurado. | Alias, objetivo, chat, espera y resultado provisional de su intento. |
 | Arena proyectada | Público. | QR configurable, tiempo transcurrido desde el inicio, actividad agregada y clasificación. |
+| Tablero de ataque (`/tablero`) | Presentador autorizado, proyectado. | Hasta seis chats de atacantes en vivo (público, agentes simulados y Prober) y cinco analíticas con su n. Antes de revelar no muestra ruta ni violaciones del público. [Detalle](./dominio/tablero.md). |
 | Operación | Presentador autorizado. | Trazas, rutas reales, evidencia, candidatos, pausa, reversión y revelación. |
 
 La vista pública no recibe tokens, marcadores protegidos ni rutas ocultas. El control de acceso se hace en el servidor. El QR lleva a la ruta de participantes, nunca al panel de operación. Por defecto utiliza el origen actual: un QR de `localhost` sirve sólo en la máquina anfitriona. Para un teléfono, configurar una URL accesible y comprobada en la propia tarjeta o mediante `VITE_PUBLIC_PARTICIPANT_URL` al construir el frontend. La aplicación no despliega un sitio al cambiar ese campo.
@@ -75,6 +76,8 @@ make smoke
 ```
 
 La configuración de ejemplo usa `demo`, 100 plazas y datos persistentes. Abrir `http://localhost:8080/arena` y `/operator`; el operador introduce el secreto de su `.env`. Conservar la etiqueta de evidencia simulada durante ese ensayo.
+
+Para mostrar la visión de ataque, abrir `/tablero` con el secreto de operador y lanzar el enjambre simulado (`cd backend && uv run python scripts/attack_swarm.py --agents 5`) y, desde Operación, una campaña del Prober en modo adaptativo. Los agentes se rotulan siempre como simulados; la tarjeta de tokens dice «no medido» mientras el modo sea `demo`. Ver [tablero](./dominio/tablero.md).
 
 Para comprobar todo el circuito mediante HTTP antes de la presentación:
 

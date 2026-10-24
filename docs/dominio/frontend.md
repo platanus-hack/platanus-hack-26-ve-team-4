@@ -12,6 +12,8 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 | [storage.ts](../../frontend/src/features/participant/storage.ts) | Sesión e historial pendiente en `localStorage`, con validación al leer; descarta la pulsera vencida y migra la que haya quedado en `sessionStorage`. |
 | [ArenaPage.tsx](../../frontend/src/features/arena/ArenaPage.tsx) | Estado agregado, cronómetro transcurrido, actividad SSE, QR y clasificación. |
 | [OperatorPage.tsx](../../frontend/src/features/operator/OperatorPage.tsx) | Controles, campañas, políticas, hallazgos, evaluación y reset archivado. |
+| [OperatorGate.tsx](../../frontend/src/features/operator/OperatorGate.tsx) | Acceso de operador con el secreto solo en memoria; lo usan `/operator` y `/tablero`. |
+| [BoardPage.tsx](../../frontend/src/features/board/BoardPage.tsx) | Ruta `/tablero`: chats de atacantes en vivo y cinco analíticas. Ver [tablero](./tablero.md). |
 | [http.ts](../../frontend/src/shared/api/http.ts) | Errores tipados, timeout, cancelación y lectura de `Retry-After`. |
 | [usePolling.ts](../../frontend/src/shared/api/usePolling.ts) | Consultas seriales y descarte de respuestas de un propietario anterior. |
 
