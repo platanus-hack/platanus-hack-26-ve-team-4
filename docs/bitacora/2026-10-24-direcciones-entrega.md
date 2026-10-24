@@ -55,7 +55,7 @@ En un delivery, la dirección de otro cliente es el dato protegido que cualquier
 - `ruff check`, `ruff format --check` y `mypy src tests`: limpios (471 archivos).
 - `pytest`: 878 passed y 2 skipped, en un contenedor `python:3.12-slim-bookworm`. Además, `tests/test_traceability.py` y `tests/victim` con el repo completo: 35 passed.
 - Model Armor no bloquea ni redacta ninguna de las 20 direcciones, ni en `tool_output` ni en `model_output`.
-- `/smoke-pr` sobre la rama: el resultado se agrega aquí cuando termine.
+- `/smoke-pr` sobre la rama (commit `95ecbbc`, sin contenedores): pytest en Linux con 881 passed, frontend y Biome en verde, diff limitado a las rutas esperadas. Marcó dos fallas **ajenas a la rama**: `mypy` y el arranque del backend en Windows nativo, ambas por `fcntl` en `telemetry/audit_store.py`. mypy en Linux está limpio.
 
 **Nota para Windows:** `pytest` no carga en Windows nativo porque `telemetry/audit_store.py` importa `fcntl`. Ese problema es anterior a este cambio. Se corre en un contenedor Linux.
 
