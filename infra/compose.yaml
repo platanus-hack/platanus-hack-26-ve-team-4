@@ -1,0 +1,31 @@
+name: agent-zero
+
+services:
+  backend:
+    build:
+      context: ../backend
+    image: agent-zero-backend:local
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      AGENT_ZERO_DATA_DIR: /data
+    volumes:
+      - agent-zero-data:/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+    image: agent-zero-frontend:local
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  agent-zero-data:
