@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: feat/nombres-clientes
-pr: pendiente
-estado: en revisión
+pr: 34
+estado: integrado
 dominios: [victim, evals]
 requisitos: [CORE-06]
 ---
