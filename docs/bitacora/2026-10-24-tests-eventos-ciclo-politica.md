@@ -53,6 +53,7 @@ Mutaciones. Cada una se aplicó sobre una copia de `backend` dentro del contened
 | M5 | `record_validation` no emite `patch_validated` | las tres pruebas |
 | M6 | `record_validation` publica `passed: true` siempre | `test_rejected_validation_announces_passed_false_once_and_nothing_activates` |
 | M7 | `rollback` sin `dedup_key` | solo `test_validation_activation_and_rollback_each_announce_once_through_the_outbox`, por su aserción sobre `dedup_key` |
+| M8 | `activate` no encola `policy_activated`; antes del arreglo la tapaba `finalize`, que lo volvía a encolar | antes del arreglo, ninguna prueba fallaba. Tras el arreglo, `test_repeated_activation_and_rollback_do_not_announce_again` falla (1 failed, 2 passed) |
 
 Sin mutación pasan las tres pruebas.
 
@@ -63,6 +64,7 @@ Pruebas de trazabilidad: ver la corrida de `tests/test_traceability.py` en el co
 ## Riesgos y efectos en otros frentes
 
 - `finalize` vuelve a encolar `POLICY_ACTIVATED` con la misma `dedup_key` que `activate`. Solo queda un evento porque el outbox deduplica por esa clave. Si alguien cambia esa clave, el evento se duplica, y la prueba lo detecta (M1).
+- `finalize` puede ocultar la ausencia del evento en `activate`. Como `finalize` vuelve a encolar `POLICY_ACTIVATED`, una activación que no lo emitiera pasaría las pruebas después de finalizar. La prueba de repetición ahora revisa el outbox justo tras el primer `activate`, así que lo detecta (M8).
 - `policy_rolled_back` lleva en `policy_version` y en `data` la versión a la que vuelve la política (la padre, 0). Su `dedup_key` lleva la versión revertida (`policy:1:rolled_back`). Son datos distintos a propósito y no deben confundirse.
 - Estos tres eventos no tienen copia para el operador. Van solo al canal público, que alimenta el historial de `public_after`.
 - Las pruebas no atraviesan el flujo SSE por HTTP. Leen `public_after`, que es la fuente de su historial.
