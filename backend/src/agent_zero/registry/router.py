@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from agent_zero.armor.model_armor import ModelArmor
 from agent_zero.registry.approval_service import ApprovalService
-from agent_zero.registry.dependencies import OperatorOnly
+from agent_zero.registry.dependencies import OperatorFlag, OperatorOnly
 from agent_zero.registry.discovery_service import DiscoveryService
 from agent_zero.registry.errors import (
     InvalidTransitionError,
@@ -49,16 +49,21 @@ async def discover(
 
 
 @router.get("/agents/{agent_id}/versions/{version}")
-async def read_version(agent_id: str, version: str, db: DbSession) -> AgentVersionRead:
+async def read_version(
+    agent_id: str, version: str, db: DbSession, is_operator: OperatorFlag
+) -> AgentVersionRead:
     try:
-        return await DiscoveryService(db).read(agent_id, version)
+        return await DiscoveryService(db).read(agent_id, version, include_unapproved=is_operator)
     except VersionNotFoundError as error:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(error)) from error
 
 
 @router.get("/agents/{agent_id}/versions/{version}/integrity")
-async def integrity(agent_id: str, version: str, db: DbSession) -> IntegrityReport:
+async def integrity(
+    agent_id: str, version: str, db: DbSession, is_operator: OperatorFlag
+) -> IntegrityReport:
     try:
+        await DiscoveryService(db).read(agent_id, version, include_unapproved=is_operator)
         return await IntegrityService(db).verify(agent_id, version)
     except VersionNotFoundError as error:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(error)) from error

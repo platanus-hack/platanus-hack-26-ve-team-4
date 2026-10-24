@@ -87,3 +87,33 @@ def test_invalid_transition_is_conflict(
     api.post(f"{path}/approve", json={"approved_by": "ana"}, headers=operator)
     again = api.post(f"{path}/approve", json={"approved_by": "ana"}, headers=operator)
     assert again.status_code == 409
+
+
+@pytest.mark.requirement("REG-03", "REG-04")
+def test_unapproved_version_is_hidden_without_operator_secret(
+    api: TestClient, operator: dict[str, str], make_manifest: Callable[..., AgentManifest]
+) -> None:
+    api.post(BASE, json=_body(make_manifest, system_prompt="SECRETO INTERNO"), headers=operator)
+    path = f"{BASE}/agente-finanzas/versions/1.0.0"
+    assert api.get(path).status_code == 404
+    assert api.get(f"{path}/integrity").status_code == 404
+    assert api.get(path, headers={"X-Operator-Secret": "otro"}).status_code == 401
+    visible = api.get(path, headers=operator)
+    assert visible.status_code == 200
+    assert visible.json()["status"] == "draft"
+    assert api.get(f"{path}/integrity", headers=operator).status_code == 200
+    api.post(f"{path}/approve", json={"approved_by": "ana"}, headers=operator)
+    assert api.get(path).status_code == 200
+    api.post(f"{path}/deprecate", headers=operator)
+    assert api.get(path).status_code == 404
+    assert api.get(path, headers=operator).status_code == 200
+
+
+@pytest.mark.requirement("REG-02")
+def test_integrity_report_flags_tampering_over_http(
+    api: TestClient, operator: dict[str, str], make_manifest: Callable[..., AgentManifest]
+) -> None:
+    api.post(BASE, json=_body(make_manifest), headers=operator)
+    path = f"{BASE}/agente-finanzas/versions/1.0.0"
+    api.post(f"{path}/approve", json={"approved_by": "ana"}, headers=operator)
+    assert api.get(f"{path}/integrity").json()["ok"] is True
