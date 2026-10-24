@@ -6,8 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agent_zero.arena.arena_service import ArenaService
 from agent_zero.arena.dependencies import Core
+from agent_zero.arena.monitor_view import attempt_graph
 from agent_zero.attempts.attempt_query_service import attempt_view, call_context
 from agent_zero.attempts.schemas import AttemptCreate
+from agent_zero.oracles.trace_reader import tool_evidence
 from agent_zero.prober.campaign_service import CampaignService
 from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.sessions.session_query_service import internal_session
@@ -41,10 +43,10 @@ async def evidence(attempt_id: str, core: Core) -> dict[str, Any]:
     attempt = await core.attempts.get(attempt_id)
     if attempt is None:
         raise HTTPException(404, "Intento no encontrado.")
+    events = await core.events.for_attempt(attempt_id)
     return attempt_view(attempt, operator=True) | {
-        "events": [
-            event.model_dump(mode="json") for event in await core.events.for_attempt(attempt_id)
-        ]
+        "events": [event.model_dump(mode="json") for event in events],
+        "graph": attempt_graph(tool_evidence(events), attempt.assessment),
     }
 
 

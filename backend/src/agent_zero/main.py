@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent_zero.arena.core import ProductCore
+from agent_zero.arena.monitor_router import router as monitor_router
 from agent_zero.arena.operator_router import router as operator_router
 from agent_zero.arena.replay_router import router as replay_router
 from agent_zero.arena.reset_router import router as reset_router
@@ -92,6 +93,7 @@ def create_app(
     app.include_router(coevolution_router)
     app.include_router(reset_router)
     app.include_router(operator_router)
+    app.include_router(monitor_router)
     app.include_router(evaluations_router)
     app.include_router(decoy_router)
     app.include_router(prober_router)

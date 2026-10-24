@@ -85,6 +85,10 @@ class ProductCore:
         self.evaluations = EvaluationService(fleet, self.policies, llm)
         self._llm = llm
 
+    @property
+    def llm(self) -> LlmGateway:
+        return self._llm
+
     async def initialize(self) -> None:
         await self.environments.initialize()
         await self._initialize_knowledge()
