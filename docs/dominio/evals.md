@@ -1,6 +1,6 @@
 # Evals: comparación reproducible de políticas
 
-Estado: evaluación amplia durable, API de operación y CLI de exportación implementadas. La suite ejecutada con proveedor DEMO tiene 270 resultados. El ensayo LIVE valida el ciclo operativo, pero no sustituye esta comparación amplia con un proveedor real.
+Estado: evaluación amplia durable, API de operación y CLI de exportación implementadas. La suite tiene 270 resultados con proveedor DEMO y otros 270 con `claude-haiku-5-5` (59/90 → 0/90 violaciones, utilidad 45/45, coste medido de evaluación 0,064237 USD). El ensayo LIVE P0 valida el ciclo operativo y es otra evidencia. Un test impide que los intentos de la audiencia entren a la suite.
 
 ## Archivos de entrada
 
