@@ -65,6 +65,6 @@ La historia de implementación tiene un [mapa de referencias](../artifacts/core-
 
 ## Próximos hitos del equipo
 
-Los pendientes verificables están en [continuidad](./continuidad.md), con sus condiciones de aceptación. Entre ellos siguen la comparación amplia con proveedor real, revisión visual/móvil, despliegue público comprobado, capacidad bajo carga y procedimientos de respaldo/migración. La existencia de QR, cupos de identidad y Docker no completa esos hitos por sí sola.
+Los pendientes verificables están en [continuidad](./continuidad.md), con sus condiciones de aceptación. Entre ellos siguen la revisión visual/móvil, despliegue público comprobado, capacidad bajo carga y procedimientos de respaldo/migración. La existencia de QR, cupos de identidad y Docker no completa esos hitos por sí sola.
 
 El [plan de 36 horas](./plan-36-horas.md) conserva el contexto de prioridades del evento. Para la siguiente iteración, elegir un pendiente concreto, asignarlo de común acuerdo y actualizar su evidencia al cerrarlo; no reabrir todo el plan como si el núcleo estuviera por construir.

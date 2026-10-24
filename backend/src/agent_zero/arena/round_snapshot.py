@@ -16,6 +16,7 @@ from agent_zero.victim.environments import Environments
 ROUND_TABLES = frozenset(
     {
         "attempts",
+        "attempt_links",
         "sessions",
         "findings",
         "finding_explanations",

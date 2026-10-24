@@ -2,7 +2,7 @@
 fecha: 2026-10-24
 autor: "@CarSanoja"
 rama: main
-pr: pendiente
+pr: ninguno  # push directo a main
 estado: integrado
 dominios: [guard, contract, llm]
 requisitos: []

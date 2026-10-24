@@ -1,12 +1,14 @@
 import asyncio
-from datetime import timedelta
+import math
+from datetime import datetime, timedelta
 from typing import Literal
 
 from fastapi import HTTPException
 
 from agent_zero.arena.models import ArenaState
 from agent_zero.arena.transactions import serialize_write
-from agent_zero.attempts.models import Attempt, AttemptStatus
+from agent_zero.attempts.conversation import check_continuation, links_for
+from agent_zero.attempts.models import Attempt, AttemptLink, AttemptStatus
 from agent_zero.attempts.repository import AttemptRepository
 from agent_zero.attempts.schemas import AttemptCreate
 from agent_zero.events.event_store import EventStore
@@ -22,6 +24,16 @@ from agent_zero.runtime.schemas import RunCreate
 from agent_zero.sessions.session_query_service import query_session
 from agent_zero.shared.ids import new_id
 from agent_zero.victim.arena_manifest import ARENA_HANDLER, ARENA_VERSION
+
+RATE_WINDOW = timedelta(minutes=1)
+# A full queue has no known release time: it frees when a pending attempt finishes, which
+# usually takes a few seconds. Five seconds matches the participant UI fallback.
+QUEUE_RETRY_SECONDS = 5
+
+
+def retry_after_seconds(release: datetime, now: datetime) -> int:
+    """Whole seconds until `release`, at least 1 so a client never retries immediately."""
+    return max(1, math.ceil((release - now).total_seconds()))
 
 
 class AttemptSubmissionService:
@@ -51,12 +63,14 @@ class AttemptSubmissionService:
             repository = AttemptRepository(db)
             existing = await repository.by_key(session_id, payload.idempotency_key)
             if existing is not None:
+                previous = (await links_for(db, [existing.id])).get(existing.id)
                 if (
                     existing.messages,
                     existing.objective_id,
                     existing.origin,
                     existing.campaign_id,
-                ) != (payload.turns, payload.objective_id, origin, campaign_id):
+                    previous,
+                ) != (payload.turns, payload.objective_id, origin, campaign_id, payload.continues):
                     raise HTTPException(
                         409, "La clave de idempotencia ya corresponde a otro intento."
                     )
@@ -68,6 +82,8 @@ class AttemptSubmissionService:
             session = await query_session(db, session_id)
             if session is None:
                 raise HTTPException(401, "Sesión no disponible.")
+            if payload.continues is not None:
+                await check_continuation(db, session_id, payload.continues)
             state = await db.get(ArenaState, 1)
             if state is None or not state.accepting:
                 raise HTTPException(409, "Las entradas de la ronda están cerradas.")
@@ -76,13 +92,22 @@ class AttemptSubmissionService:
                 await repository.in_flight(origin=origin) >= settings.arena_queue_limit
                 or await repository.in_flight(session_id) >= settings.arena_session_queue_limit
             ):
-                raise HTTPException(429, "La cola está llena; espera el resultado anterior.")
+                raise HTTPException(
+                    429,
+                    "La cola está llena; espera el resultado anterior.",
+                    headers={"Retry-After": str(QUEUE_RETRY_SECONDS)},
+                )
             now = self._fleet.clock()
-            if (
-                await repository.recent_count(session_id, now - timedelta(minutes=1))
-                >= settings.arena_attempts_per_minute
-            ):
-                raise HTTPException(429, "Alcanzaste el límite de intentos por minuto.")
+            recent = await repository.created_since(session_id, now - RATE_WINDOW)
+            limit = settings.arena_attempts_per_minute
+            if len(recent) >= limit:
+                # Admission reopens once enough attempts leave the window to drop below the limit.
+                release = recent[len(recent) - limit] + RATE_WINDOW
+                raise HTTPException(
+                    429,
+                    "Alcanzaste el límite de intentos por minuto.",
+                    headers={"Retry-After": str(retry_after_seconds(release, now))},
+                )
             route = await self._routing.decide(session, payload.turns, db)
             version = (await PolicyRepository(db).active()).version
             attempt_id = new_id("attempt")
@@ -115,6 +140,8 @@ class AttemptSubmissionService:
                 updated_at=now,
             )
             db.add(attempt)
+            if payload.continues is not None:
+                db.add(AttemptLink(attempt_id=attempt_id, previous_attempt_id=payload.continues))
             await self._events.stage(
                 db,
                 EventDraft(

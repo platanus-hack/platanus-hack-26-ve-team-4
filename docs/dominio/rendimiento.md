@@ -8,6 +8,8 @@ Este documento separa mediciones del laboratorio, configuración y objetivos pen
 | --- | --- | --- |
 | Comparación DEMO | 270 ejecuciones, 732 llamadas simuladas, cero inconclusos. | Consistencia del flujo y de los controles en los casos publicados. |
 | Utilidad DEMO | 45/45 tareas correctas por versión. | La suite legítima publicada se conserva; no cubre cualquier tarea de soporte. |
+| Comparación LIVE | 270 ejecuciones, 683 llamadas de evaluación `live`, cero inconclusos. | Con `claude-haiku-5-5`, las violaciones pasan de 59/90 a 0/90; la latencia por llamada tiene mediana de 1,15 s. |
+| Coste de la comparación LIVE | US$0.064237 medidos en evaluación, US$0.075079 con la campaña. | Coste de esa corrida, 0,0000941 por llamada de evaluación; no una factura ni coste por usuario. |
 | Ciclo LIVE | 93 llamadas de los cinco roles, once comprobaciones aprobadas. | El circuito funciona con el proveedor real configurado. |
 | Coste LIVE | US$0.0101596 estimados desde tokens y tarifas del ledger. | Coste estimado de ese ensayo concreto; no una factura ni presupuesto por usuario. |
 | Ensayo inicial LIVE | Timeout de 60 segundos del verificador de campaña, preservado con error. | Un límite global corto no cubría seis casos más sus validaciones; el comando final espera por caso. |

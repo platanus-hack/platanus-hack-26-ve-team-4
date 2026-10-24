@@ -14,10 +14,11 @@ Implementación verificada el 24 de octubre de 2026, antes de esta actualizació
 | Contenedores | Ambas imágenes construidas; API, nginx, SPA, autorización, SSE y ejercicio completo comprobados. |
 | Flota original | 22/22 comprobaciones HTTP en modo demo. |
 | Comparación DEMO | 270 ejecuciones, 732 llamadas simuladas, 90/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones. |
+| Comparación LIVE | 270 ejecuciones con `claude-haiku-5-5`, 683 llamadas con coste medido (US$0.064237), 59/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones. |
 | Ciclo LIVE | Once comprobaciones aprobadas, 93 llamadas reales y los cinco roles; coste estimado de US$0.0101596 según tokens y tarifas configuradas. |
 | Historia de implementación | 25 commits comprobados individualmente en importaciones, nombres, arranque, sesión y consulta de políticas; el mapa conserva procedencia. |
 
-No hubo revisión visual en navegador ni prueba de acceso desde un teléfono externo. El resultado DEMO verifica integración del laboratorio; no mide eficacia de un LLM real. El ensayo LIVE comprueba el ciclo, no la comparación amplia de 270 ejecuciones ni una meta de capacidad.
+No hubo revisión visual en navegador ni prueba de acceso desde un teléfono externo. El resultado DEMO verifica integración del laboratorio; no mide eficacia de un LLM real. El ensayo LIVE P0 comprueba el ciclo; la comparación LIVE de 270 ejecuciones es otra evidencia. Ninguno es una meta de capacidad.
 
 La actualización documental vuelve a validar enlaces, comandos de colección y trazabilidad. No convierte esos resultados históricos en ejecuciones nuevas ni consume el proveedor para editar documentos.
 

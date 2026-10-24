@@ -165,9 +165,10 @@ Empezar por [continuidad y traspaso](./docs/continuidad.md). El [índice documen
 | Frontend | 92 pruebas aprobadas; Biome, TypeScript y build aprobados (24 oct). Panel del Guard revisado en el navegador sobre la pila Docker. |
 | Guard agnóstico | Tres contratos (comida, banca, clínica): cada invariante produce una política activa, el ataque repetido queda bloqueado y todas las tareas legítimas siguen pasando. Las demos de Python, MCP y Node corren contra la pila Docker completa (Postgres) y un contrato dado de alta por API aprende y bloquea igual. Síntesis LIVE con Haiku: 3 llamadas, US$0.0013, políticas aceptadas por la compuerta en banca y clínica. |
 | Comparación DEMO | 270 ejecuciones y 732 llamadas simuladas; 90/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones. |
+| Comparación LIVE | 270 ejecuciones con `claude-haiku-5-5` y 683 llamadas de evaluación con coste medido (US$0.064237; US$0.075079 con la campaña); 59/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones, cero inconclusos. La línea base viola menos que en el DEMO. |
 | Ciclo LIVE | Once comprobaciones, 93 llamadas de cinco roles; parche, repetición protegida, señuelo, Prober, reversión y archivo. Coste estimado US$0.0101596 desde tokens y tarifas configuradas. |
 
-La [guía de pruebas](./docs/pruebas/README.md) distingue resultados históricos, comandos y comprobaciones documentales. Los [artefactos y hashes](./docs/pruebas/evidencias.md) conservan procedencia. La comparación amplia con un LLM real, la revisión visual, la prueba de carga y el despliegue público siguen pendientes. Las tasas DEMO no son métricas de eficacia de un LLM real.
+La [guía de pruebas](./docs/pruebas/README.md) distingue resultados históricos, comandos y comprobaciones documentales. Los [artefactos y hashes](./docs/pruebas/evidencias.md) conservan procedencia. La revisión visual, la prueba de carga y el despliegue público siguen pendientes. Las tasas DEMO no son métricas de eficacia de un LLM real; las LIVE valen para este escenario sintético y un modelo, sin semilla.
 
 ## Arranque con Docker
 

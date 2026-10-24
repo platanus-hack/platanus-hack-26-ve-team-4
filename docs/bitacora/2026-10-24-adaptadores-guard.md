@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@carlos"
 rama: worktree-agent-ac5653937505c4034
-pr: pendiente
-estado: en revisión
+pr: ninguno  # push directo a main
+estado: integrado
 dominios: [guard, integracion]
 requisitos: []
 ---

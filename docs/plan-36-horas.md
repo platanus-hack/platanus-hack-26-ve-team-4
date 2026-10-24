@@ -1,6 +1,6 @@
 # Plan de construcción en 36 horas
 
-Estado del 24 de octubre de 2026: se conserva el plan de referencia y se registra su avance real en la sección 8. El núcleo, la arena local y la comparación amplia simulada están implementados; el despliegue público y la evaluación amplia con proveedor real siguen pendientes. La distribución personal conserva su carácter de propuesta.
+Estado del 24 de octubre de 2026: se conserva el plan de referencia y se registra su avance real en la sección 8. El núcleo, la arena local y la comparación amplia simulada y la LIVE con `claude-haiku-5-5` están implementados; el despliegue público sigue pendiente. La distribución personal conserva su carácter de propuesta.
 
 ## 1. Resultado mínimo
 
@@ -42,7 +42,7 @@ Las ventanas describen hitos integrados: los tres frentes pueden avanzar simult�
 
 **P2, ampliaciones si queda tiempo:** más familias, explicación visual de causas, exportación de informe y comparación de varios candidatos. Soporte de más proveedores, integraciones externas y despliegue empresarial quedan para después del evento.
 
-P0 y las funciones locales de P1 ya están integrados. El acceso público de P1 requiere todavía un despliegue y una URL comprobados. La cobertura de seis familias y la exportación de P2 también existen. El alcance comunicado debe distinguir esos resultados de las mediciones pendientes con proveedor real.
+P0 y las funciones locales de P1 ya están integrados. El acceso público de P1 requiere todavía un despliegue y una URL comprobados. La cobertura de seis familias y la exportación de P2 también existen. El alcance comunicado debe distinguir esos resultados de las mediciones pendientes de carga y despliegue, y las tasas simuladas de las medidas con proveedor real.
 
 ## 5. Cómo recortar sin perder el concepto
 
@@ -90,7 +90,8 @@ La revisión final debe confirmar:
 | Recuperación | Outbox, leases, escrituras de negocio idempotentes, auditoría con journal y reset archivado recuperable. |
 | Capacidad de identidad | 100 plazas por defecto y hasta 500 configurables, sin compartir cliente entre participantes; no equivale a una prueba de carga real. |
 | Evaluación amplia | [Artefacto](../artifacts/core-evaluation/demo-270.json): 270 ejecuciones y 732 llamadas simuladas, 90/90 → 0/90 violaciones, 45/45 tareas útiles por versión, cero inconclusos. |
-| Proveedor real | [Once comprobaciones del ciclo completo](../artifacts/core-evaluation/live-p0.json), 93 llamadas LIVE, cinco roles y coste estimado de 0,0101596 USD a partir de tokens medidos. Comparación amplia real aún pendiente. |
+| Proveedor real | [Once comprobaciones del ciclo completo](../artifacts/core-evaluation/live-p0.json), 93 llamadas LIVE, cinco roles y coste estimado de 0,0101596 USD a partir de tokens medidos. |
+| Evaluación amplia LIVE | [Artefacto](../artifacts/core-evaluation/live-270-2026-10-24-yummy.json): 270 ejecuciones con `claude-haiku-5-5`, 683 llamadas de evaluación con coste medido, 59/90 → 0/90 violaciones, 45/45 tareas útiles por versión, cero inconclusos; coste total de 0,075079 USD. |
 | Contenedores | Ambas imágenes construidas; proxy, ejercicio completo y reset archivado comprobados en modo demo. |
 | Backend | 860 pruebas aprobadas y dos LIVE opcionales omitidas, con advertencias tratadas como errores; Ruff, formato y mypy aprobados. |
 | Frontend | 47 pruebas, tipado, lint y build aprobados. La revisión visual en navegador sigue pendiente. |

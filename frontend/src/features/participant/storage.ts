@@ -73,6 +73,7 @@ export function loadHistory(id: string): ConversationEntry[] {
           typeof entry.key === "string" &&
           Array.isArray(entry.messages) &&
           entry.messages.every((message) => typeof message === "string") &&
+          (entry.continues == null || typeof entry.continues === "string") &&
           (entry.attempt === null ||
             (entry.attempt &&
               typeof entry.attempt.id === "string" &&

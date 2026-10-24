@@ -88,13 +88,9 @@ export function ParticipantPage() {
 
   if (session) {
     return (
-      <main className="page participant-page">
-        <p className="eyebrow">Agent Zero · Participante</p>
-        <h1>Hola, {session.alias}</h1>
-        <p>
-          Explora los controles del asistente de soporte de Yummy. Cada resultado se verifica en el
-          laboratorio.
-        </p>
+      <main className="page participant-page participant-chat">
+        <p className="eyebrow">Agent Zero · Laboratorio de seguridad</p>
+        <h1 className="participant-title">Hola, {session.alias}</h1>
         <AttemptChat key={session.id} session={session} onExpired={expire} />
         <RevealCard key={`reveal-${session.id}`} session={session} />
       </main>
