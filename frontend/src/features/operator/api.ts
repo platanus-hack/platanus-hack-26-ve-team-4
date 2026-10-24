@@ -24,7 +24,34 @@ export interface Policy {
     level1_passed?: boolean;
     reason?: string;
     cases?: { name: string; passed: boolean; error?: string | null }[];
+    integrity_probe?: { passed: boolean; outcome: string; untrusted_effects?: number };
+    synthesis?: Synthesis;
   };
+  flow_rules?: FlowRule[];
+  synthesis?: Synthesis | null;
+}
+export interface FlowRule {
+  rule_id: string;
+  tool: string;
+  reason: string;
+  text: string;
+  deny_when: { kind: string; argument?: string; limit?: number };
+}
+export interface Synthesis {
+  status?: string;
+  source?: string;
+  reason?: string;
+  llm_mode?: string;
+  error?: string;
+  precheck?: {
+    accepted: boolean;
+    reason: string;
+    original_blocked: number;
+    original_total: number;
+    legitimate_kept: number;
+    legitimate_total: number;
+  };
+  trace?: { tool: string; provenance: Record<string, string> }[];
 }
 export interface Finding {
   id: string;

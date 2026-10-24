@@ -1,0 +1,28 @@
+.flow-policy {
+  border-left: 3px solid var(--color-accent);
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+}
+
+.flow-policy h4 {
+  margin: 0 0 0.5rem;
+}
+
+.flow-rules code,
+.flow-trace code {
+  overflow-wrap: anywhere;
+}
+
+.flow-trace {
+  list-style: none;
+  padding: 0;
+}
+
+.flow-low,
+.flow-warning {
+  color: var(--color-danger);
+}
+
+.flow-ok {
+  color: var(--color-accent);
+}

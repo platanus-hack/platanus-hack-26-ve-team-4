@@ -1,4 +1,5 @@
 import type { Policy } from "./api";
+import { FlowPolicyPanel } from "./FlowPolicyPanel";
 
 const RULE_LABELS: Record<string, string> = {
   order_belongs_to_session_customer: "La identidad solo puede acceder a sus propios pedidos",
@@ -41,13 +42,14 @@ export function PolicyList({
               </p>
             </details>
           )}
+          <FlowPolicyPanel policy={policy} />
           {policy.rules.length ? (
             <ul>
               {policy.rules.map((rule) => (
                 <li key={rule}>{RULE_LABELS[rule] ?? rule}</li>
               ))}
             </ul>
-          ) : (
+          ) : policy.flow_rules?.length ? null : (
             <p>Base vulnerable del laboratorio.</p>
           )}
           {policy.validation.cases && (
