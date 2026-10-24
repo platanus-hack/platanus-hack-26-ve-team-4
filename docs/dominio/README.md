@@ -17,6 +17,7 @@ Documentación de la implementación vigente al 24 de octubre de 2026. Cada domi
 | [patches](./patches.md) | Scheduler de defensa, explicación de asesoría y validación contrafactual/conversacional. |
 | [arena](./arena.md) | Estado, clasificación, revelación, operación y reset archivado recuperable. |
 | [events](./events.md) | Eventos, outbox, proyección pública y SSE con cursor e historia durable. |
+| [guard](./guard.md) | Contrato de dominio declarativo y Guard de dos llamadas para agentes de cualquier negocio. |
 
 ## Autonomía y evaluación
 

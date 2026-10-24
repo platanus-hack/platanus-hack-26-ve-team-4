@@ -1,32 +1,163 @@
 # AGENT ZERO
 
-**Arena de red teaming autónomo con defensa en vivo.**
+**El sistema inmune de tu agente de IA: lo ataca, comprueba el daño real y lo bloquea con una regla verificada, sin tocar su código.**
 
 <img src="./project-logo.png" alt="Logo del proyecto" width="200" />
 
-Agent Zero ejecuta ataques contra un asistente de soporte sintético, verifica efectos con oráculos, deriva controles declarativos, valida seguridad y utilidad y activa una política nueva durante la misma ronda. La audiencia y el Prober participan con orígenes separados; un señuelo aislado permite estudiar éxitos aparentes.
-
 **Track:** AI Security · **Evento:** Platanus Hack 26: Caracas ft. Yummy · **Equipo:** team-4.
 
-## Para continuar el proyecto
+## El problema
+
+Las empresas ya ponen en producción agentes con herramientas reales: consultan pedidos, mueven dinero, leen historias clínicas, guardan memoria. Cada herramienta es una puerta. Un mensaje bien escrito, un correo o un documento envenenado bastan para que el agente reembolse, transfiera o lea datos de otra persona.
+
+Hoy eso se descubre tarde. Un humano investiga, alguien escribe un parche y se despliega días después. Mientras tanto el agente sigue expuesto, y los clasificadores de "¿esto suena peligroso?" no dicen si hubo daño.
+
+## Qué hace Agent Zero
+
+Es un *purple team* autónomo: ataque y defensa en el mismo bucle.
+
+1. **Ataca sin parar.** El Prober prueba inyecciones, abuso de herramientas y memoria envenenada, y se adapta a lo que funciona. Personas reales también pueden atacar.
+2. **Confirma el daño, no el texto.** Un oráculo determinista mira el efecto: si la transferencia se registró o si se leyó un dato ajeno. Sin efecto no hay hallazgo.
+3. **Escribe la defensa desde el incidente.** Rastrea de dónde salió cada argumento (el cliente, el sistema, un documento externo, la memoria) y propone reglas en una gramática cerrada, por ejemplo `DENEGAR transferir SI monto viene de una fuente no confiable`.
+4. **La prueba antes de activarla.** La regla tiene que bloquear el ataque sin romper ninguna tarea legítima declarada. Si rompe algo, se rechaza.
+5. **La activa en segundos y se revierte con un clic.** Vive en el gateway por el que pasan las llamadas del agente: no hay redeploy ni PR.
+6. **Recuerda.** Cada versión hereda las reglas de su padre, con hash, motivo y la evidencia que la justificó.
+
+El modelo propone; el código decide. Oráculos, compuerta, activación y reversión son deterministas, y ninguna regla se activa porque un LLM lo diga.
+
+## Qué obtiene un equipo que lo usa
+
+| Hoy | Con Agent Zero |
+| --- | --- |
+| Pentest anual con informe en PDF | Ataques continuos contra el agente |
+| Un clasificador que avisa si algo "suena raro" | Evidencia de daño real sobre las herramientas |
+| Parche manual en días, a veces rompiendo cosas | Regla validada y activa en segundos |
+| Revertir exige redeploy | Reversión con un clic a la versión verificada |
+| "¿Estamos más seguros?" se responde con una opinión | Tasa de éxito del ataque por versión de política, con n e intervalo |
+
+## Cómo lo usa cualquier empresa
+
+Agent Zero separa lo que solo la empresa sabe de lo que se puede automatizar:
+
+- **La empresa declara qué nunca debe pasar**, una vez, en un contrato.
+- **Agent Zero produce, prueba y aplica el cómo**, ante cada ataque.
+
+El motor no conoce ningún negocio. Yummy, un banco y una clínica son tres archivos YAML en [`backend/contracts/`](./backend/contracts/) que usan el mismo código.
+
+### Lo que le pedimos a la empresa
+
+| Pedimos | Para qué | Cómo se entrega |
+| --- | --- | --- |
+| **1. Un contrato del agente** | Herramientas, qué significa cada argumento, invariantes y tareas legítimas | Un YAML revisado por PR, como cualquier configuración. Una a dos horas para un agente típico |
+| **2. Dos llamadas por herramienta** | `check` antes de ejecutar y `effects` después | Un envoltorio de 80 líneas ([cliente de ejemplo](./examples/guard/agent_zero_guard.py)) o un proxy en su gateway |
+| **3. El dueño de cada recurso** | Saber si la cuenta, el pedido o el paciente es del usuario de la sesión | Una función `owner_of` que ya tienen en su backend |
+| **4. El origen de su contexto** | Saber si un dato lo dijo el usuario o vino de un correo, un documento o la memoria | Etiquetar cada fragmento del prompt como `user`, `store`, `untrusted` o `memory` |
+
+No pedimos acceso a su código, a su modelo ni a sus datos de producción. Agent Zero solo ve los nombres de las herramientas, sus argumentos y las etiquetas de origen.
+
+### El contrato
+
+```yaml
+contract_id: banco-transferencias
+subject: Titular autenticado de la banca en línea.
+enforce_invariants: true
+tools:
+  transferir:
+    side_effect: true
+    arguments:
+      cuenta:  {kind: resource}
+      destino: {kind: identifier}
+      monto:   {kind: amount}
+invariants:
+  - id: tope-por-transferencia
+    tools: [transferir]
+    never: {kind: exceeds, argument: monto, limit: 500}
+  - id: beneficiarios-registrados
+    tools: [transferir]
+    never: {kind: not_in, argument: destino, allowed: [BEN-ALQUILER, BEN-AHORRO]}
+legitimate:
+  - name: pagar-alquiler
+    tool: transferir
+    arguments: {cuenta: CTA-1, destino: BEN-ALQUILER, monto: 450}
+    provenance: {cuenta: user, destino: user, monto: user}
+    owners: {cuenta: subject}
+```
+
+Cinco tipos de argumento (`amount`, `resource`, `enum`, `identifier`, `text`) y cinco condiciones (`exceeds`, `not_owner`, `untrusted_origin`, `not_in`, `contains_any`) cubren dinero, recursos con dueño, listas permitidas, contenido prohibido y procedencia en cualquier dominio. El contrato se valida al cargar: una tarea legítima que rompa un invariante, una condición que no encaje con el tipo del argumento o una herramienta desconocida lo rechazan.
+
+### En el código del agente
+
+```python
+guard = AgentZeroGuard(url, "banco-transferencias", api_key)
+transferir = guard.wrap("transferir", transferir, owner_of=dueno_de_cuenta)
+
+transferir(subject="ana", context=[
+    {"origin": "user", "text": mensaje_del_cliente},
+    {"origin": "untrusted", "text": correo_resumido},
+], cuenta="CTA-1", destino="BEN-EXTERNO", monto=900, concepto="factura")
+```
+
+Si el Guard deniega, la herramienta no se ejecuta y el agente recibe el motivo. Si el Guard no responde, el cliente falla cerrado.
+
+### Dos modos por contrato
+
+- **`enforce_invariants: true`**: los invariantes también bloquean antes de ejecutar. Un ataque nunca llega a producir efecto, y aun así Agent Zero aprende reglas de procedencia que bloquean variantes que **no** rompen ningún invariante. Recomendado para dinero y datos sensibles.
+- **Detección por efecto (por defecto)**: el hallazgo nace de lo que pasó, informado en `effects`. Sirve cuando el daño solo se ve después, por ejemplo el dueño del pedido devuelto.
+
+Con `auto_activate: false`, cada política queda como propuesta hasta que un operador la aprueba.
+
+### Pruébalo en dos minutos
+
+```bash
+make arena-server ARENA_MODE=demo
+AGENT_ZERO_GUARD_API_KEY=change-me-guard python3 examples/guard/banco_demo.py
+```
+
+En local, la clave por defecto es `change-me-guard` salvo que `.env` defina `AGENT_ZERO_GUARD_API_KEY`. Fuera de local, una clave de menos de 32 caracteres deja el Guard apagado (503) sin afectar a la arena.
+
+Salida real del agente bancario de ejemplo:
+
+```text
+2. Un correo inyecta una transferencia de 900 USD: el invariante la frena
+  BLOQUEADA  900 a BEN-EXTERNO  <- invariant:tope-por-transferencia
+   regla v1: DENEGAR transferir SI monto > 500
+   regla v1: DENEGAR transferir SI destino viene de una fuente no confiable
+   regla v1: DENEGAR transferir SI monto viene de una fuente no confiable
+4. Una inyección pequeña que no rompe ningún invariante
+  BLOQUEADA  40 a BEN-AHORRO desde el correo  <- r_transferir_destino_untrusted
+5. Lo legítimo sigue funcionando
+  EJECUTADA  alquiler 450 a BEN-ALQUILER
+```
+
+El paso 4 es la diferencia con una lista de reglas: 40 USD a un beneficiario registrado cumple todos los invariantes, pero el monto lo dictó un correo.
+
+La [guía de integración](./docs/integracion.md) detalla el contrato, la API, los adaptadores, el modelo de seguridad y los límites.
+
+### Lo que todavía no hace
+
+- **No escribe código ni abre PRs.** Es a propósito: la defensa es una regla que el código impone, no un parche que un modelo inventa.
+- **No entrena modelos.** Aprende en el sentido de un sistema inmune: acumula reglas verificadas.
+- **La procedencia es léxica**: compara valores con los fragmentos etiquetados. Un atacante que logre que el usuario repita el valor lo vuelve `user`. Para dinero conviene `enforce_invariants`.
+- **Hay un adaptador de referencia en Python.** Proxies para MCP, LangChain u OpenAI Agents siguen el mismo patrón de dos llamadas y no están construidos.
+- **La síntesis con LLM solo corre en modo `live`**; en `demo` y `offline` las reglas se derivan de forma determinista del invariante roto y de la procedencia.
+
+## La arena: el laboratorio en vivo
+
+La arena es Agent Zero aplicado a un asistente de soporte sintético de Yummy, con audiencia. Los participantes atacan desde el teléfono, el Prober ataca en paralelo, y la pantalla muestra cada hallazgo convertido en política, la repetición en pantalla partida, el señuelo y la curva de éxito del ataque por versión.
 
 Empezar por [continuidad y traspaso](./docs/continuidad.md). El [índice documental](./docs/README.md) reúne la ruta de lectura; los [documentos por dominio](./docs/dominio/README.md) enlazan código, contratos, persistencia, invariantes, pruebas y próximos pasos.
 
-La implementación está publicada en `core/complete-autonomous-loop` en el repositorio de organización y el espejo personal. Consultar el estado de la rama y la revisión antes de asumir que está integrada en `main`.
-
 ## Estado comprobado
-
-Verificación funcional de referencia del 24 de octubre de 2026:
 
 | Área | Resultado |
 | --- | --- |
-| Backend | 860 pruebas aprobadas, dos LIVE opcionales omitidas y cero warnings; Ruff, formato y mypy estricto aprobados. |
-| Frontend | 47 pruebas aprobadas; Biome, TypeScript y build aprobados. |
-| Contenedores/flota | Ambas imágenes construidas, smoke HTTP completo y recorrido original de flota 22/22. |
+| Backend | 1096 pruebas aprobadas y dos LIVE opcionales omitidas; Ruff, formato y mypy estricto aprobados (24 oct). |
+| Frontend | 68 pruebas aprobadas; Biome, TypeScript y build aprobados (24 oct). |
+| Guard agnóstico | Tres contratos (comida, banca, clínica): cada invariante produce una política activa, el ataque repetido queda bloqueado y todas las tareas legítimas siguen pasando. Agente bancario de ejemplo ejecutado contra el servidor real. |
 | Comparación DEMO | 270 ejecuciones y 732 llamadas simuladas; 90/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones. |
 | Ciclo LIVE | Once comprobaciones, 93 llamadas de cinco roles; parche, repetición protegida, señuelo, Prober, reversión y archivo. Coste estimado US$0.0101596 desde tokens y tarifas configuradas. |
 
-La [guía de pruebas](./docs/pruebas/README.md) distingue resultados históricos, comandos y comprobaciones documentales. Los [artefactos y hashes](./docs/pruebas/evidencias.md) conservan procedencia y el primer ensayo LIVE que agotó el timeout del verificador. La comparación amplia con un LLM real, la revisión visual, la prueba de carga y el despliegue público siguen pendientes. Las tasas DEMO no son métricas de eficacia de un LLM real.
+La [guía de pruebas](./docs/pruebas/README.md) distingue resultados históricos, comandos y comprobaciones documentales. Los [artefactos y hashes](./docs/pruebas/evidencias.md) conservan procedencia. La comparación amplia con un LLM real, la revisión visual, la prueba de carga y el despliegue público siguen pendientes. Las tasas DEMO no son métricas de eficacia de un LLM real.
 
 ## Arranque con Docker
 
