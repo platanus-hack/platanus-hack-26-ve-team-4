@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@franbastardo"
 rama: feat/panel-monitor
-pr: pendiente
-estado: en revisión
+pr: 44
+estado: integrado
 dominios: [frontend, arena, llm]
 requisitos: []
 ---
