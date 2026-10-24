@@ -45,7 +45,7 @@ La fila guarda `session_id`, `origin`, `campaign_id`, `customer_id`, `policy_ver
 1. Reservar el escritor SQLite con `BEGIN IMMEDIATE`, además del lock local.
 2. Resolver primero la clave idempotente. Si mensajes, objetivo, origen y campaña coinciden, devolver la fila existente; si difieren, 409.
 3. Para campaña, exigir que siga `running` y que el origen sea autónomo. Resolver la sesión y exigir entradas abiertas.
-4. Aplicar límite de cola por origen, cola por sesión y frecuencia. Los excesos devuelven 429.
+4. Aplicar límite de cola por origen, cola por sesión y frecuencia. Los excesos devuelven 429 con `Retry-After` en segundos enteros: por frecuencia, lo que falta para que salga de la ventana de un minuto el intento que deja a la sesión bajo el límite (mínimo 1); con la cola llena, 5 s fijos, porque se libera cuando termina un intento pendiente y no hay una hora conocida.
 5. Pedir la ruta, leer la versión activa y crear intento, run y eventos en una sola transacción.
 6. Después de commit, despachar el outbox. Un fallo de publicación no convierte la admisión en una segunda operación.
 
@@ -65,13 +65,16 @@ La respuesta pública sustituye canarios por `[referencia]` y omite identidad in
 
 ```bash
 cd backend
-uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_control_concurrency.py tests/arena/test_transactional_events.py tests/arena/test_tool_retries.py -q
+uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_control_concurrency.py tests/arena/test_transactional_events.py tests/arena/test_tool_retries.py tests/arena/test_attempt_limits.py tests/arena/test_pause_in_flight.py tests/arena/test_operator_authorization.py -q
 ```
 
 | Cobertura | Archivo de prueba |
 | --- | --- |
 | Ciclo útil → violación → parche → repetición y proyección pública | [test_core_cycle.py](../../backend/tests/arena/test_core_cycle.py). |
 | Frecuencia/cupo, pausa y versión fijada al admitir | [test_admission_and_campaign.py](../../backend/tests/arena/test_admission_and_campaign.py). |
+| Largo máximo del mensaje (4000 sí, 4001 no), 429 por intento pendiente, por cola llena y por frecuencia con reloj inyectado, y `Retry-After` de cada uno | [test_attempt_limits.py](../../backend/tests/arena/test_attempt_limits.py). |
+| Pausa con un intento en ejecución: termina evaluado, conserva sus eventos y los envíos nuevos reciben 409 | [test_pause_in_flight.py](../../backend/tests/arena/test_pause_in_flight.py). |
+| Un token de participante válido recibe 401 en las rutas de operación y no cambia el estado | [test_operator_authorization.py](../../backend/tests/arena/test_operator_authorization.py). |
 | Solicitudes simultáneas con una clave; conflicto de payload; carreras con activación/reversión | [test_control_concurrency.py](../../backend/tests/arena/test_control_concurrency.py). |
 | Fallo antes de commit, caída después de commit y recuperación del evento | [test_transactional_events.py](../../backend/tests/arena/test_transactional_events.py). |
 | App recreada y resultado de herramienta reutilizado | [test_recovery.py](../../backend/tests/arena/test_recovery.py), [test_tool_retries.py](../../backend/tests/arena/test_tool_retries.py). |
