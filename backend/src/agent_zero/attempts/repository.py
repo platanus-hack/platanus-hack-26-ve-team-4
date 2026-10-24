@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agent_zero.attempts.models import Attempt, AttemptStatus
+from agent_zero.attempts.models import Attempt, AttemptOutcome, AttemptStatus
 
 OPEN_STATUSES = (AttemptStatus.QUEUED, AttemptStatus.RUNNING)
 
@@ -41,6 +41,23 @@ class AttemptRepository:
             Attempt.status.in_(OPEN_STATUSES), Attempt.run_id.is_not(None)
         )
         return (await self._db.scalars(query.order_by(Attempt.created_at))).all()
+
+    async def list_by_session(self, session_id: str, limit: int) -> Sequence[Attempt]:
+        query = (
+            select(Attempt)
+            .where(Attempt.session_id == session_id)
+            .order_by(Attempt.created_at.desc())
+            .limit(limit)
+        )
+        return (await self._db.scalars(query)).all()
+
+    async def tally(self) -> dict[tuple[AttemptStatus, AttemptOutcome | None], int]:
+        query = select(Attempt.status, Attempt.outcome, func.count()).group_by(
+            Attempt.status, Attempt.outcome
+        )
+        return {
+            (status, outcome): count for status, outcome, count in await self._db.execute(query)
+        }
 
     async def list_recent(self, limit: int) -> Sequence[Attempt]:
         query = select(Attempt).order_by(Attempt.created_at.desc()).limit(limit)

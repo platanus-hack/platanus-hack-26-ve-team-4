@@ -1,4 +1,9 @@
+import { ActivityFeed } from "./components/ActivityFeed";
+import { ArenaIndicators } from "./components/ArenaIndicators";
+import { JoinQr } from "./components/JoinQr";
+import { RoundTimer } from "./components/RoundTimer";
 import { useArenaEvents } from "./hooks/useArenaEvents";
+import { useArenaState } from "./hooks/useArenaState";
 
 const CONNECTION_LABELS = {
   connecting: "Conectando…",
@@ -8,27 +13,29 @@ const CONNECTION_LABELS = {
 
 export function ArenaPage() {
   const { events, connection } = useArenaEvents();
+  const { state, failed } = useArenaState(events[0]?.id ?? null);
 
   return (
-    <main className="page">
+    <main className="page arena">
       <header className="arena-header">
         <h1>Arena</h1>
-        <span className="status">{CONNECTION_LABELS[connection]}</span>
+        <span className="status" role="status">
+          {CONNECTION_LABELS[connection]}
+        </span>
       </header>
-      {events.length === 0 ? (
-        <p>Esperando actividad.</p>
-      ) : (
-        <ol className="timeline">
-          {events.map((event) => (
-            <li key={event.id}>
-              <time dateTime={event.timestamp}>
-                {new Date(event.timestamp).toLocaleTimeString("es")}
-              </time>{" "}
-              {event.type}
-            </li>
-          ))}
-        </ol>
-      )}
+      <div className="arena-grid">
+        <JoinQr />
+        <div className="arena-main">
+          <RoundTimer />
+          <ArenaIndicators state={state} failed={failed} />
+          <h2>Actividad reciente</h2>
+          <ActivityFeed events={events} />
+        </div>
+      </div>
+      <p className="muted">
+        Los resultados son provisionales hasta la revelación. El cronómetro es local y no cierra
+        entradas.
+      </p>
     </main>
   );
 }

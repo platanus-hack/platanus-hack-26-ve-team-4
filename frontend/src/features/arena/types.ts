@@ -24,3 +24,17 @@ export interface TraceEvent {
 }
 
 export type ConnectionState = "connecting" | "open" | "reconnecting";
+
+export interface ArenaState {
+  accepting: boolean;
+  policy_version: number;
+  attempts_total: number;
+  queued: number;
+  running: number;
+  finished: number;
+  apparent_successes: number;
+  prevented: number;
+  not_achieved: number;
+  inconclusive: number;
+  findings_open: number | null;
+}

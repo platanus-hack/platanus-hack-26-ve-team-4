@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from agent_zero.attempts.arena_router import router as arena_state_router
 from agent_zero.attempts.attempt_events import AttemptEvents
 from agent_zero.attempts.attempt_tracker import AttemptTracker
 from agent_zero.attempts.execution import ArenaWiring
@@ -85,6 +86,7 @@ def create_app(
     app.include_router(sessions_operator_router)
     app.include_router(attempts_router)
     app.include_router(attempts_operator_router)
+    app.include_router(arena_state_router)
     app.include_router(events_router)
     app.include_router(registry_router)
     app.include_router(runtime_router, dependencies=[OperatorOnly])

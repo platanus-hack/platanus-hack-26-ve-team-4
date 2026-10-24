@@ -72,3 +72,187 @@ button:disabled {
   padding: 8px 12px;
   border-radius: 6px;
 }
+
+h2 {
+  font-size: 1.1rem;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-surface);
+  resize: vertical;
+}
+
+button.secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.composer {
+  max-width: none;
+}
+
+.turn {
+  display: grid;
+  gap: 4px;
+}
+
+.attempts {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.attempt {
+  display: grid;
+  gap: 6px;
+}
+
+.bubble {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+
+.bubble p {
+  margin: 0 0 6px;
+}
+
+.bubble.agent {
+  border-left: 3px solid var(--color-accent);
+}
+
+/* Los tonos refuerzan un texto que ya dice el estado; nunca lo sustituyen. */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid currentColor;
+}
+
+.tag-neutral {
+  color: var(--color-muted);
+}
+
+.tag-progress {
+  color: #58a6ff;
+}
+
+.tag-success {
+  color: var(--color-accent);
+}
+
+.tag-warning {
+  color: #d29922;
+}
+
+.tag-danger {
+  color: var(--color-danger);
+}
+
+.arena {
+  max-width: 1200px;
+}
+
+.arena-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.join {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: 8px;
+}
+
+.qr {
+  width: 100%;
+  max-width: 240px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.join-link {
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.clock {
+  font-size: 3.5rem;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.indicators {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.indicators div {
+  background: var(--color-surface);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.indicators dt {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.indicators dd {
+  margin: 4px 0 0;
+  font-size: 1.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .arena-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .clock {
+    font-size: 2.5rem;
+  }
+}

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from agent_zero.attempts.dependencies import Submissions
 from agent_zero.attempts.errors import (
@@ -33,6 +35,14 @@ async def submit(
     if not submission.created:
         response.status_code = status.HTTP_200_OK
     return AttemptPublicView.of(submission.attempt)
+
+
+@router.get("")
+async def list_mine(
+    session: CurrentSession, db: DbSession, limit: Annotated[int, Query(ge=1, le=100)] = 50
+) -> list[AttemptPublicView]:
+    attempts = await AttemptRepository(db).list_by_session(session.id, limit)
+    return [AttemptPublicView.of(attempt) for attempt in attempts]
 
 
 @router.get("/{attempt_id}")

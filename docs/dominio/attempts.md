@@ -17,7 +17,8 @@ Recibe cada intento, sea de una persona o del Prober, lo encola contra la vícti
 | `rate_limits.py` | Un intento cada `AGENT_ZERO_ATTEMPT_MIN_INTERVAL_SECONDS` (3) por sesión: 429. Cola global de `AGENT_ZERO_ATTEMPT_QUEUE_LIMIT` (20) intentos abiertos: 503. Ambos con `Retry-After`. |
 | `attempt_tracker.py` | Proceso en segundo plano que sigue el run de cada intento abierto y lo pasa a `running`, `evaluated` o `inconclusive`. |
 | `attempt_events.py` | Publica `attempt_queued`, `attempt_started` y `attempt_evaluated` dos veces: completa para operación y sin identificadores para el público. |
-| `router.py` | `POST /api/attempts` (202 nuevo, 200 si la clave ya existía) y `GET /api/attempts/{id}`, solo para la sesión dueña. |
+| `router.py` | `POST /api/attempts` (202 nuevo, 200 si la clave ya existía), `GET /api/attempts` (los de la sesión, del más reciente al más antiguo) y `GET /api/attempts/{id}`, solo para la sesión dueña. |
+| `arena_state.py`, `arena_router.py` | `GET /api/arena/state`, público: contadores de la ronda para la pantalla proyectada. Suma violaciones confirmadas y éxitos en el señuelo en `apparent_successes` hasta la revelación; `findings_open` es `null` mientras no exista el registro de hallazgos. |
 | `operator_router.py` | `GET /api/operator/attempts` y `GET /api/operator/attempts/{id}`, con ruta, run y resultado reales. |
 
 ### Conexión con otros dominios
