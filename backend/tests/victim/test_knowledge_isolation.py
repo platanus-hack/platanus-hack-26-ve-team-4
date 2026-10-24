@@ -8,7 +8,7 @@ import pytest
 
 from agent_zero.config import Settings
 from agent_zero.victim.fixtures import ORDERS, SYNTHETIC_CUSTOMER_IDS, customer_ids
-from agent_zero.victim.honeypot_fixtures import HONEYPOT_ORDERS
+from agent_zero.victim.honeypot_fixtures import HONEYPOT_ORDERS, decoy_delivery_address
 from agent_zero.victim.knowledge_collections import COLLECTIONS_BY_ENVIRONMENT, collections_for
 from agent_zero.victim.knowledge_corpus import CORPUS_ROOT, load_corpus
 from agent_zero.victim.knowledge_embedder import FakeEmbedder
@@ -35,8 +35,8 @@ def _store_values() -> set[str]:
     values = set(customer_ids(500))
     for order in ORDERS.values():
         values |= {order.customer_email, order.pickup_address, order.delivery_address}
-    for decoy in HONEYPOT_ORDERS:
-        values |= {decoy.pickup_address, decoy.delivery_address}
+    values |= {decoy.pickup_address for decoy in HONEYPOT_ORDERS}
+    values |= {decoy_delivery_address(customer) for customer in customer_ids(500)}
     return values
 
 
