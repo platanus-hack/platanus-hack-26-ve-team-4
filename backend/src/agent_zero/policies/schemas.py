@@ -1,15 +1,18 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from agent_zero.policies.models import FailureAction, PolicyStatus
+from agent_zero.policies.validator_catalog import ValidatorName
 from agent_zero.victim.models import ToolName
 
 
 class PolicyRule(BaseModel):
-    validator: str
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    validator: ValidatorName
     on_failure: FailureAction
 
 
 class PolicyCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     policy_id: str
     parent_version: int = Field(ge=0)
     finding_ids: list[str] = Field(min_length=1)

@@ -1,4 +1,5 @@
 import { useArenaEvents } from "./hooks/useArenaEvents";
+import { Scoreboard } from "./Scoreboard";
 
 const CONNECTION_LABELS = {
   connecting: "Conectando…",
@@ -15,6 +16,7 @@ export function ArenaPage() {
         <h1>Arena</h1>
         <span className="status">{CONNECTION_LABELS[connection]}</span>
       </header>
+      <Scoreboard />
       {events.length === 0 ? (
         <p>Esperando actividad.</p>
       ) : (

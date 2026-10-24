@@ -1,6 +1,6 @@
 # Evaluación y criterios de aceptación
 
-Estado: protocolo propuesto. No se han ejecutado campañas ni obtenido métricas de eficacia en este repositorio.
+Estado: protocolo de evaluación amplia pendiente. El ciclo de integración ya tiene pruebas con proveedor simulado, descritas en [núcleo implementado](./nucleo.md); esas pruebas no son métricas de eficacia de un LLM real.
 
 ## 1. Qué debe demostrar el MVP
 

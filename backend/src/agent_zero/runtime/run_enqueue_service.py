@@ -24,7 +24,7 @@ class RunEnqueueService:
         self._registry = registry
         self._clock = clock
 
-    async def enqueue(self, payload: RunCreate) -> Run:
+    async def enqueue(self, payload: RunCreate, *, commit: bool = True) -> Run:
         self._registry.get(payload.handler)
         if payload.idempotency_key is not None:
             existing = await self._repository.get_by_key(payload.idempotency_key)
@@ -48,7 +48,10 @@ class RunEnqueueService:
         try:
             await self._repository.add(run)
             await self._repository.add_event(run.run_id, 0, RunEventKind.QUEUED, "", now)
-            await self._db.commit()
+            if commit:
+                await self._db.commit()
+            else:
+                await self._db.flush()
         except IntegrityError:
             await self._db.rollback()
             key = payload.idempotency_key

@@ -6,7 +6,9 @@ Categoría: control · Responsable: Carlos · Issues: #12
 
 Decide si un intento se ejecuta en el entorno protegido, se desvía al señuelo o se bloquea. Es una decisión determinista del servidor.
 
-## Estado hoy
+## Estado inicial del diseño
+
+La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
 
 | Archivo | Contenido |
 | --- | --- |

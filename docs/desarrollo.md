@@ -2,6 +2,8 @@
 
 Guía para trabajar en el repositorio: estructura, convenciones, comandos y entrega continua.
 
+El arranque de la arena, sus contratos HTTP y los límites actuales se documentan en [núcleo implementado](./nucleo.md).
+
 ## Requisitos
 
 | Herramienta | Versión | Uso |

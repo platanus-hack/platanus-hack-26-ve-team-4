@@ -6,7 +6,9 @@ Categoría: arena · Responsable: Francisco · Issues: #6
 
 Recibe cada intento, sea de una persona o del Prober, lo encola contra la víctima o el señuelo con la versión de política vigente y guarda su estado y su resultado.
 
-## Estado hoy
+## Estado inicial del diseño
+
+La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
 
 | Archivo | Contenido |
 | --- | --- |

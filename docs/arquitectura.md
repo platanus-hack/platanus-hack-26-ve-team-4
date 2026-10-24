@@ -1,6 +1,6 @@
 # Arquitectura propuesta de Agent Zero
 
-Estado: especificación del MVP; los contratos y ejemplos de este documento aún no están implementados.
+Estado: referencia de diseño del MVP. El ciclo P0 y parte de la arena ya están implementados; ver [núcleo implementado](./nucleo.md) para los contratos vigentes, pruebas y brechas.
 
 ## 1. Decisiones de alcance
 

@@ -1,6 +1,6 @@
 # Demo en vivo y experiencia de la arena
 
-Estado: guion y comportamiento previstos. La interfaz y las acciones descritas están pendientes de construcción.
+Estado: guion de referencia. Chat, arena y operación ya tienen implementación; el QR público, cronómetro, despliegue y evaluación amplia siguen pendientes. Estado y arranque en [núcleo implementado](./nucleo.md).
 
 ## 1. Historia que debe entender el jurado
 

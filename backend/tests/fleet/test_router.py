@@ -28,8 +28,13 @@ def test_status_lists_the_victim_handler_and_tools(tmp_path: Path) -> None:
     with client_for(tmp_path) as client:
         status = client.get("/api/fleet/status", headers={"x-operator-secret": SECRET}).json()
 
-    assert status["handlers"] == ["support_conversation"]
-    assert status["tools"] == ["get_order", "request_refund", "search_knowledge"]
+    assert status["handlers"] == [
+        "arena_attempt",
+        "prober_campaign",
+        "support_conversation",
+        "validate_patch",
+    ]
+    assert status["tools"] == ["get_order", "request_refund", "save_memory", "search_knowledge"]
     assert status["llm_mode"] == "offline"
 
 

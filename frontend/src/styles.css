@@ -15,6 +15,10 @@ body {
   background: var(--color-bg);
 }
 
+a {
+  color: var(--color-accent);
+}
+
 .page {
   max-width: 960px;
   margin: 0 auto;
@@ -28,11 +32,47 @@ form {
 }
 
 input,
+textarea,
 button {
   font: inherit;
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid var(--color-surface);
+}
+
+input,
+textarea {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+textarea {
+  resize: vertical;
+}
+.consent {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.result {
+  background: var(--color-surface);
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+.reply {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.evidence {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
 }
 
 button {

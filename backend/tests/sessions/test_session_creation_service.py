@@ -12,7 +12,7 @@ async def test_new_session_starts_protected_with_synthetic_identity(settings: Se
     await database.create_schema()
 
     async with database.sessions() as db:
-        created = await create_session(db, SessionCreate(alias="trinity"))
+        created = await create_session(db, SessionCreate(alias="trinity", accepted_rules=True))
 
     async with database.sessions() as db:
         stored = await SessionRepository(db).get(created.id)

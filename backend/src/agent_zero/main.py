@@ -4,6 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from agent_zero.arena.core import ProductCore
+from agent_zero.arena.operator_router import router as operator_router
+from agent_zero.arena.router import router as arena_router
+from agent_zero.attempts.router import router as attempts_router
 from agent_zero.config import Settings
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.router import router as events_router
@@ -15,6 +19,7 @@ from agent_zero.llm.factory import build_gateway
 from agent_zero.llm.models import ModelRole
 from agent_zero.llm.playback_model import PlaybackModel
 from agent_zero.memory_bank.router import router as memory_router
+from agent_zero.prober.router import router as prober_router
 from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.registry.router import router as registry_router
 from agent_zero.runtime.router import router as runtime_router
@@ -42,11 +47,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.audit_log = fleet.audit
     app.state.handler_registry = fleet.handlers
     app.state.tool_registry = fleet.tools
+    core = ProductCore(fleet, app.state.llm, app.state.event_broker)
+    await core.initialize()
+    app.state.core = core
     fleet.start()
+    core.worker.start()
     try:
         yield
     finally:
+        await core.worker.stop()
         await fleet.stop()
+        await core.environments.dispose()
         await database.dispose()
 
 
@@ -66,6 +77,10 @@ def create_app(
         )
     app.include_router(health_router)
     app.include_router(sessions_router)
+    app.include_router(attempts_router)
+    app.include_router(arena_router)
+    app.include_router(operator_router)
+    app.include_router(prober_router)
     app.include_router(events_router)
     app.include_router(registry_router)
     app.include_router(runtime_router, dependencies=[OperatorOnly])

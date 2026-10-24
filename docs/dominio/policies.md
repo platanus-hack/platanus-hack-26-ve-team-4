@@ -6,7 +6,9 @@ Categoría: control · Responsable: Carlos · Issues: #11
 
 Guarda cada versión de política, sabe cuál está activa y ejecuta sus controles dentro del gateway antes de cada herramienta. Es lo que hace que un parche cambie el comportamiento de la víctima sin reiniciar nada.
 
-## Estado hoy
+## Estado inicial del diseño
+
+La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
 
 | Archivo | Contenido |
 | --- | --- |

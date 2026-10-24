@@ -36,6 +36,20 @@ El texto de referencia es el desafío del track: una red de agentes instituciona
 | E2E-01 | Escenario completo de la flota. | Publicar y aprobar un agente, emitir su identidad, encolar un run que usa memoria y una herramienta vía gateway, bloquear una inyección, redactar PII, reiniciar y reanudar, y comprobar la traza y la cadena de auditoría. | `tests/fleet` | hecho |
 | DEMO-01 | La aplicación real expone los siete componentes y un recorrido funcional los ejercita por HTTP. | `python -m agent_zero.walkthrough` contra la app pasa sus 22 comprobaciones: registro, Armor, runtime con espera, modelo, memoria, gateway, identidad revocada, traza y auditoría. | `walkthrough`, `victim`, `fleet` | hecho |
 
+## Núcleo del producto
+
+La implementación y los límites vigentes se describen en [núcleo implementado](./nucleo.md). Estos requisitos se prueban con un proveedor simulado; no afirman una tasa de éxito con un LLM real.
+
+| ID | Requisito | Prueba de éxito | Módulo | Estado |
+| --- | --- | --- | --- | --- |
+| CORE-01 | Sesiones con token firmado, consentimiento e identidad fijada por el servidor. | Sin token no se envía; el participante recibe su identidad y no puede leer un intento de otra sesión. | `sessions`, `attempts` | hecho |
+| CORE-02 | Víctima con herramientas elegidas por el modelo a través del gateway y políticas por versión. | Consultar un pedido propio es útil; una llamada ajena pasa en la base y se niega tras el parche. | `victim`, `policies`, `agent_gateway` | hecho |
+| CORE-03 | Oráculos deterministas de pedidos, reembolsos y memoria con evidencia de efectos. | Cada objetivo se confirma con traza y datos persistidos, aunque se bloquee después la salida de una lectura. | `oracles` | hecho |
+| CORE-04 | Hallazgos, candidato, ocho casos de validación, activación y reversión. | El ciclo bloquea la repetición y conserva utilidad; un parche que rompe tareas legítimas se rechaza. | `analyzer`, `patches`, `policies` | hecho |
+| CORE-05 | Intentos idempotentes, checkpoints y evidencia persistida. | Dos envíos con la misma clave devuelven un intento; al recrear la app se ejecuta el run encolado y se conserva la traza. | `attempts`, `runtime`, `events` | hecho |
+| CORE-06 | Señuelo aislado, desvío permanente y proyecciones públicas sanitizadas. | Tres turnos desviados no acceden a datos protegidos; la vista pública oculta ruta, identidad y canarios. | `routing`, `victim`, `arena` | hecho |
+| CORE-07 | Campaña autónoma acotada y separada de la clasificación humana. | Tres intentos descubren los tres objetivos, agotan el presupuesto y no puntúan como audiencia. | `prober` | hecho |
+
 ## Límites conocidos
 
 Todas las filas están en `hecho` porque existe al menos un test que demuestra la prueba de éxito tal como está escrita. Esto no significa ausencia de límites; los que se conocen son:

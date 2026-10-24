@@ -1,6 +1,6 @@
 # Dominio de Agent Zero
 
-Estado: propuesta del 24 de octubre de 2026. Describe el núcleo del producto que se construye sobre la flota ya implementada. Lo que existe en el código se indica como tal; el resto es diseño a validar.
+Estado: diseño del 24 de octubre de 2026 con el ciclo P0 implementado sobre la flota. La guía de [núcleo implementado](../nucleo.md) es la referencia del estado actual, API y límites; los documentos de diseño conservan también ampliaciones pendientes.
 
 Esta carpeta reúne qué es el producto, cómo se organizan sus agentes, cómo se toma cada decisión y qué hace cada dominio. Complementa a [arquitectura](../arquitectura.md), [evaluación](../evaluacion.md) y [demo](../demo.md), que siguen siendo la referencia del escenario y del protocolo de medición.
 
@@ -20,18 +20,18 @@ Cada dominio vive en `backend/src/agent_zero/<dominio>/` con la estructura de [d
 
 | Dominio | Documento | Categoría | Responsable | Estado hoy |
 | --- | --- | --- | --- | --- |
-| `victim` | [victim](./victim.md) | Objetivo | Carlos | Tienda, herramientas y handler con orden fijo. |
-| `sessions` | [sessions](./sessions.md) | Arena | Francisco | Creación de sesión con cliente sintético. |
-| `attempts` | [attempts](./attempts.md) | Arena | Francisco | Estados y resultados. |
-| `routing` | [routing](./routing.md) | Control | Carlos | Rutas y decisiones. |
-| `policies` | [policies](./policies.md) | Control | Carlos | Ciclo de vida y esquema de candidato. |
-| `oracles` | [oracles](./oracles.md) | Juez | Fernando | No existe. |
-| `analyzer` | pendiente | Defensa | Fernando | Esquemas de evaluación y hallazgo. |
-| `patches` | pendiente | Defensa | Fernando | No existe. |
-| `prober` | pendiente | Ofensiva | Fernando | Familias, superficies y `AttackCase`. |
-| `events` | pendiente | Arena | Francisco | Broker, tipos de evento y SSE. |
-| `arena` | pendiente | Arena | Francisco | No existe. |
-| `evals` | pendiente | Juez | Fernando | No existe. |
+| `victim` | [victim](./victim.md) | Objetivo | Carlos | Bucle nativo de herramientas, efectos idempotentes, canarios y entornos aislados; conserva el recorrido de la flota. |
+| `sessions` | [sessions](./sessions.md) | Arena | Francisco | Consentimiento, tokens firmados, tres clientes sin repetir y aislamiento por propietario. |
+| `attempts` | [attempts](./attempts.md) | Arena | Francisco | API, cupos, idempotencia, runs y checkpoints durables. |
+| `routing` | [routing](./routing.md) | Control | Carlos | Desvío permanente por violación, Armor o negaciones repetidas. |
+| `policies` | [policies](./policies.md) | Control | Carlos | Catálogo, versiones persistidas, activación atómica con drenaje y reversión. |
+| `oracles` | [oracles](./oracles.md) | Juez | Fernando | Tres verificadores deterministas sobre traza y efectos persistidos. |
+| `analyzer` | [Estado actual](../nucleo.md) | Defensa | Fernando | Hallazgos consolidados y persistidos; enriquecimiento LLM pendiente. |
+| `patches` | [Estado actual](../nucleo.md) | Defensa | Fernando | Validación contrafactual y ocho casos aislados por candidato. |
+| `prober` | [Estado actual](../nucleo.md) | Ofensiva | Fernando | Campañas con presupuesto y plantillas de tres familias. |
+| `events` | [Estado actual](../nucleo.md) | Arena | Francisco | Persistencia, proyección pública y SSE con reanudación. |
+| `arena` | [Estado actual](../nucleo.md) | Arena | Francisco | Chat, clasificación y panel autorizado; reinicio archivado pendiente. |
+| `evals` | [Evaluación](../evaluacion.md) | Juez | Fernando | Suite amplia e informe pendientes. |
 
 ## Relación con la flota
 

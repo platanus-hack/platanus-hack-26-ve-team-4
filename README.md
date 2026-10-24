@@ -12,7 +12,7 @@ Agent Zero encuentra fallos en agentes de IA mediante ataques automatizados y pa
 
 ## Estado
 
-Este repositorio contiene la propuesta, la especificación y el esqueleto del MVP: backend y frontend por dominios, contenedores y CI. El ciclo de ataque, análisis y parcheo y el despliegue están pendientes de implementación. Las capacidades y métricas descritas son objetivos de construcción y validación, salvo indicación expresa de evidencia obtenida.
+El núcleo del MVP está implementado: intentos con herramientas elegidas por el modelo, oráculos deterministas, hallazgos, parches validados y activados en caliente, reversión y señuelo aislado. Incluye chat, arena pública, operación autorizada y campañas acotadas del Prober. La guía de [núcleo implementado](./docs/nucleo.md) explica cómo ejecutarlo, sus pruebas y lo que sigue pendiente. El despliegue y la evaluación amplia aún no están completados.
 
 ## Cómo funciona
 
@@ -35,6 +35,7 @@ El MVP adapta políticas y controles; no reentrena el modelo. Cada parche necesi
 | [Plan de 36 horas](./docs/plan-36-horas.md) | Prioridades, hitos, distribución de trabajo y entrega. |
 | [Desarrollo](./docs/desarrollo.md) | Estructura, convenciones, comandos y CI. |
 | [Dominio](./docs/dominio/README.md) | Visión, agentes, flujo de decisión, rendimiento, casos de uso y un documento por dominio del núcleo. |
+| [Núcleo implementado](./docs/nucleo.md) | Estado real, arranque, API, evidencia de integración y límites del MVP. |
 | [Prueba de la flota](./docs/prueba-flota.md) | Cómo levantar la app y recorrer los siete componentes con llamadas reales. |
 | [Trazabilidad](./docs/trazabilidad.md) | Requisitos de la flota, pruebas de éxito y tests que los demuestran. |
 | [Equipo](./docs/equipo.md) | Frentes, responsables, propiedad del código y flujo de trabajo. |

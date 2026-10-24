@@ -1,6 +1,6 @@
 # Núcleo del producto: casos de uso y flujos
 
-Estado: definición propuesta el 24 de octubre de 2026 para acordar con el equipo antes de construir. Índice del dominio en [README](./README.md). Toma como base [arquitectura](../arquitectura.md), [evaluación](../evaluacion.md) y [demo](../demo.md), y no las reemplaza.
+Estado: referencia del diseño inicial del 24 de octubre de 2026. El ciclo P0 y parte de P1 están implementados; ver [estado actual y brechas](../nucleo.md). Índice del dominio en [README](./README.md). Toma como base [arquitectura](../arquitectura.md), [evaluación](../evaluacion.md) y [demo](../demo.md), y no las reemplaza.
 
 ## 1. Qué tiene que hacer el núcleo
 
@@ -69,7 +69,7 @@ Son pocas y van detrás de interfaces, para que la flota siga sin conocer al nú
 
 ### Dominios del núcleo
 
-| Dominio | Hoy | Falta |
+| Dominio | Estado inicial | Trabajo previsto en el diseño |
 | --- | --- | --- |
 | `victim` | Tienda sintética, herramientas registradas en el gateway, handler de conversación con orden fijo. | Ciclo de herramientas decidido por el modelo, `save_memory`, omisiones intencionales, señuelo. |
 | `sessions` | Modelo, repositorio, servicio de creación y ruta. | Token firmado, cliente sintético asignado, cupo. |

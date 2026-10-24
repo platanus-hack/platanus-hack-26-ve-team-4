@@ -6,7 +6,9 @@ Categoría: arena · Responsable: Francisco · Issues: #4
 
 Representa a cada participante: su alias, el cliente sintético que le toca y la ruta en la que está. Es la única fuente de la identidad del cliente durante un intento.
 
-## Estado hoy
+## Estado inicial del diseño
+
+La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
 
 | Archivo | Contenido |
 | --- | --- |

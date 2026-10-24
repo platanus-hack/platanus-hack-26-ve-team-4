@@ -35,3 +35,4 @@ class GatewayReason(StrEnum):
     INPUT_BLOCKED = "input_blocked"
     OUTPUT_BLOCKED = "output_blocked"
     TOOL_FAILED = "tool_failed"
+    BUSINESS_RULE_DENIED = "business_rule_denied"

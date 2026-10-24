@@ -6,7 +6,9 @@ Categoría: objetivo · Responsable: Carlos · Issues: #2, #5, #12
 
 Contiene el escenario que se ataca: una tienda sintética con clientes, pedidos, reembolsos y una base de conocimiento, y los dos agentes que la atienden. La víctima es útil y tiene omisiones intencionales; el señuelo es indistinguible para el atacante y opera sobre datos falsos.
 
-## Estado hoy
+## Estado inicial del diseño
+
+La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
 
 | Archivo | Contenido |
 | --- | --- |

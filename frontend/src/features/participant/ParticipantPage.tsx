@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { AttemptChat } from "./AttemptChat";
 import { createSession } from "./api/createSession";
 import type { ArenaSession } from "./types";
 
@@ -7,6 +8,7 @@ export function ParticipantPage() {
   const [session, setSession] = useState<ArenaSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,6 +28,7 @@ export function ParticipantPage() {
       <main className="page">
         <h1>Hola, {session.alias}</h1>
         <p>Tu sesión está lista. Estás en una simulación de seguridad con datos ficticios.</p>
+        <AttemptChat session={session} />
       </main>
     );
   }
@@ -47,7 +50,16 @@ export function ParticipantPage() {
           maxLength={40}
           required
         />
-        <button type="submit" disabled={pending}>
+        <label className="consent">
+          <input
+            type="checkbox"
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            required
+          />
+          Acepto participar solo con datos ficticios en este laboratorio.
+        </label>
+        <button type="submit" disabled={pending || !accepted}>
           {pending ? "Entrando…" : "Entrar a la arena"}
         </button>
       </form>

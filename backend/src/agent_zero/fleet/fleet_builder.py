@@ -20,11 +20,13 @@ from agent_zero.fleet.registry_admission import RegistryAdmission
 from agent_zero.fleet.token_vault import TokenVault
 from agent_zero.fleet.vault_principal_guard import VaultPrincipalGuard
 from agent_zero.identity.credential_issuer import CredentialIssuer
+from agent_zero.identity.schemas import AgentPrincipal
 from agent_zero.llm.traced_model import TracedModel
 from agent_zero.memory_bank.memory_cipher import MemoryCipher
 from agent_zero.memory_bank.principal_guard import PrincipalGuard
 from agent_zero.runtime.handler_registry import HandlerRegistry
 from agent_zero.runtime.run_worker import RunWorker
+from agent_zero.runtime.tool_access import ToolAccess, ToolAccessProvider
 from agent_zero.runtime.wiring import RuntimeWiring
 from agent_zero.shared.clock import utc_now
 from agent_zero.shared.database import Database
@@ -49,6 +51,10 @@ class Fleet:
     admission: RegistryAdmission
     worker: RunWorker
     owns_telemetry: bool
+    tool_access: ToolAccessProvider
+
+    def tools_for(self, principal: AgentPrincipal) -> ToolAccess:
+        return self.tool_access.tools_for(principal)
 
     def trace_model(self, model: Model, role: str) -> Model:
         return TracedModel(model, role, self.telemetry.tracer)
@@ -90,13 +96,14 @@ def build_fleet(
         )
     )
     admission = RegistryAdmission(database.sessions, issuer, vault, clock)
+    tool_access = GatewayToolProvider(gateway, vault)
     wiring = RuntimeWiring(
         sessions=database.sessions,
         registry=handlers,
         admission=admission,
         clock=clock,
         telemetry=active,
-        tools=GatewayToolProvider(gateway, vault),
+        tools=tool_access,
     )
     return Fleet(
         settings=settings,
@@ -114,4 +121,5 @@ def build_fleet(
         admission=admission,
         worker=RunWorker(wiring, settings),
         owns_telemetry=owned,
+        tool_access=tool_access,
     )

@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.models import Visibility
+from agent_zero.events.public_projection import public_projection
 from agent_zero.events.schemas import TraceEvent
 
 HEARTBEAT = ": ping\n\n"
@@ -23,4 +24,4 @@ async def public_stream(
                 yield HEARTBEAT
                 continue
             if event.visibility is Visibility.PUBLIC:
-                yield format_sse(event)
+                yield format_sse(public_projection(event))

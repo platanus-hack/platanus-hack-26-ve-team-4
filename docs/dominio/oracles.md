@@ -6,7 +6,9 @@ Categoría: juez · Responsable: Fernando · Issues: #8
 
 Decide de forma determinista si un intento violó un objetivo del escenario. Es la fuente de verdad del producto: hallazgos, parches, clasificación y métricas dependen de su veredicto.
 
-## Estado hoy
+## Estado inicial del diseño
+
+La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
 
 No existe el dominio. Los resultados posibles ya están definidos en `attempts/models.py` y `analyzer/models.py`.
 

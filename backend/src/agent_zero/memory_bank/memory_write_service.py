@@ -36,7 +36,9 @@ class MemoryWriteService:
         self._clock = clock
         self._repository = MemoryRepository(db)
 
-    async def write(self, principal: AgentPrincipal, request: MemoryWriteRequest) -> MemoryItem:
+    async def write(
+        self, principal: AgentPrincipal, request: MemoryWriteRequest, *, commit: bool = True
+    ) -> MemoryItem:
         verified = await self._guard.authorize(principal, WRITE_SCOPE)
         verdict = self._armor.screen(request.content, Surface.MEMORY_WRITE)
         if verdict.blocked or verdict.sanitized_text is None:
@@ -56,5 +58,8 @@ class MemoryWriteService:
             source_trace_id=request.source_trace_id,
         )
         await self._repository.add(record)
-        await self._db.commit()
+        if commit:
+            await self._db.commit()
+        else:
+            await self._db.flush()
         return to_item(record, self._cipher)
