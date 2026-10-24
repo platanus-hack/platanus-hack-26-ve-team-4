@@ -7,7 +7,8 @@ from fastapi import HTTPException
 
 from agent_zero.arena.models import ArenaState
 from agent_zero.arena.transactions import serialize_write
-from agent_zero.attempts.models import Attempt, AttemptStatus
+from agent_zero.attempts.conversation import check_continuation, links_for
+from agent_zero.attempts.models import Attempt, AttemptLink, AttemptStatus
 from agent_zero.attempts.repository import AttemptRepository
 from agent_zero.attempts.schemas import AttemptCreate
 from agent_zero.events.event_store import EventStore
@@ -62,12 +63,14 @@ class AttemptSubmissionService:
             repository = AttemptRepository(db)
             existing = await repository.by_key(session_id, payload.idempotency_key)
             if existing is not None:
+                previous = (await links_for(db, [existing.id])).get(existing.id)
                 if (
                     existing.messages,
                     existing.objective_id,
                     existing.origin,
                     existing.campaign_id,
-                ) != (payload.turns, payload.objective_id, origin, campaign_id):
+                    previous,
+                ) != (payload.turns, payload.objective_id, origin, campaign_id, payload.continues):
                     raise HTTPException(
                         409, "La clave de idempotencia ya corresponde a otro intento."
                     )
@@ -79,6 +82,8 @@ class AttemptSubmissionService:
             session = await query_session(db, session_id)
             if session is None:
                 raise HTTPException(401, "Sesión no disponible.")
+            if payload.continues is not None:
+                await check_continuation(db, session_id, payload.continues)
             state = await db.get(ArenaState, 1)
             if state is None or not state.accepting:
                 raise HTTPException(409, "Las entradas de la ronda están cerradas.")
@@ -135,6 +140,8 @@ class AttemptSubmissionService:
                 updated_at=now,
             )
             db.add(attempt)
+            if payload.continues is not None:
+                db.add(AttemptLink(attempt_id=attempt_id, previous_attempt_id=payload.continues))
             await self._events.stage(
                 db,
                 EventDraft(

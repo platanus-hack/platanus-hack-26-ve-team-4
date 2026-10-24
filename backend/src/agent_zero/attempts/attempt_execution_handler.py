@@ -1,5 +1,6 @@
 from agent_zero.arena.transactions import serialize_write
 from agent_zero.attempts.attempt_query_service import call_context
+from agent_zero.attempts.conversation import previous_turns
 from agent_zero.attempts.models import AttemptOutcome, AttemptStatus
 from agent_zero.attempts.repository import AttemptRepository
 from agent_zero.events.event_store import EventStore
@@ -50,10 +51,13 @@ class AttemptExecutionHandler:
                     ),
                     dedup_key=f"{attempt.id}:started",
                 )
+            history = [] if context.checkpoint else await previous_turns(db, attempt.id)
             await db.commit()
         scope = call_context(attempt)
         if not context.checkpoint:
-            state = await self._executor.start(scope, context.principal, attempt.messages)
+            state = await self._executor.start(
+                scope, context.principal, attempt.messages, history=history
+            )
             return Advance(checkpoint=state)
         if context.checkpoint["phase"] != "complete":
             state = await self._executor.advance(

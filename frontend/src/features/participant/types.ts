@@ -28,12 +28,15 @@ export interface Attempt {
   created_at: string;
   messages?: string[];
   idempotency_key?: string;
+  // Intento previo cuya conversación continúa este (lo arma el servidor).
+  continues?: string | null;
 }
 
 export interface ConversationEntry {
   key: string;
   messages: string[];
   attempt: Attempt | null;
+  continues?: string | null;
 }
 
 export interface DecoyReveal {

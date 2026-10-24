@@ -14,6 +14,8 @@ class AttemptCreate(BaseModel):
     messages: list[Message] | None = Field(default=None, min_length=1, max_length=4)
     objective_id: ObjectiveId | None = None
     idempotency_key: str = Field(min_length=1, max_length=120)
+    # Intento previo de la misma sesión cuya conversación continúa este (chat del participante).
+    continues: str | None = Field(default=None, min_length=1, max_length=40)
 
     @model_validator(mode="after")
     def exactly_one_message_form(self) -> Self:

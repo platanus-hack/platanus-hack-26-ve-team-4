@@ -8,7 +8,9 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 | --- | --- |
 | [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` pública y `/operator` reservada. |
 | [ParticipantPage.tsx](../../frontend/src/features/participant/ParticipantPage.tsx) | Consentimiento, alta y recuperación mediante `/api/sessions/me`. |
-| [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Edición de hasta cuatro mensajes, envío durable y reconciliación del historial. |
+| [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Cada mensaje es un intento que continúa la conversación en curso (`continues`). |
+| [useConversation.ts](../../frontend/src/features/participant/useConversation.ts) | Envío durable, reconciliación del historial, conversaciones (`threadsOf`), reintento y espera de 429. |
+| [LabPanel.tsx](../../frontend/src/features/participant/LabPanel.tsx) | Panel discreto del laboratorio: modo, identidad ficticia, pedidos, objetivos, límites y resultado provisional de cada mensaje. |
 | [storage.ts](../../frontend/src/features/participant/storage.ts) | Sesión e historial pendiente en `localStorage`, con validación al leer; descarta la pulsera vencida y migra la que haya quedado en `sessionStorage`. |
 | [ArenaPage.tsx](../../frontend/src/features/arena/ArenaPage.tsx) | Estado agregado, cronómetro transcurrido, actividad SSE, QR y clasificación. |
 | [OperatorPage.tsx](../../frontend/src/features/operator/OperatorPage.tsx) | Controles, campañas, políticas, hallazgos, evaluación y reset archivado. |
@@ -23,6 +25,8 @@ Los contratos se declaran junto a cada feature, en [participant/types.ts](../../
 Al recargar, cerrar la pestaña o abrir otra, se recupera el token del navegador (`localStorage`) y se valida contra `/api/sessions/me`; no se crea otra identidad ni se gasta otro cupo de la ronda. Todas las pestañas del mismo navegador son el mismo participante. Otro navegador o una ventana privada sí crean otra sesión: el servidor no puede distinguirlos. Un 401/403 invalida la sesión local. Un fallo de transporte conserva el token y permite volver a consultar.
 
 Antes del POST se guarda una entrada con mensajes exactos y una clave aleatoria generada mediante `crypto.getRandomValues`, que funciona en HTTP local. La clave se conserva si se pierde la respuesta, incluso tras recargar. El historial consultado al servidor se reconcilia por ID o `idempotency_key`; una aceptación ya existente evita enviar de nuevo.
+
+El chat envía un mensaje por intento con `continues` igual al último intento terminado de la conversación en curso. «Nueva conversación», o llegar a 6 intentos, envía el siguiente sin `continues`. Si el servidor rechaza la continuación con 404 o 409, el texto vuelve al campo y el mensaje siguiente abre una conversación nueva. Los resultados no aparecen en el chat, sino en el panel del laboratorio; antes de revelar, una violación y un éxito en el señuelo se ven igual.
 
 La interfaz bloquea envíos simultáneos y nuevos envíos mientras existe una entrada pendiente. Un 422 permite corregir el formulario; un 429 conserva la clave y respeta `Retry-After`. Las mutaciones no se reintentan silenciosamente desde el cliente HTTP.
 
