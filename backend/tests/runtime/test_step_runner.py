@@ -152,3 +152,59 @@ async def test_resumed_steps_continue_the_first_trace(
     spans = telemetry.memory_exporter.get_finished_spans()
     assert len(spans) == 4
     assert len({span.context.trace_id for span in spans if span.context}) == 1
+
+
+PII_TEXT = "cliente@example.com tarjeta 4111 1111 1111 1111"
+
+
+async def _leak_value_error(context: StepContext) -> StepResult:
+    raise ValueError(f"falla con {PII_TEXT}")
+
+
+async def _leak_timeout(context: StepContext) -> StepResult:
+    raise TimeoutError(f"lento con {PII_TEXT}")
+
+
+async def _stored_failure_text(database: Database, run_id: str) -> str:
+    async with database.sessions() as db:
+        repository = RunRepository(db)
+        run = await repository.get(run_id)
+        events = await repository.events(run_id)
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    return " ".join([run.failure_reason or "", *(event.detail for event in events)])
+
+
+def _assert_clean(stored: str) -> None:
+    assert "example.com" not in stored
+    assert "4111" not in stored
+    assert "[EMAIL]" in stored
+
+
+@pytest.mark.requirement("OBS-03")
+async def test_unrecoverable_failure_never_stores_pii(
+    database: Database,
+    registry: HandlerRegistry,
+    admission: FakeAdmission,
+    runtime_settings: Settings,
+    clock: FakeClock,
+) -> None:
+    handler = ScriptedHandler("fuga", [_leak_value_error])
+    run_id = await enqueue(database, registry, clock, handler)
+    await drain(new_worker(database, registry, admission, runtime_settings, clock))
+    _assert_clean(await _stored_failure_text(database, run_id))
+
+
+@pytest.mark.requirement("OBS-03")
+async def test_retry_events_never_store_pii(
+    database: Database,
+    registry: HandlerRegistry,
+    admission: FakeAdmission,
+    runtime_settings: Settings,
+    clock: FakeClock,
+) -> None:
+    handler = ScriptedHandler("fuga", [_leak_timeout])
+    run_id = await enqueue(database, registry, clock, handler)
+    await drain(new_worker(database, registry, admission, runtime_settings, clock))
+    assert len(handler.calls) == runtime_settings.runtime_max_attempts
+    _assert_clean(await _stored_failure_text(database, run_id))

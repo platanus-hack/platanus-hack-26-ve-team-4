@@ -1,11 +1,13 @@
 from datetime import datetime
 
+from agent_zero.runtime.failure_text import safe_failure_text
 from agent_zero.runtime.models import Run, RunEventKind, RunStatus
 from agent_zero.runtime.repository import RunRepository
 from agent_zero.runtime.step_results import Advance, Complete, Fail, StepResult, Wait
 
 
 async def fail_run(repository: RunRepository, run: Run, reason: str, now: datetime) -> None:
+    reason = safe_failure_text(reason)
     run.status = RunStatus.FAILED
     run.failure_reason = reason
     run.resume_at = None
@@ -17,7 +19,7 @@ async def retry_or_fail(
     repository: RunRepository, run: Run, error: BaseException, max_attempts: int, now: datetime
 ) -> None:
     run.attempts += 1
-    detail = f"{type(error).__name__}: {error}"
+    detail = safe_failure_text(f"{type(error).__name__}: {error}")
     if run.attempts >= max_attempts:
         reason = f"reintentos agotados ({run.attempts}/{max_attempts}): {detail}"
         await fail_run(repository, run, reason, now)
