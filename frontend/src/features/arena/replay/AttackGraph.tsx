@@ -107,7 +107,9 @@ export function AttackGraph({
   const height = Math.max(1, tools.length) * ROW;
   const summary = graph.edges.some((edge) => edge.state === "blocked" && cut)
     ? `Política v${version}: el ataque queda bloqueado antes del efecto.`
-    : `Política v${version}: el ataque llega al efecto indebido.`;
+    : graph.edges.some((edge) => edge.state !== "ok")
+      ? `Política v${version}: el ataque llega al efecto indebido.`
+      : `Política v${version}: llamadas sin efecto indebido.`;
   return (
     <svg
       className="replay-graph"
