@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from sqlalchemy import select
@@ -11,6 +12,14 @@ from agent_zero.events.models import EventDelivery, EventRecord, EventType, Visi
 from agent_zero.events.public_projection import PUBLIC_FIELDS
 from agent_zero.events.schemas import EventDraft, TraceEvent
 from agent_zero.fleet.fleet_builder import Fleet
+
+# Identifiers minted by `shared.ids.new_id`. Their hex part can look like a phone number
+# ("finding-929410922ffb"), so redacting them would break links between events and rows.
+SERVER_ID = re.compile(r"[a-z]+(?:-[a-z]+)*-[0-9a-f]{12}")
+
+
+def is_identifier_key(key: str) -> bool:
+    return key == "id" or key.endswith(("_id", "_ids"))
 
 
 class EventStore:
@@ -108,14 +117,18 @@ class EventStore:
         await self.dispatch_pending()
 
     def _sanitize(self, value: dict[str, Any]) -> dict[str, Any]:
-        return {key: self._redact_value(item) for key, item in value.items()}
+        return {key: self._redact_value(item, key) for key, item in value.items()}
 
-    def _redact_value(self, value: Any) -> Any:
+    def _redact_value(self, value: Any, key: str | None = None) -> Any:
         if isinstance(value, dict):
-            return {key: self._redact_value(item) for key, item in value.items()}
+            return {name: self._redact_value(item, name) for name, item in value.items()}
         if isinstance(value, list):
-            return [self._redact_value(item) for item in value]
+            return [self._redact_value(item, key) for item in value]
         if isinstance(value, str):
+            # Only server-minted ids under id fields skip redaction: an id field may also
+            # carry model-proposed text (a tool's order_id), which is still redacted.
+            if key is not None and is_identifier_key(key) and SERVER_ID.fullmatch(value):
+                return value
             return self._fleet.armor.redact_pii(value)
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             redacted = self._fleet.armor.redact_pii(str(value))
