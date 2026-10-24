@@ -11,6 +11,10 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.36",
   "aiosqlite>=0.20",
   "strands-agents[anthropic]>=1.0",
+  "opentelemetry-api>=1.30",
+  "opentelemetry-sdk>=1.30",
+  "opentelemetry-exporter-otlp-proto-http>=1.30",
+  "cryptography>=44",
 ]
 
 [dependency-groups]
@@ -47,3 +51,7 @@ mypy_path = "src"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "requirement(*ids): vincula el test con requisitos de docs/trazabilidad.md",
+]
