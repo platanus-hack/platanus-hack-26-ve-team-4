@@ -27,7 +27,7 @@ Se agregó `artifacts/core-evaluation/demo-270-2026-10-24-yummy.json`, con su `.
 | Inconclusos | 0 | 0 |
 | Llamadas `simulated` | 732 | 732 |
 
-El resultado de cada caso, versión y repetición es idéntico en las 270 ejecuciones. Lo único que cambia es el `state_hash`, porque el estado guardado ahora incluye comercio, direcciones y nombre del cliente.
+El resultado de cada caso, versión y repetición es idéntico en las 270 ejecuciones. El `state_hash` cambia en cada ejecución en los dos JSON, porque incluye canarios aleatorios y el `operation_id` de los reembolsos, así que no sirve para compararlos. El texto de `reply` difiere en 201 ejecuciones: 63 solo por identificadores y canarios aleatorios, y 138 porque `get_order` ahora devuelve nombre, comercio y direcciones.
 
 ## Por qué
 
@@ -45,10 +45,9 @@ Se siguió el procedimiento HTTP de `docs/evaluacion.md` §9 en un contenedor `p
 4. Se lanzó la campaña `{"max_attempts":6,"generation":"llm","max_mutations":6}` y se esperó a que la política activa estuviera validada y tuviera los tres controles del catálogo. Fue la versión 3.
 5. Se corrió `uv run python -m agent_zero.evals --base-url http://127.0.0.1:8000 --before 0 --after 3 --repetitions 3 --max-calls 1200 --output …/demo-270-2026-10-24-yummy.json`.
 
-El servidor usó los valores de `.env.example`, salvo los secretos (aleatorios y de un solo uso) y dos variables:
+El servidor usó los valores de `.env.example` (incluido `AGENT_ZERO_LLM_MODE=demo`), salvo los secretos (aleatorios y de un solo uso) y dos variables:
 
-- `AGENT_ZERO_LLM_MODE=demo`.
-- `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=false`. Con `true`, que es el valor de `.env.example`, un primer intento mitigó pedido y reembolso con `flow_rules` sintetizadas. La versión activa quedó con un solo control del catálogo y la espera de §9 no terminaba. `demo-270.json` registra los tres controles del catálogo en su política 3.
+- `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=false`. Con `true`, que es el valor de `.env.example`, un primer intento mitigó pedido y reembolso con `flow_rules` sintetizadas. La versión activa quedó con un solo control del catálogo y la espera de §9 no se cumplía (termina con error a los 300 s). `demo-270.json` registra los tres controles del catálogo en su política 3.
 - `AGENT_ZERO_GATEWAY_RATE_LIMIT_PER_MINUTE=10000`, el mismo valor que fija `scripts/verify_live.py`. El valor por defecto es 60 llamadas por minuto, contadas por agente, y las 270 ejecuciones comparten `soporte-tienda`. Con 60 se completó una corrida: 187 de las 270 ejecuciones recibieron `rate_limited`, la política 0 quedó con 26/90 violaciones y la utilidad bajó a 16/45. Esas denegaciones no son defensas, así que esa corrida no vale como comparación. Se archivó fuera del repositorio y no se commitea. El límite por agente ya figuraba como pendiente en [la bitácora de la traza v2](./2026-10-24-traza-herramientas-v2.md).
 
 Una corrida previa con estas mismas variables y cifras se descartó porque el reloj de Windows estaba desincronizado: estaba 222 s adelantado y con `w32time` detenido, y producía latencias de ±222 s. La evidencia guardada se generó después de sincronizar el reloj. Sus latencias por ejecución van de 0,10 a 0,56 s, sin valores negativos, y la creación y el cierre fueron entre las 19:49:03 y las 19:50:37 UTC.
@@ -79,5 +78,5 @@ Una corrida previa con estas mismas variables y cifras se descartó porque el re
 
 ## Pendiente
 
-- Para Carlos: `.env.example` trae `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=true`, y con eso la espera de `docs/evaluacion.md` §9 no termina, porque la política activa mitiga con `flow_rules` y no reúne los tres controles del catálogo. Decidir si `.env.example` o §9 fijan `false` para la evaluación, o si la espera debe aceptar también `flow_rules`.
+- Para Carlos: `.env.example` trae `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=true`, y con eso la espera de `docs/evaluacion.md` §9 nunca se cumple y termina con error a los 300 s, porque la política activa mitiga con `flow_rules` y no reúne los tres controles del catálogo. Decidir si `.env.example` o §9 fijan `false` para la evaluación, o si la espera debe aceptar también `flow_rules`.
 - El límite del gateway por agente para la evaluación sigue pendiente, como en la traza v2.
