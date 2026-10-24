@@ -27,7 +27,7 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run mypy src tests
+      - run: uv run mypy src tests scripts
       - run: uv run pytest
 
   frontend:
@@ -54,10 +54,23 @@ jobs:
   containers:
     needs: [backend, frontend]
     runs-on: ubuntu-latest
+    env:
+      AGENT_ZERO_LLM_MODE: demo
+      AGENT_ZERO_LLM_DAILY_CALL_LIMIT: 5000
+      AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT: 1200
     steps:
       - uses: actions/checkout@v5
+      - name: Configure an isolated operator credential
+        run: |
+          python3 - <<'PY'
+          import os
+          import secrets
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as target:
+              target.write("AGENT_ZERO_OPERATOR_SECRET=" + secrets.token_urlsafe(32) + "\n")
+          PY
       - run: docker compose -f infra/compose.yaml up --build --detach --wait
       - run: ./infra/scripts/smoke.sh
+      - run: ./infra/scripts/smoke.sh --exercise
       - if: failure()
         run: docker compose -f infra/compose.yaml logs
       - if: always()

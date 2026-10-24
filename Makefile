@@ -22,7 +22,7 @@ lint:
 	cd frontend && pnpm lint
 
 typecheck:
-	cd backend && uv run mypy src tests
+	cd backend && uv run mypy src tests scripts
 	cd frontend && pnpm typecheck
 
 test:
