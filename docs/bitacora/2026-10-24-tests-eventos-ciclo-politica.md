@@ -59,7 +59,7 @@ Sin mutación pasan las tres pruebas.
 
 La mutación M7 no la detecta la prueba de repetición (`test_repeated_activation_and_rollback_do_not_announce_again`). Una segunda reversión la frena la transición de estado antes de llegar al evento, así que el `dedup_key` no interviene ahí. Lo detecta solo la primera prueba, que compara el `dedup_key` del evento.
 
-Pruebas de trazabilidad: ver la corrida de `tests/test_traceability.py` en el commit de documentación.
+Pruebas de trazabilidad: `tests/test_traceability.py` más el ciclo, 6 passed. Suite completa: ruff, format y mypy OK; 1201 passed y 23 skipped en ~14 min.
 
 ## Riesgos y efectos en otros frentes
 
@@ -72,4 +72,3 @@ Pruebas de trazabilidad: ver la corrida de `tests/test_traceability.py` en el co
 ## Pendiente
 
 - Si se quiere, cubrir por HTTP el flujo SSE de estos tres tipos de evento.
-- Las cifras de la suite completa no están en esta entrada. Se registran en la respuesta del track; si el líder las pide en la bitácora, se añaden en un commit nuevo.
