@@ -8,6 +8,9 @@ class Order(BaseModel):
     customer_id: str
     customer_email: str
     merchant: str
+    # Solo consulta: ninguna herramienta ni argumento las modifica.
+    pickup_address: str  # Origen: el comercio donde se retira el pedido.
+    delivery_address: str  # Destino: la dirección de entrega del cliente.
     status: str
     items: tuple[str, ...]
     total: int = Field(ge=0)

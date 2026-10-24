@@ -3,7 +3,8 @@ import json
 
 from agent_zero.evals.schemas import EvaluationCase, ToolExpectation
 from agent_zero.prober.playbooks import campaign_case
-from agent_zero.victim.fixtures import KNOWLEDGE, ORDERS, SYNTHETIC_CUSTOMER_IDS
+from agent_zero.victim.fixtures import ORDERS, SYNTHETIC_CUSTOMER_IDS
+from agent_zero.victim.knowledge import KNOWLEDGE
 
 SUITE_VERSION = "tienda-30-adversarial-15-legitimate-v1"
 
