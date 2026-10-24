@@ -4,7 +4,7 @@ Referencia del código publicado al 24 de octubre de 2026. El [índice por domin
 
 ## Composición y ejecución
 
-El despliegue es un monolito modular FastAPI/SQLAlchemy con workers asíncronos y SQLite, más un frontend React/TypeScript servido por Vite en desarrollo o nginx en contenedor. Las dependencias están fijadas en `backend/uv.lock` y `frontend/pnpm-lock.yaml`.
+El despliegue es un monolito modular FastAPI/SQLAlchemy con workers asíncronos y SQLite o Postgres (el contenedor usa Postgres; ver [infraestructura](./dominio/infraestructura.md#base-de-datos)), más un frontend React/TypeScript servido por Vite en desarrollo o nginx en contenedor. Las dependencias están fijadas en `backend/uv.lock` y `frontend/pnpm-lock.yaml`.
 
 | Entrada | Qué conecta |
 | --- | --- |
@@ -54,7 +54,7 @@ Los modelos de aplicación usan `AppBase`; el escenario tiene `StoreBase`, más 
 
 La admisión serializa con `BEGIN IMMEDIATE` y guarda intento, run y eventos de transición juntos. La versión activa y sus eventos se actualizan en transacción. En el escenario, el guard del gateway comparte la transacción entre comprobar política y ejecutar el efecto. Los efectos guardan un `operation_id` y fingerprint para recuperarse sin duplicarlos.
 
-SQLite y JSONL no forman una transacción distribuida. Outbox, IDs durables, resultados de operación y journal firmado cubren ventanas de recuperación concretas; no deben sustituirse por un lock de proceso. Los leases y su fencing impiden que un worker vencido sobrescriba un checkpoint recuperado.
+La base y los JSONL no forman una transacción distribuida. Outbox, IDs durables, resultados de operación y journal firmado cubren ventanas de recuperación concretas; no deben sustituirse por un lock de proceso. Los leases y su fencing impiden que un worker vencido sobrescriba un checkpoint recuperado.
 
 ## Límites de confianza
 

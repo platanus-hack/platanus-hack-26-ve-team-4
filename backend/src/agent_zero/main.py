@@ -26,7 +26,7 @@ from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.registry.router import router as registry_router
 from agent_zero.runtime.router import router as runtime_router
 from agent_zero.sessions.router import router as sessions_router
-from agent_zero.shared.database import Database
+from agent_zero.shared.database import Database, ensure_database
 from agent_zero.shared.health_router import router as health_router
 from agent_zero.victim.registration import register_victim
 
@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     enforce_secure_settings(settings)
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    await ensure_database(settings.app_database_url)
     database = Database(settings.app_database_url)
     await create_fleet_schema(database)
     await database.create_schema()

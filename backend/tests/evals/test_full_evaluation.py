@@ -26,7 +26,8 @@ def test_full_270_execution_comparison_uses_actual_gateway_state_and_separate_fi
         },
     )
     assert response.status_code == 202, response.text
-    result = wait_evaluation(client, response.json()["id"])
+    # 270 executions; on Postgres every durable step is a network round trip.
+    result = wait_evaluation(client, response.json()["id"], timeout=300)
     report = result["report"]
     assert result["status"] == "completed", result["stop_reason"]
     assert report["completed"] == report["planned"] == 270

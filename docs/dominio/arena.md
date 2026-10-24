@@ -9,7 +9,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 | Archivo | Función |
 | --- | --- |
 | [core.py](../../backend/src/agent_zero/arena/core.py) | Construye `ProductCore`, registra handlers y manifiestos, conecta gateway, workers, evaluación y recuperación. |
-| [arena_service.py](../../backend/src/agent_zero/arena/arena_service.py) | Lee métricas y puntuación desde SQLite; cambia admisión/revelación. |
+| [arena_service.py](../../backend/src/agent_zero/arena/arena_service.py) | Lee métricas y puntuación en un solo snapshot; cambia admisión/revelación. |
 | [operator_router.py](../../backend/src/agent_zero/arena/operator_router.py) | Evidencia, repetición, reversión y controles de ronda. |
 | [round_service.py](../../backend/src/agent_zero/arena/round_service.py) | Archivado, reset y recuperación de un reset interrumpido. |
 | [round_snapshot.py](../../backend/src/agent_zero/arena/round_snapshot.py) | Define tablas de la ronda y el hash del snapshot. |
@@ -45,13 +45,13 @@ El operador usa `X-Operator-Secret`; un token Bearer de participante no concede 
 
 ## Reset y recuperación
 
-La ruta de reset toma `maintenance_lock`, espera la parada de los workers locales y después toma `admission_lock`. El servicio reserva el escritor SQLite y rechaza intentos o runs del producto no terminales. Esto incluye campañas, validaciones, análisis y evaluación amplia; una cola visualmente vacía no basta.
+La ruta de reset toma `maintenance_lock`, espera la parada de los workers locales y después toma `admission_lock`. El servicio reserva el escritor de la base y rechaza intentos o runs del producto no terminales. Esto incluye campañas, validaciones, análisis y evaluación amplia; una cola visualmente vacía no basta.
 
 Antes de borrar datos se persiste un archivo `resetting` y se cierra admisión. El snapshot incluye tablas del producto, runs/eventos/leases, eventos de la ronda, ambos entornos y auditoría. La memoria del snapshot de los entornos permanece cifrada. El hash se comprueba antes de completar o descargar el archivo.
 
 Completar el reset restaura fixtures, política 0, participantes y metadatos. Los IDs de eventos siguen creciendo entre rondas. Se conservan archivos anteriores, registro de agentes, revocaciones, memoria de plataforma y runs ajenos al producto; el presupuesto/ledger LLM tampoco se reinicia. La eliminación de sesiones invalida sus tokens.
 
-Si el proceso cae entre restablecer un entorno y confirmar la aplicación, `RoundService.initialize()` retoma el archivo pendiente antes de arrancar workers. Las operaciones de reset son repetibles. SQLite de aplicación y entornos no comparten una única transacción distribuida; el estado durable `resetting` permite cerrar esa ventana durante recuperación.
+Si el proceso cae entre restablecer un entorno y confirmar la aplicación, `RoundService.initialize()` retoma el archivo pendiente antes de arrancar workers. Las operaciones de reset son repetibles. Las bases de aplicación y entornos no comparten una única transacción distribuida; el estado durable `resetting` permite cerrar esa ventana durante recuperación.
 
 ## Pruebas y evidencia
 
@@ -77,4 +77,4 @@ La verificación previa aprobó el ejercicio Docker y un ensayo LIVE con reset a
 
 La UI muestra el `archive_id` al resetear, pero todavía no lista `/operator/rounds` ni descarga snapshots de rondas: esas operaciones se hacen por API. Añadir esa navegación debe mantener la autorización y la verificación del hash.
 
-El mantenimiento detiene workers locales; los demás procesos observan el estado durable y las reservas SQLite. No sustituye un coordinador distribuido ni una prueba de carga. Para añadir una tabla del producto, revisar `ROUND_TABLES`, captura, borrado, recuperación y pruebas de reset en el mismo cambio. Para ampliar puntuación, modificar primero el cálculo del servidor y probar la fase provisional/final por separado.
+El mantenimiento detiene workers locales; los demás procesos observan el estado durable y las reservas de escritura de la base. No sustituye un coordinador distribuido ni una prueba de carga. Para añadir una tabla del producto, revisar `ROUND_TABLES`, captura, borrado, recuperación y pruebas de reset en el mismo cambio. Para ampliar puntuación, modificar primero el cálculo del servidor y probar la fase provisional/final por separado.

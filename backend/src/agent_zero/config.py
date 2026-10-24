@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 from agent_zero.llm.models import LlmMode
 
@@ -12,6 +13,9 @@ class Settings(BaseSettings):
 
     environment: str = "local"
     data_dir: Path = Path("./data")
+    # Without it every database is a SQLite file in data_dir. With a postgresql+asyncpg URL the
+    # app uses that database and adds `<name>_protected` and `<name>_honeypot` for the stores.
+    database_url: SecretStr | None = None
     operator_secret: SecretStr = SecretStr("change-me")
     cors_origins: list[str] = []
 
@@ -57,9 +61,22 @@ class Settings(BaseSettings):
     otel_endpoint: str | None = None
     otel_service_name: str = "agent-zero"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _blank_database_url_means_sqlite(cls, value: object) -> object:
+        return None if value == "" else value
+
     @property
     def app_database_url(self) -> str:
-        return f"sqlite+aiosqlite:///{self.data_dir / 'app.db'}"
+        if self.database_url is None:
+            return f"sqlite+aiosqlite:///{self.data_dir / 'app.db'}"
+        return self.database_url.get_secret_value()
+
+    def environment_database_url(self, name: str) -> str:
+        if self.database_url is None:
+            return f"sqlite+aiosqlite:///{self.data_dir / (name + '.db')}"
+        url = make_url(self.database_url.get_secret_value())
+        return url.set(database=f"{url.database}_{name}").render_as_string(hide_password=False)
 
     @property
     def llm_ledger_path(self) -> Path:

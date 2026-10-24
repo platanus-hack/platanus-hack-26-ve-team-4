@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 
 from agent_zero.analyzer.models import FindingRecord, FindingStatus
 from agent_zero.arena.models import ArenaState
@@ -13,7 +13,7 @@ from agent_zero.policies.policy_service import PolicyService
 from agent_zero.policies.repository import PolicyRepository
 from agent_zero.sessions.models import ArenaSession
 from agent_zero.sessions.session_query_service import query_session
-from agent_zero.shared.database import Database
+from agent_zero.shared.database import Database, begin_snapshot
 
 
 class ArenaService:
@@ -31,7 +31,7 @@ class ArenaService:
 
     async def state(self) -> dict[str, Any]:
         async with self._database.sessions() as db:
-            await db.execute(text("BEGIN"))
+            await begin_snapshot(db)
             state = await db.get(ArenaState, 1)
             if state is None:
                 raise ValueError("Arena no inicializada.")

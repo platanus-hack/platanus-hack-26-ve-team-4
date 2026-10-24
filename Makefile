@@ -1,4 +1,4 @@
-COMPOSE := docker compose -f infra/compose.yaml
+COMPOSE := docker compose --env-file .env -f infra/compose.yaml
 
 .PHONY: install dev-backend dev-frontend format lint typecheck test check up down logs smoke smoke-exercise fleet-server fleet-walkthrough arena-server evaluate
 

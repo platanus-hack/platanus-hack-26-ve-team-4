@@ -1,6 +1,6 @@
 # Infraestructura: arranque, contenedores y verificaciones
 
-Estado: configuración revisada sobre la base funcional `1d0e21d`. La entrega es una API FastAPI con workers internos, un frontend estático servido por nginx y SQLite persistente. El repositorio contiene imágenes construibles; una URL pública comprobada sigue pendiente.
+Estado: configuración revisada sobre la base funcional `1d0e21d`. La entrega es una API FastAPI con workers internos, un frontend estático servido por nginx y una base relacional: Postgres en contenedor con `make up`, SQLite en desarrollo y en las pruebas por defecto. El repositorio contiene imágenes construibles; una URL pública comprobada sigue pendiente.
 
 ## Entradas de ejecución
 
@@ -11,7 +11,7 @@ Estado: configuración revisada sobre la base funcional `1d0e21d`. La entrega es
 | [.env.example](../../.env.example) | Configuración de demostración sin clave del proveedor. |
 | [backend/Dockerfile](../../backend/Dockerfile) | Python 3.12, uv fijado, instalación congelada sin dependencias de desarrollo y usuario sin privilegios. |
 | [frontend/Dockerfile](../../frontend/Dockerfile) | Node 24/pnpm, build congelado y nginx sin privilegios. |
-| [compose.yaml](../../infra/compose.yaml) | Backend, frontend, dependencia de salud, puerto y volumen persistente. |
+| [compose.yaml](../../infra/compose.yaml) | Postgres, backend y frontend, dependencias de salud, puertos y volúmenes persistentes. |
 | [smoke.py](../../infra/scripts/smoke.py) | Verificación HTTP de sólo lectura y ejercicio explícito del ciclo completo. |
 | [ci.yml](../../.github/workflows/ci.yml) | Definición de validación, contenedores y publicación de imágenes. |
 
@@ -21,9 +21,21 @@ El ejemplo configura `demo`, 100 plazas, 5000 llamadas diarias y 1200 por campa�
 
 `Settings` lee `.env` relativo al directorio de ejecución. Los targets de servidor del [Makefile](../../Makefile) cargan el `.env` de la raíz antes de entrar en `backend/`. Evitar cargar ese archivo en la terminal de pruebas unitarias: variables exportadas pueden alterar los fixtures; consultar [pruebas](../pruebas/README.md).
 
-Compose exige `AGENT_ZERO_OPERATOR_SECRET` mediante interpolación. Se puede definir en el `.env` de la raíz o exportarlo; no basta asumir un secreto no suministrado. No se incorpora al bundle: el operador lo introduce en la UI y ésta lo conserva sólo en memoria durante la visita.
+Compose exige `AGENT_ZERO_OPERATOR_SECRET` y `POSTGRES_PASSWORD` mediante interpolación. `make up` pasa el `.env` de la raíz con `--env-file`; sin él, Compose buscaría `infra/.env`. Llamando a `docker compose` directamente hay que pasar `--env-file .env` o exportar las variables, como hace la CI. No se incorpora al bundle: el operador lo introduce en la UI y ésta lo conserva sólo en memoria durante la visita.
 
-El volumen `agent-zero-data` monta `/data` y conserva `app.db`, `protected.db`, `honeypot.db`, ledger/cassettes LLM y auditoría. `make down` conserva el volumen; `down --volumes` elimina los datos y se reserva al entorno efímero de CI o a una limpieza deliberada. Cambiar claves de memoria/firma sin un plan afecta descifrado, credenciales y verificación de auditoría.
+### Base de datos
+
+Sin `AGENT_ZERO_DATABASE_URL`, cada base es un archivo SQLite en `AGENT_ZERO_DATA_DIR`: `app.db`, `protected.db` y `honeypot.db`. Con una URL `postgresql+asyncpg://…/agent_zero`, la aplicación usa esa base y crea al arrancar `agent_zero_protected` y `agent_zero_honeypot`, para que los dos entornos sigan aislados como antes. Los entornos de validación siguen siendo SQLite en memoria, porque se crean y descartan por candidato.
+
+`make up` siempre usa el servicio `postgres` de Compose, con usuario y base `agent_zero`. Su puerto se publica sólo en `127.0.0.1:${POSTGRES_PORT:-5433}` para inspeccionar los datos:
+
+```bash
+docker compose --env-file .env -f infra/compose.yaml exec postgres psql -U agent_zero -d agent_zero
+```
+
+La reserva de escritura que en SQLite toma `BEGIN IMMEDIATE` es en Postgres un lock consultivo de transacción (`pg_advisory_xact_lock`), uno por base. El snapshot del estado público usa `REPEATABLE READ`. Ambos viven en [database.py](../../backend/src/agent_zero/shared/database.py). No hay migraciones: `create_all` crea tablas nuevas pero no altera las existentes, así que un cambio de columnas exige recrear el volumen `agent-zero-postgres` o alterar la tabla a mano.
+
+El volumen `agent-zero-postgres` conserva las tres bases. El volumen `agent-zero-data` monta `/data` y conserva ledger/cassettes LLM y auditoría. `make down` conserva los volúmenes; `down --volumes` elimina los datos y se reserva al entorno efímero de CI o a una limpieza deliberada. Cambiar claves de memoria/firma sin un plan afecta descifrado, credenciales y verificación de auditoría.
 
 Fuera de `local`/`test`, el arranque exige secretos de operador/firma distintos y de al menos 32 caracteres, y una clave Fernet de memoria explícita. Revisar [startup_guard.py](../../backend/src/agent_zero/fleet/startup_guard.py) y el dominio de [memoria](./memory-bank.md) antes de configurar otro entorno.
 

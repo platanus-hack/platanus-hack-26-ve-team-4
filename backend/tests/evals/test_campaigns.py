@@ -21,7 +21,8 @@ from tests.evals.support import OPERATOR, candidate, core_for
 
 
 def _wait_campaign(client: TestClient) -> dict[str, Any]:
-    deadline = time.monotonic() + 20
+    # A guard against hangs, not a latency target: Postgres takes ~26 s here, SQLite ~15 s.
+    deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
         item: dict[str, Any] = client.get("/api/operator/campaigns", headers=OPERATOR).json()[0]
         if item["status"] != "running":
