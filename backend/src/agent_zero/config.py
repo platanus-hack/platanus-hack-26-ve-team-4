@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,25 @@ class Settings(BaseSettings):
     llm_breaker_failures: int = Field(default=3, ge=1)
     llm_breaker_recovery_seconds: float = Field(default=30.0, gt=0)
 
+    identity_signing_key: SecretStr = SecretStr("change-me-identity")
+    identity_token_ttl_seconds: int = Field(default=900, ge=30)
+
+    memory_encryption_key: SecretStr = SecretStr("")
+    memory_default_ttl_days: int = Field(default=90, ge=1)
+
+    data_region: str = "cl"
+    allowed_data_regions: list[str] = ["cl"]
+
+    runtime_worker_concurrency: int = Field(default=2, ge=1)
+    runtime_poll_seconds: float = Field(default=0.5, gt=0)
+    runtime_max_attempts: int = Field(default=3, ge=1)
+
+    gateway_rate_limit_per_minute: int = Field(default=60, ge=1)
+
+    otel_exporter: Literal["none", "memory", "console", "otlp"] = "none"
+    otel_endpoint: str | None = None
+    otel_service_name: str = "agent-zero"
+
     @property
     def app_database_url(self) -> str:
         return f"sqlite+aiosqlite:///{self.data_dir / 'app.db'}"
@@ -39,3 +59,7 @@ class Settings(BaseSettings):
     @property
     def llm_default_cassette_path(self) -> Path:
         return self.llm_cassette_path or self.data_dir / "llm" / "cassette.jsonl"
+
+    @property
+    def audit_log_path(self) -> Path:
+        return self.data_dir / "audit" / "audit.jsonl"
