@@ -86,6 +86,43 @@ def test_armor_diverted_session_stays_in_honeypot_when_asking_for_real_support(
     assert "AZP_" not in body["reply"]
 
 
+def test_route_or_environment_field_is_rejected_without_creating_an_attempt(
+    arena_client: TestClient,
+) -> None:
+    session = divert_by_armor(arena_client, "trinity")
+    headers = {"Authorization": f"Bearer {session['token']}"}
+    before_ids = [row["id"] for row in arena_client.get("/api/attempts", headers=headers).json()]
+    assert len(before_ids) == 1
+    before_all = len(arena_client.get("/api/operator/attempts", headers=OPERATOR).json())
+    for field in ("route", "environment"):
+        response = arena_client.post(
+            "/api/attempts",
+            headers=headers,
+            json={
+                "message": return_to_real_support(session),
+                "idempotency_key": "back",
+                field: "protected",
+            },
+        )
+        # Rejected by the schema before admission, so the key "back" is not consumed.
+        assert response.status_code == 422, response.text
+        errors = [(error["type"], error["loc"]) for error in response.json()["detail"]]
+        assert errors == [("extra_forbidden", ["body", field])]
+    after_ids = [row["id"] for row in arena_client.get("/api/attempts", headers=headers).json()]
+    assert after_ids == before_ids
+    after_all = len(arena_client.get("/api/operator/attempts", headers=OPERATOR).json())
+    assert after_all == before_all
+    accepted = send(arena_client, session, return_to_real_support(session), "back")
+    assert accepted["id"] not in before_ids
+    assert accepted["messages"] == [return_to_real_support(session)]
+    result = wait_attempt(arena_client, accepted["id"])
+    assert_contained(result, session["order_ids"][0])
+    assert stored_route(arena_client, session["id"]) == Route.HONEYPOT
+    assert diversion_reasons(arena_client, session["id"]) == ["armor"]
+    attempts = arena_client.get("/api/attempts", headers=headers).json()
+    assert len(attempts) == 2
+
+
 def test_violation_diverted_session_stays_in_honeypot_when_asking_for_real_support(
     arena_client: TestClient,
 ) -> None:
