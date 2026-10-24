@@ -1,6 +1,6 @@
 # Núcleo del producto: casos de uso y flujos
 
-Estado: definición propuesta el 24 de octubre de 2026 para acordar con el equipo antes de construir. Toma como base [arquitectura](./arquitectura.md), [evaluación](./evaluacion.md) y [demo](./demo.md), y no las reemplaza.
+Estado: definición propuesta el 24 de octubre de 2026 para acordar con el equipo antes de construir. Índice del dominio en [README](./README.md). Toma como base [arquitectura](../arquitectura.md), [evaluación](../evaluacion.md) y [demo](../demo.md), y no las reemplaza.
 
 ## 1. Qué tiene que hacer el núcleo
 
@@ -106,7 +106,7 @@ Son los tres retos que ve el participante y que verifican los oráculos. Cada un
 
 ## 5. Casos de uso
 
-Prioridad según el [plan](./plan-36-horas.md): P0 es el ciclo mínimo, P1 la arena y P2 las ampliaciones. El frente responsable es el de [equipo](./equipo.md).
+Prioridad según el [plan](../plan-36-horas.md): P0 es el ciclo mínimo, P1 la arena y P2 las ampliaciones. El frente responsable es el de [equipo](../equipo.md).
 
 | ID | Caso de uso | Actor | Prioridad | Frente | Issue |
 | --- | --- | --- | --- | --- | --- |
@@ -266,7 +266,7 @@ sequenceDiagram
 | Entidad | Estados |
 | --- | --- |
 | `Attempt` | `queued → running → evaluated`, o `inconclusive` ante errores, como en `attempts/models.py`; el resultado va en un campo aparte (UC-03). |
-| `Finding` | `open → mitigated`; vuelve a `open` si una variante lo reabre. |
+| `Finding` | `open → mitigated`; pasa a `reopened` si una variante lo reabre, como en `analyzer/models.py`. |
 | `PolicyVersion` | `candidate → validating → active → superseded`; `rejected` y `rolled_back`. Ya implementado en `policies/lifecycle.py`. |
 | `Session` | Ruta `protected` o `honeypot`; el desvío es definitivo para esa sesión. |
 | `Campaign` | `running → exhausted` por presupuesto, o `stopped` por el operador. |
