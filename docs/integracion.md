@@ -34,6 +34,7 @@ Cada invariante es una frase de negocio con una condición de la gramática cerr
 | Condición | Se cumple cuando | Tipos admitidos |
 | --- | --- | --- |
 | `exceeds` | el número supera `limit` | `amount` |
+| `window_exceeds` | el valor de esta llamada más la suma del mismo argumento en las llamadas permitidas previas del mismo sujeto y herramienta, dentro de `window_seconds` (60 a 2 592 000), supera `limit` | `amount` |
 | `not_owner` | el dueño del recurso no es el sujeto de la sesión | `resource` |
 | `not_in` | el valor no está en `allowed` | `enum`, `identifier`, `text` |
 | `contains_any` | el texto contiene algún término de `terms` | `text`, `enum`, `identifier` |
@@ -61,7 +62,17 @@ curl -X POST "$AZ/api/guard/contracts/validate" \
   -H "X-Operator-Secret: $OPERATOR" --data-binary @mi-contrato.yaml
 ```
 
-La respuesta dice si es válido, su digest y sus invariantes, sin instalarlo. El contrato se instala añadiéndolo a `backend/contracts/` por PR y reiniciando el servicio: queda revisado y versionado como cualquier cambio. Cada política guarda el digest del contrato con el que se validó; si el contrato cambia y una regla deja de encajar, el Guard deniega con `policy_incompatible` en lugar de aplicar algo inválido.
+La respuesta dice si es válido, su digest y sus invariantes, sin instalarlo. Para instalarlo hay dos caminos:
+
+- **Por PR**: añadirlo a `backend/contracts/` y reiniciar. Queda revisado y versionado como cualquier cambio, y no se puede sobrescribir por API.
+- **En caliente**: `POST /api/guard/contracts` con el mismo YAML, o el formulario "Registrar" de la consola del operador. Queda guardado en la base, sobrevive a reinicios y lo ven todas las réplicas. Volver a enviarlo con el mismo `contract_id` lo reemplaza.
+
+```bash
+curl -X POST "$AZ/api/guard/contracts" \
+  -H "X-Operator-Secret: $OPERATOR" --data-binary @mi-contrato.yaml
+```
+
+Cada política guarda el digest del contrato con el que se validó; si el contrato cambia y una regla deja de encajar, el Guard deniega con `policy_incompatible` en lugar de aplicar algo inválido.
 
 ### 6. Conectar el agente
 
@@ -100,14 +111,16 @@ Respuesta:
 
 El [cliente de referencia](../examples/guard/agent_zero_guard.py) envuelve cualquier función de Python en esas dos llamadas. Para otros entornos el patrón es el mismo:
 
-| Entorno | Dónde va el `check` |
-| --- | --- |
-| Función Python o Node | Envoltorio de la herramienta (ejemplo incluido) |
-| MCP | Proxy entre el cliente y el servidor MCP, en `tools/call` |
-| LangChain, OpenAI Agents, Strands | Callback o hook previo a la ejecución de la herramienta |
-| Gateway HTTP propio | Middleware sobre los endpoints que el agente invoca |
+| Entorno | Dónde va el `check` | Adaptador |
+| --- | --- | --- |
+| Función Python | Envoltorio de la herramienta | [`agent_zero_guard.py`](../examples/guard/agent_zero_guard.py) |
+| Función Node | Envoltorio de la herramienta | [`node/agent-zero-guard.mjs`](../examples/guard/node/agent-zero-guard.mjs) |
+| MCP | Proxy entre el cliente y el servidor MCP, en `tools/call` | [`mcp_proxy.py`](../examples/guard/mcp_proxy.py) |
+| Strands | Hook `BeforeToolCallEvent` / `AfterToolCallEvent` | [`strands_guard.py`](../examples/guard/strands_guard.py) |
+| LangChain, OpenAI Agents | Callback o hook previo a la herramienta | Mismo patrón; sin adaptador todavía |
+| Gateway HTTP propio | Middleware sobre los endpoints que el agente invoca | Mismo patrón; sin adaptador todavía |
 
-Solo el envoltorio de Python existe hoy; los demás son el mismo contrato de dos llamadas.
+Los cuatro adaptadores comparten la semántica: fallan cerrado, deniegan con un error de herramienta y guardan la última política aprendida. Su uso y las etiquetas de contexto de cada uno están en [`examples/guard/README.md`](../examples/guard/README.md). El proxy MCP no ve el texto del usuario: etiqueta como `untrusted` las salidas de herramientas no declaradas de confianza y como `store` las de `--trusted-tool`.
 
 ### 7. Etiquetar el contexto
 
@@ -134,14 +147,15 @@ El informe de la compuerta de cada política dice cuántas llamadas violatorias 
 
 - **Falla cerrado.** Una herramienta o un argumento no declarado se deniega (`contract_undeclared`). Una regla de dueño sin dueño resuelto se deniega (`owner_required`). Una política incompatible con el contrato se deniega (`policy_incompatible`). El cliente de referencia deniega si el Guard no responde.
 - **Claves separadas.** `AGENT_ZERO_GUARD_API_KEY` la usan los agentes; `AGENT_ZERO_OPERATOR_SECRET`, las personas que administran. Fuera de local, una clave del Guard de menos de 32 caracteres deja los endpoints del Guard en 503.
-- **El modelo no decide.** En modo `live`, el rol PATCHER propone reglas dentro de la gramática; cada una se comprueba contra el contrato y pasa la compuerta antes de existir. Si falla, se usan las reglas derivadas de forma determinista.
+- **El modelo no decide.** En modo `live`, el rol PATCHER propone reglas dentro de la gramática; cada una se comprueba contra el contrato y pasa la compuerta antes de existir. Si falla, se usan las reglas derivadas de forma determinista, y si bloquea menos inyecciones simuladas que ellas, se le suman: el modelo puede añadir defensa, nunca quitarla.
 - **Datos mínimos.** Agent Zero guarda nombres de herramienta, argumentos, etiquetas de origen y dueños. No recibe el prompt completo salvo los fragmentos que el adaptador decida enviar como contexto.
 
 ## Límites conocidos
 
 - La procedencia es léxica: compara valores con fragmentos. Un ataque que consiga que el usuario repita el valor lo vuelve `user`.
-- Los invariantes son por llamada. Reglas que dependen de la historia (por ejemplo "no más de 1000 USD al día") necesitan una condición de ventana que todavía no existe.
-- Un contrato se carga al arrancar; no hay alta de contratos por API.
+- La única condición con historia es `window_exceeds`, que suma por sujeto y herramienta. Secuencias entre herramientas distintas (leer un dato y luego enviarlo) todavía no se expresan.
+- Cada `check` toma la reserva de escritura de la base para que los topes de ventana sean exactos bajo concurrencia; con tráfico muy alto conviene una reserva por sujeto.
+- No hay baja de contratos por API ni firma del YAML registrado.
 - No hay multi-inquilino: una instancia sirve a los contratos de su directorio con una clave del Guard.
 
 ## Siguiente paso recomendado para un piloto

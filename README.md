@@ -83,7 +83,7 @@ legitimate:
     owners: {cuenta: subject}
 ```
 
-Cinco tipos de argumento (`amount`, `resource`, `enum`, `identifier`, `text`) y cinco condiciones (`exceeds`, `not_owner`, `untrusted_origin`, `not_in`, `contains_any`) cubren dinero, recursos con dueño, listas permitidas, contenido prohibido y procedencia en cualquier dominio. El contrato se valida al cargar: una tarea legítima que rompa un invariante, una condición que no encaje con el tipo del argumento o una herramienta desconocida lo rechazan.
+Cinco tipos de argumento (`amount`, `resource`, `enum`, `identifier`, `text`) y seis condiciones (`exceeds`, `window_exceeds`, `not_owner`, `untrusted_origin`, `not_in`, `contains_any`) cubren dinero por llamada y acumulado en una ventana de tiempo, recursos con dueño, listas permitidas, contenido prohibido y procedencia en cualquier dominio. El contrato se valida al cargar: una tarea legítima que rompa un invariante, una condición que no encaje con el tipo del argumento o una herramienta desconocida lo rechazan.
 
 ### En el código del agente
 
@@ -99,6 +99,12 @@ transferir(subject="ana", context=[
 
 Si el Guard deniega, la herramienta no se ejecuta y el agente recibe el motivo. Si el Guard no responde, el cliente falla cerrado.
 
+Hay adaptadores listos para [Python](./examples/guard/agent_zero_guard.py), [Node](./examples/guard/node/agent-zero-guard.mjs), [MCP](./examples/guard/mcp_proxy.py) (un proxy por stdio que se pone delante de cualquier servidor MCP sin tocar su código) y [Strands](./examples/guard/strands_guard.py), descritos en [examples/guard](./examples/guard/README.md).
+
+### Alta del contrato
+
+Un contrato entra de dos formas: como archivo en `backend/contracts/` revisado por PR, o en caliente con `POST /api/guard/contracts` desde la API o desde la consola del operador, que también muestra las versiones de política, el informe de la compuerta, los hallazgos y los botones de activar y revertir.
+
 ### Dos modos por contrato
 
 - **`enforce_invariants: true`**: los invariantes también bloquean antes de ejecutar. Un ataque nunca llega a producir efecto, y aun así Agent Zero aprende reglas de procedencia que bloquean variantes que **no** rompen ningún invariante. Recomendado para dinero y datos sensibles.
@@ -110,7 +116,9 @@ Con `auto_activate: false`, cada política queda como propuesta hasta que un ope
 
 ```bash
 make arena-server ARENA_MODE=demo
-AGENT_ZERO_GUARD_API_KEY=change-me-guard python3 examples/guard/banco_demo.py
+python3 examples/guard/banco_demo.py --url http://127.0.0.1:8000
+python3 examples/guard/mcp_banco_demo.py --url http://127.0.0.1:8000 --subject diego
+node examples/guard/node/banco-demo.mjs http://127.0.0.1:8000 elena
 ```
 
 En local, la clave por defecto es `change-me-guard` salvo que `.env` defina `AGENT_ZERO_GUARD_API_KEY`. Fuera de local, una clave de menos de 32 caracteres deja el Guard apagado (503) sin afectar a la arena.
@@ -127,6 +135,8 @@ Salida real del agente bancario de ejemplo:
   BLOQUEADA  40 a BEN-AHORRO desde el correo  <- r_transferir_destino_untrusted
 5. Lo legítimo sigue funcionando
   EJECUTADA  alquiler 450 a BEN-ALQUILER
+7. Un tercer pago de 450 en el día: el tope diario de 1000 lo frena
+  BLOQUEADA  alquiler 450 a BEN-ALQUILER  <- r_transferir_tope_diario
 ```
 
 El paso 4 es la diferencia con una lista de reglas: 40 USD a un beneficiario registrado cumple todos los invariantes, pero el monto lo dictó un correo.
@@ -138,8 +148,8 @@ La [guía de integración](./docs/integracion.md) detalla el contrato, la API, l
 - **No escribe código ni abre PRs.** Es a propósito: la defensa es una regla que el código impone, no un parche que un modelo inventa.
 - **No entrena modelos.** Aprende en el sentido de un sistema inmune: acumula reglas verificadas.
 - **La procedencia es léxica**: compara valores con los fragmentos etiquetados. Un atacante que logre que el usuario repita el valor lo vuelve `user`. Para dinero conviene `enforce_invariants`.
-- **Hay un adaptador de referencia en Python.** Proxies para MCP, LangChain u OpenAI Agents siguen el mismo patrón de dos llamadas y no están construidos.
-- **La síntesis con LLM solo corre en modo `live`**; en `demo` y `offline` las reglas se derivan de forma determinista del invariante roto y de la procedencia.
+- **LangChain y OpenAI Agents no tienen adaptador propio.** Siguen el mismo patrón de dos llamadas que los cuatro adaptadores incluidos.
+- **La síntesis con LLM solo corre en modo `live`**; en `demo` y `offline` las reglas se derivan de forma determinista del invariante roto y de la procedencia. En `live`, si la política del modelo bloquea menos inyecciones simuladas que la derivada, se le suman las reglas derivadas: el modelo puede añadir defensa, nunca quitarla.
 
 ## La arena: el laboratorio en vivo
 
@@ -151,9 +161,9 @@ Empezar por [continuidad y traspaso](./docs/continuidad.md). El [índice documen
 
 | Área | Resultado |
 | --- | --- |
-| Backend | 1112 pruebas aprobadas y dos LIVE opcionales omitidas; Ruff, formato y mypy estricto aprobados (24 oct). |
-| Frontend | 68 pruebas aprobadas; Biome, TypeScript y build aprobados (24 oct). |
-| Guard agnóstico | Tres contratos (comida, banca, clínica): cada invariante produce una política activa, el ataque repetido queda bloqueado y todas las tareas legítimas siguen pasando. Agente bancario de ejemplo ejecutado contra el servidor real. |
+| Backend | 1176 pruebas aprobadas en SQLite; las del Guard también contra Postgres 17; Ruff, formato y mypy estricto aprobados (24 oct). |
+| Frontend | 92 pruebas aprobadas; Biome, TypeScript y build aprobados (24 oct). Panel del Guard revisado en el navegador sobre la pila Docker. |
+| Guard agnóstico | Tres contratos (comida, banca, clínica): cada invariante produce una política activa, el ataque repetido queda bloqueado y todas las tareas legítimas siguen pasando. Las demos de Python, MCP y Node corren contra la pila Docker completa (Postgres) y un contrato dado de alta por API aprende y bloquea igual. Síntesis LIVE con Haiku: 3 llamadas, US$0.0013, políticas aceptadas por la compuerta en banca y clínica. |
 | Comparación DEMO | 270 ejecuciones y 732 llamadas simuladas; 90/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones. |
 | Ciclo LIVE | Once comprobaciones, 93 llamadas de cinco roles; parche, repetición protegida, señuelo, Prober, reversión y archivo. Coste estimado US$0.0101596 desde tokens y tarifas configuradas. |
 
