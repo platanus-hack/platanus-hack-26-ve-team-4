@@ -34,6 +34,7 @@ El texto de referencia es el desafío del track: una red de agentes instituciona
 | OBS-02 | Registro de auditoría append-only y encadenado por hash, con `trace_id`, `span_id`, actor y decisión. | Verificar la cadena pasa; editar una línea del archivo hace fallar la verificación en esa línea. | `telemetry` | hecho |
 | OBS-03 | Exportador configurable (`none`, `memory`, `console`, `otlp`) y atributos sin PII. | Con `otlp` se construye el exportador HTTP; ningún atributo de span contiene el correo usado en el escenario. | `telemetry` | hecho |
 | E2E-01 | Escenario completo de la flota. | Publicar y aprobar un agente, emitir su identidad, encolar un run que usa memoria y una herramienta vía gateway, bloquear una inyección, redactar PII, reiniciar y reanudar, y comprobar la traza y la cadena de auditoría. | `tests/fleet` | hecho |
+| DEMO-01 | La aplicación real expone los siete componentes y un recorrido funcional los ejercita por HTTP. | `python -m agent_zero.walkthrough` contra la app pasa sus 22 comprobaciones: registro, Armor, runtime con espera, modelo, memoria, gateway, identidad revocada, traza y auditoría. | `walkthrough`, `victim`, `fleet` | hecho |
 
 ## Límites conocidos
 
@@ -87,3 +88,4 @@ Todas las filas están en `hecho` porque existe al menos un test que demuestra l
 | OBS-02 | `tests/agent_gateway/test_agent_gateway.py`, `tests/telemetry/test_audit_anchor.py`, `tests/telemetry/test_audit_hashing.py`, `tests/telemetry/test_audit_log.py`, `tests/telemetry/test_audit_verifier.py` |
 | OBS-03 | `tests/agent_gateway/test_agent_gateway.py`, `tests/agent_gateway/test_gateway_auditor.py`, `tests/agent_gateway/test_stage_tracer.py`, `tests/memory_bank/test_router.py`, `tests/runtime/test_failure_text.py`, `tests/runtime/test_step_runner.py`, `tests/telemetry/test_otel_setup.py`, `tests/telemetry/test_spans.py` |
 | E2E-01 | `tests/fleet/test_fleet_scenario.py` |
+| DEMO-01 | `tests/walkthrough/test_walkthrough.py` |
