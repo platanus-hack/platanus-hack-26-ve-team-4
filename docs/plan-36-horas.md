@@ -16,7 +16,7 @@ El primer corte usa un único escenario de soporte, un proveedor de LLM, una her
 | Red team y evaluación | Plantillas, mutaciones, verificadores, hallazgos y candidatos. | Caso reproducible y decisión de validación. |
 | Arena y entrega | API de participación, eventos, interfaz, QR y despliegue. | Flujo público usable y panel de operación protegido. |
 
-El equipo acuerda al inicio qué persona toma cada frente y quién revisa los cambios que cruzan límites de confianza. Los contratos de eventos, intentos y políticas se definen juntos antes de separar trabajo.
+La propuesta de responsables, propiedad del código y forma de trabajo está en [equipo](./equipo.md); el equipo la confirma al inicio. Los contratos de eventos, intentos y políticas se definen juntos antes de separar trabajo.
 
 ## 3. Hitos por horario
 
