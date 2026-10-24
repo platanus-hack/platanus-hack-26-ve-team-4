@@ -19,6 +19,15 @@ class Exceeds(_Condition):
     limit: float
 
 
+class WindowExceeds(_Condition):
+    kind: Literal["window_exceeds"]
+    limit: float = Field(gt=0)
+    window_seconds: int = Field(ge=60, le=2_592_000)
+
+    def total_key(self) -> str:
+        return f"{self.argument}@{self.window_seconds}"
+
+
 class NotOwner(_Condition):
     kind: Literal["not_owner"]
 
@@ -38,10 +47,12 @@ class ContainsAny(_Condition):
 
 
 Condition = Annotated[
-    Exceeds | NotOwner | UntrustedOrigin | NotIn | ContainsAny, Field(discriminator="kind")
+    Exceeds | WindowExceeds | NotOwner | UntrustedOrigin | NotIn | ContainsAny,
+    Field(discriminator="kind"),
 ]
 ACCEPTED_KINDS: dict[str, frozenset[str]] = {
     "exceeds": frozenset({"amount"}),
+    "window_exceeds": frozenset({"amount"}),
     "not_owner": frozenset({"resource"}),
     "untrusted_origin": frozenset({"amount", "resource", "enum", "text", "identifier"}),
     "not_in": frozenset({"enum", "identifier", "text"}),
@@ -56,9 +67,10 @@ class CallFacts:
     subject: str
     provenance: Mapping[str, str] = field(default_factory=dict)
     owners: Mapping[str, str | None] = field(default_factory=dict)
+    totals: Mapping[str, float] = field(default_factory=dict)
 
 
-def _number(value: Any) -> float | None:
+def number_of(value: Any) -> float | None:
     if isinstance(value, bool):
         return None
     try:
@@ -67,13 +79,21 @@ def _number(value: Any) -> float | None:
         return None
 
 
+def _over_limit(condition: Exceeds | WindowExceeds, value: Any, facts: CallFacts) -> bool:
+    number = number_of(value)
+    if number is None:
+        return False
+    if isinstance(condition, WindowExceeds):
+        number += facts.totals.get(condition.total_key(), 0.0)
+    return number > condition.limit
+
+
 def holds(condition: Condition, facts: CallFacts) -> bool:
     if condition.argument not in facts.arguments:
         return False
     value = facts.arguments[condition.argument]
-    if isinstance(condition, Exceeds):
-        number = _number(value)
-        return number is not None and number > condition.limit
+    if isinstance(condition, Exceeds | WindowExceeds):
+        return _over_limit(condition, value, facts)
     if isinstance(condition, NotOwner):
         owner = facts.owners.get(condition.argument)
         return owner is not None and owner != facts.subject

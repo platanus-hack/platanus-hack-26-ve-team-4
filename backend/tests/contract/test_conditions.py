@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from agent_zero.contract.conditions import (
     CallFacts,
     ContainsAny,
@@ -5,6 +8,7 @@ from agent_zero.contract.conditions import (
     NotIn,
     NotOwner,
     UntrustedOrigin,
+    WindowExceeds,
     holds,
 )
 
@@ -50,3 +54,24 @@ def test_not_in_and_contains_any() -> None:
 
 def test_a_missing_argument_never_holds() -> None:
     assert not holds(Exceeds(kind="exceeds", argument="amount", limit=1), facts())
+
+
+def test_window_exceeds_adds_the_history_to_the_current_value() -> None:
+    rule = WindowExceeds(kind="window_exceeds", argument="amount", limit=1000, window_seconds=86400)
+    assert rule.total_key() == "amount@86400"
+    assert not holds(rule, CallFacts("tool", {"amount": 900}, "ana"))
+    assert holds(rule, CallFacts("tool", {"amount": 1001}, "ana"))
+    history = {"amount@86400": 700}
+    assert holds(rule, CallFacts("tool", {"amount": 450}, "ana", totals=history))
+    assert not holds(rule, CallFacts("tool", {"amount": 300}, "ana", totals=history))
+    assert not holds(rule, CallFacts("tool", {"amount": 450}, "ana", totals={"amount@60": 700}))
+    assert not holds(rule, CallFacts("tool", {"amount": "mucho"}, "ana", totals=history))
+    assert not holds(rule, CallFacts("tool", {}, "ana", totals=history))
+
+
+def test_window_exceeds_validates_its_bounds() -> None:
+    for limit, seconds in ((0, 3600), (10, 59), (10, 2_592_001)):
+        with pytest.raises(ValidationError):
+            WindowExceeds(
+                kind="window_exceeds", argument="amount", limit=limit, window_seconds=seconds
+            )

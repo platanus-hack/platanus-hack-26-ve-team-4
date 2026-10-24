@@ -10,10 +10,16 @@ def dump(facts: CallFacts) -> dict[str, Any]:
         "subject": facts.subject,
         "provenance": dict(facts.provenance),
         "owners": dict(facts.owners),
+        "totals": dict(facts.totals),
     }
 
 
 def load(raw: dict[str, Any]) -> CallFacts:
     return CallFacts(
-        raw["tool"], raw["arguments"], raw["subject"], raw["provenance"], raw["owners"]
+        raw["tool"],
+        raw["arguments"],
+        raw["subject"],
+        raw["provenance"],
+        raw["owners"],
+        raw.get("totals", {}),
     )

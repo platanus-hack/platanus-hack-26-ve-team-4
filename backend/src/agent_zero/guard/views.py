@@ -5,10 +5,21 @@ from agent_zero.contract.schema import PolicyRule
 from agent_zero.guard.models import GuardFindingRecord, GuardPolicyRecord
 
 
+def window_label(seconds: int) -> str:
+    if seconds % 3600 == 0:
+        return f"{seconds // 3600} h"
+    if seconds % 60 == 0:
+        return f"{seconds // 60} min"
+    return f"{seconds} s"
+
+
 def clause(condition: Condition) -> str:
     data = condition.model_dump(mode="json")
     if data["kind"] == "exceeds":
         return f"{condition.argument} > {data['limit']:g}"
+    if data["kind"] == "window_exceeds":
+        span = window_label(data["window_seconds"])
+        return f"monto acumulado en {span} > {data['limit']:g}"
     if data["kind"] == "not_owner":
         return f"{condition.argument} no pertenece al sujeto"
     if data["kind"] == "untrusted_origin":

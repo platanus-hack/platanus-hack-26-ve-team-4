@@ -6,6 +6,7 @@ from agent_zero.contract.conditions import (
     NotIn,
     NotOwner,
     UntrustedOrigin,
+    WindowExceeds,
 )
 from agent_zero.contract.schema import DomainContract, Invariant, LegitimateCall
 
@@ -23,7 +24,7 @@ def violating_variant(
     owners = dict(base.owners)
     condition = invariant.never
     name = condition.argument
-    if isinstance(condition, Exceeds):
+    if isinstance(condition, Exceeds | WindowExceeds):
         arguments[name] = condition.limit + 1
     elif isinstance(condition, NotOwner):
         owners[name] = OUTSIDER

@@ -1,4 +1,11 @@
-from agent_zero.contract.conditions import ContainsAny, Exceeds, NotIn, NotOwner, UntrustedOrigin
+from agent_zero.contract.conditions import (
+    ContainsAny,
+    Exceeds,
+    NotIn,
+    NotOwner,
+    UntrustedOrigin,
+    WindowExceeds,
+)
 from agent_zero.contract.schema import PolicyRule
 from agent_zero.guard.views import clause, render
 
@@ -19,3 +26,16 @@ def test_render_names_the_tool() -> None:
         reason="tope",
     )
     assert render(rule) == "DENEGAR transferir SI monto > 500"
+
+
+def test_window_clause_shows_a_readable_span() -> None:
+    def window(seconds: int) -> str:
+        return clause(
+            WindowExceeds(
+                kind="window_exceeds", argument="monto", limit=1000, window_seconds=seconds
+            )
+        )
+
+    assert window(86400) == "monto acumulado en 24 h > 1000"
+    assert window(5400) == "monto acumulado en 90 min > 1000"
+    assert window(61) == "monto acumulado en 61 s > 1000"
