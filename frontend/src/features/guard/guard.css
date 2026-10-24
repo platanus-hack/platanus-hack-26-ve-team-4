@@ -1,0 +1,42 @@
+.guard-panel select,
+.guard-register textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.guard-register textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.guard-message {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.guard-rules {
+  list-style: none;
+  padding: 0;
+}
+
+.guard-rules code {
+  overflow-wrap: anywhere;
+}
+
+.guard-gate {
+  border-left: 3px solid var(--color-accent);
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+}
+
+.guard-status {
+  color: var(--color-muted);
+}
+
+.guard-status.active {
+  color: var(--color-accent);
+}
+
+.guard-status.rejected,
+.guard-status.rolled_back {
+  color: var(--color-danger);
+}
