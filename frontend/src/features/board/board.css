@@ -1,0 +1,231 @@
+.board-shell {
+  min-height: 100vh;
+  padding: 12px 20px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.board {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 24px);
+  gap: 10px;
+}
+.board-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.board-header .eyebrow {
+  margin: 0;
+}
+.board-header .board-status {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-muted);
+}
+.board-alert {
+  margin: 0;
+}
+.board-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 1fr);
+  gap: 14px;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  min-height: 0;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-surface);
+  border: 3px solid var(--color-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+.tile[data-pinned="true"] {
+  outline: 2px dashed var(--color-muted);
+  outline-offset: 2px;
+}
+.tile-empty {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  cursor: default;
+}
+.tile-leaked {
+  border-color: #ff6b5f;
+}
+.tile-safe {
+  border-color: #6cb6ff;
+}
+.tile-blocked {
+  border-color: var(--color-accent);
+}
+.tile header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tile header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+.badge,
+.state,
+.chip {
+  display: inline-block;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.badge-swarm {
+  border-color: #f2c14e;
+  color: #f2c14e;
+}
+.badge-prober {
+  border-color: #c3a6ff;
+  color: #c3a6ff;
+}
+.badge-safe,
+.state-safe {
+  border-color: #6cb6ff;
+  color: #6cb6ff;
+}
+.state-leaked,
+.chip-confirmed_violation {
+  border-color: #ff6b5f;
+  color: #ff9a92;
+}
+.state-blocked,
+.chip-prevented,
+.chip-not_achieved {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.chip-contained_honeypot {
+  border-color: #6cb6ff;
+  color: #6cb6ff;
+}
+.state {
+  margin-left: auto;
+}
+.pin {
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+}
+.pin[aria-pressed="true"] {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+.transcript {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+.transcript li {
+  margin-bottom: 10px;
+}
+.line {
+  margin: 4px 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.line strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.line.attacker {
+  border-left: 3px solid #536a78;
+  padding-left: 10px;
+}
+.line.bot {
+  padding-left: 13px;
+}
+.typing {
+  color: var(--color-muted);
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.kpis {
+  display: grid;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+}
+.kpi {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 8px 14px;
+  overflow: hidden;
+}
+.kpi .kpi-title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-muted);
+}
+.kpi-value {
+  margin: 0;
+  font-size: clamp(2rem, 4.5vh, 3.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.kpi-context,
+.kpi-note {
+  margin: 2px 0;
+  font-size: 0.95rem;
+}
+.kpi-note {
+  color: #f2c14e;
+}
+.kpi-source {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .typing {
+    animation: none;
+  }
+  .tile {
+    transition: none;
+  }
+  .transcript {
+    scroll-behavior: auto;
+  }
+}
