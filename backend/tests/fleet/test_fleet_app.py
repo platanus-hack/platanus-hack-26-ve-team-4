@@ -88,3 +88,14 @@ def test_http_run_of_an_unapproved_agent_fails(fleet_client: TestClient) -> None
         time.sleep(0.01)
     assert state["status"] == "failed"
     assert state["failure_reason"].startswith("admisión denegada:")
+
+
+@pytest.mark.requirement("MEM-04")
+def test_memory_erasure_route_is_wired_and_operator_only(fleet_client: TestClient) -> None:
+    path = "/api/memory/subjects/cliente-1/forget"
+    assert fleet_client.post(path).status_code == 401
+    erased = fleet_client.post(path, headers=OPERATOR)
+    assert erased.status_code == 200
+    assert erased.json() == {"deleted": 0}
+    entries = fleet_client.app.state.audit_log.entries()  # type: ignore[attr-defined]
+    assert entries[-1].action == "memory.forget_subject"

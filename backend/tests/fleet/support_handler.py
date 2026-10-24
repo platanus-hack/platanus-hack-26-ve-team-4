@@ -42,7 +42,11 @@ class SupportFollowUpHandler:
         )
         async with self._fleet.database.sessions() as db:
             writer = MemoryWriteService(
-                db, self._fleet.settings, self._fleet.cipher, self._fleet.armor, self._fleet.clock
+                db,
+                self._fleet.settings,
+                self._fleet.cipher,
+                self._fleet.memory_guard,
+                self._fleet.clock,
             )
             await writer.write(context.principal, request)
         checkpoint: dict[str, Any] = {
@@ -72,7 +76,9 @@ class SupportFollowUpHandler:
 
     async def _recall(self, context: StepContext) -> list[Any]:
         async with self._fleet.database.sessions() as db:
-            reader = MemoryReadService(db, self._fleet.cipher, self._fleet.clock)
+            reader = MemoryReadService(
+                db, self._fleet.cipher, self._fleet.memory_guard, self._fleet.clock
+            )
             return list(await reader.recall(context.principal, SUBJECT))
 
 

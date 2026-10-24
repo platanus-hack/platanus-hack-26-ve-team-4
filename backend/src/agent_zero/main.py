@@ -10,6 +10,7 @@ from agent_zero.events.router import router as events_router
 from agent_zero.fleet.fleet_builder import build_fleet
 from agent_zero.fleet.tables import create_fleet_schema
 from agent_zero.llm.factory import build_gateway
+from agent_zero.memory_bank.router import router as memory_router
 from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.registry.router import router as registry_router
 from agent_zero.runtime.router import router as runtime_router
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     fleet = build_fleet(settings, database)
     app.state.fleet = fleet
     app.state.model_armor = fleet.armor
+    app.state.audit_log = fleet.audit
     app.state.handler_registry = fleet.handlers
     app.state.tool_registry = fleet.tools
     fleet.start()
@@ -56,4 +58,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(events_router)
     app.include_router(registry_router)
     app.include_router(runtime_router, dependencies=[OperatorOnly])
+    app.include_router(memory_router)
     return app

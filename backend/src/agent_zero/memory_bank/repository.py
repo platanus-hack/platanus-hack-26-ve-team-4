@@ -42,6 +42,12 @@ class MemoryRepository:
         result = await self._db.execute(statement)
         return int(getattr(result, "rowcount", 0) or 0)
 
+    async def delete_subject_everywhere(self, subject_id: str) -> int:
+        result = await self._db.execute(
+            delete(MemoryRecord).where(MemoryRecord.subject_id == subject_id)
+        )
+        return int(getattr(result, "rowcount", 0) or 0)
+
     async def delete_expired(self, now: datetime) -> int:
         result = await self._db.execute(delete(MemoryRecord).where(MemoryRecord.expires_at <= now))
         return int(getattr(result, "rowcount", 0) or 0)

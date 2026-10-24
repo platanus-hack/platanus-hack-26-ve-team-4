@@ -18,9 +18,11 @@ from agent_zero.config import Settings
 from agent_zero.fleet.gateway_tool_access import GatewayToolProvider
 from agent_zero.fleet.registry_admission import RegistryAdmission
 from agent_zero.fleet.token_vault import TokenVault
+from agent_zero.fleet.vault_principal_guard import VaultPrincipalGuard
 from agent_zero.identity.credential_issuer import CredentialIssuer
 from agent_zero.llm.traced_model import TracedModel
 from agent_zero.memory_bank.memory_cipher import MemoryCipher
+from agent_zero.memory_bank.principal_guard import PrincipalGuard
 from agent_zero.runtime.handler_registry import HandlerRegistry
 from agent_zero.runtime.run_worker import RunWorker
 from agent_zero.runtime.wiring import RuntimeWiring
@@ -40,6 +42,7 @@ class Fleet:
     armor: ModelArmor
     issuer: CredentialIssuer
     cipher: MemoryCipher
+    memory_guard: PrincipalGuard
     tools: ToolRegistry
     handlers: HandlerRegistry
     gateway: AgentGateway
@@ -104,6 +107,7 @@ def build_fleet(
         armor=armor,
         issuer=issuer,
         cipher=MemoryCipher.from_settings(settings),
+        memory_guard=VaultPrincipalGuard(database.sessions, settings, vault, clock),
         tools=tools,
         handlers=handlers,
         gateway=gateway,

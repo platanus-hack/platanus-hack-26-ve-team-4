@@ -8,10 +8,11 @@ from agent_zero.armor.models import Surface
 from agent_zero.config import Settings
 from agent_zero.identity.schemas import AgentPrincipal
 from agent_zero.memory_bank.errors import MemoryRejectedError
-from agent_zero.memory_bank.memory_access import WRITE_SCOPE, require_scope
+from agent_zero.memory_bank.memory_access import WRITE_SCOPE
 from agent_zero.memory_bank.memory_cipher import MemoryCipher
 from agent_zero.memory_bank.memory_mapping import to_item
 from agent_zero.memory_bank.models import MemoryRecord
+from agent_zero.memory_bank.principal_guard import PrincipalGuard
 from agent_zero.memory_bank.repository import MemoryRepository
 from agent_zero.memory_bank.schemas import MemoryItem, MemoryWriteRequest
 from agent_zero.shared.clock import utc_now
@@ -24,18 +25,19 @@ class MemoryWriteService:
         db: AsyncSession,
         settings: Settings,
         cipher: MemoryCipher,
-        armor: ModelArmor | None = None,
+        guard: PrincipalGuard,
         clock: Callable[[], datetime] = utc_now,
     ) -> None:
         self._db = db
         self._default_ttl_days = settings.memory_default_ttl_days
         self._cipher = cipher
-        self._armor = armor or ModelArmor()
+        self._guard = guard
+        self._armor = ModelArmor()
         self._clock = clock
         self._repository = MemoryRepository(db)
 
     async def write(self, principal: AgentPrincipal, request: MemoryWriteRequest) -> MemoryItem:
-        require_scope(principal, WRITE_SCOPE)
+        verified = await self._guard.authorize(principal, WRITE_SCOPE)
         verdict = self._armor.screen(request.content, Surface.MEMORY_WRITE)
         if verdict.blocked or verdict.sanitized_text is None:
             detail = "; ".join(finding.detail for finding in verdict.findings)
@@ -44,7 +46,7 @@ class MemoryWriteService:
         ttl_days = request.ttl_days or self._default_ttl_days
         record = MemoryRecord(
             id=new_id("mem"),
-            agent_id=principal.agent_id,
+            agent_id=verified.agent_id,
             subject_id=request.subject_id,
             kind=request.kind,
             ciphertext=self._cipher.encrypt(verdict.sanitized_text),
