@@ -40,6 +40,21 @@ Las rutas viven en [arena/operator_router.py](../../backend/src/agent_zero/arena
 
 Aun en versión base se validan contexto, esquema y existencia del pedido. La versión 0 tiene reglas de negocio vacías: la falta de titularidad/límite/lista de memoria es una omisión intencional del escenario, no de la identidad de la flota.
 
+## Reglas de flujo de información
+
+Con `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=true`, un hallazgo de `OBJ-ORDER` u `OBJ-REFUND` intenta primero una política de flujo en vez de la fila del catálogo. La idea viene de CaMeL, FIDES y Progent: la decisión depende de la procedencia de cada argumento, no solo de su valor.
+
+| Pieza | Código |
+| --- | --- |
+| Gramática cerrada | [flow/dsl.py](../../backend/src/agent_zero/policies/flow/dsl.py): `untrusted_origin`, `exceeds` y `not_session_owner`; de una a tres reglas, solo sobre `get_order` y `request_refund`. |
+| Evaluador único | [flow/evaluator.py](../../backend/src/agent_zero/policies/flow/evaluator.py), invocado por `BusinessPolicyEngine` antes de los controles del catálogo. La denegación usa el validador `flow:<rule_id>`. |
+| Procedencia | [victim/provenance.py](../../backend/src/agent_zero/victim/provenance.py) etiqueta cada argumento como `user`, `store`, `untrusted`, `memory` o `model` por coincidencia con los segmentos de la conversación. El usuario manda sobre una copia no confiable. Viaja en `CallContext.provenance` y en los eventos `tool_*`. |
+| Persistencia | Tabla `policy_flow_rules` por versión. El `content_hash` de la versión incluye las reglas, y alterarlas hace fallar `require`. Las versiones sin reglas conservan su hash anterior. |
+
+Una versión hereda siempre las reglas de flujo de su padre, aunque se proponga desde el catálogo. Tras una reversión, los hallazgos se reabren según los controles del catálogo más los que cubren las reglas de flujo del padre.
+
+Límite conocido: la procedencia es léxica. Un modelo que parafrasea o calcula un valor produce `model`, que no se considera de integridad baja. Los ataques escritos directamente por el usuario no tienen procedencia baja: los cubren `exceeds` y `not_session_owner`.
+
 ## Ciclo e invariantes
 
 ```text
