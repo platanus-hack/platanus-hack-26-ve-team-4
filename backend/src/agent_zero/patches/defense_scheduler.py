@@ -41,6 +41,7 @@ class DefenseScheduler:
         environments: Environments,
     ) -> None:
         self.synthesizer: PolicySynthesizer | None = None
+        self._synthesis_tried: set[tuple[str, int, str]] = set()
         self._fleet = fleet
         self._policies = policies
         self._findings = findings
@@ -113,6 +114,9 @@ class DefenseScheduler:
             return
         if not self._fleet.settings.arena_auto_patch:
             return
+        await self._propose_next(policies)
+
+    async def _propose_next(self, policies: list[dict[str, Any]]) -> None:
         active = await self._policies.active_version()
         findings = await self._findings.all()
         for finding in findings:
@@ -136,12 +140,19 @@ class DefenseScheduler:
                 if row["id"] != finding["id"] and finding["attempt_ids"][-1] in row["attempt_ids"]
             ]
             flow = None
-            if not earlier and self.synthesizer and self._fleet.settings.arena_flow_synthesis:
+            key = (finding["id"], active, finding["attempt_ids"][-1])
+            if (
+                not earlier
+                and key not in self._synthesis_tried
+                and self.synthesizer
+                and self._fleet.settings.arena_flow_synthesis
+            ):
+                self._synthesis_tried.add(key)
                 flow = await self.synthesizer.synthesize(
                     finding["objective_id"], finding["attempt_ids"][-1]
                 )
             synthesized = flow is not None and flow.policy is not None
-            await self._policies.propose(
+            proposed = await self._policies.propose(
                 finding["id"],
                 finding["objective_id"],
                 related=[]
@@ -150,7 +161,8 @@ class DefenseScheduler:
                 evidence_attempt_ids=finding["attempt_ids"],
                 flow=flow,
             )
-            break
+            if proposed is not None:
+                break
 
     async def _quarantine(self, policy: dict[str, Any]) -> None:
         if ValidatorName.MEMORY_KEYS in policy["rules"]:
