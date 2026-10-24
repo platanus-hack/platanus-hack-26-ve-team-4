@@ -1,6 +1,7 @@
 import os
 from collections.abc import Mapping
 
+from opentelemetry.trace import Tracer
 from strands.models.anthropic import AnthropicModel
 from strands.models.model import CacheConfig, Model
 
@@ -17,6 +18,7 @@ from agent_zero.llm.playback_model import PlaybackModel
 from agent_zero.llm.quota import InMemoryCallQuota
 from agent_zero.llm.recording_model import RecordingModel
 from agent_zero.llm.retrying_model import RetryingModel
+from agent_zero.llm.traced_model import TracedModel
 
 SDK_KEY_VARIABLE = "ANTHROPIC_API_KEY"
 
@@ -70,15 +72,16 @@ def _base_model(
 
 
 def build_gateway(
-    settings: Settings, playback: Mapping[ModelRole, PlaybackModel] | None = None
+    settings: Settings,
+    playback: Mapping[ModelRole, PlaybackModel] | None = None,
+    tracer: Tracer | None = None,
 ) -> LlmGateway:
     ledger = JsonlCallLedger(settings.llm_ledger_path)
     limits = ModelLimits(LimitPolicy.from_settings(settings), InMemoryCallQuota())
     limits.charge_history(ledger.records())
-    models: dict[ModelRole, Model] = {
-        role: InstrumentedModel(
-            _base_model(role, settings, playback or {}), role.value, ledger, limits
-        )
-        for role in ModelRole
-    }
+    models: dict[ModelRole, Model] = {}
+    for role in ModelRole:
+        base = _base_model(role, settings, playback or {})
+        model: Model = InstrumentedModel(base, role.value, ledger, limits)
+        models[role] = model if tracer is None else TracedModel(model, role.value, tracer)
     return LlmGateway(settings.llm_mode, models, ledger, limits)

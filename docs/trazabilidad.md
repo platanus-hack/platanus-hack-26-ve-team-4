@@ -53,7 +53,7 @@ Todas las filas están en `hecho` porque existe al menos un test que demuestra l
 - REG-03/REG-04: la lectura pública de una versión o de su integridad devuelve 404 si no está aprobada; con el secreto de operador se leen todos los estados. El `system_prompt` de las versiones aprobadas sigue siendo público.
 - REG-05: Model Armor revisa descripción, nombre, capacidades, etiquetas, nombres y descripciones de herramientas y el prompt al publicar.
 - IDN-01/IDN-02: fuera de `local` y `test` el arranque aborta si `identity_signing_key` u `operator_secret` conservan el valor por defecto, miden menos de 32 caracteres o son iguales entre sí.
-- OBS-01: el span de llamada al modelo (`model.call`) lo emite `TracedModel`, que la flota expone con `Fleet.trace_model`; un handler que use un modelo sin envolverlo no produce ese span.
+- OBS-01: el span de llamada al modelo (`model.call`) lo emite `TracedModel`. La aplicación lo aplica a los cinco roles del gateway de IA con el tracer de la flota, así que todo modelo obtenido de `app.state.llm` queda trazado; un modelo construido por fuera del gateway no produce ese span.
 
 ## Requisito -> tests
 

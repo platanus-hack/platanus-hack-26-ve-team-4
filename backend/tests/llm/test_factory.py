@@ -1,6 +1,9 @@
 from pathlib import Path
 
 import pytest
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pydantic import SecretStr
 
 from agent_zero.config import Settings
@@ -81,3 +84,20 @@ async def test_replay_gateway_reads_the_cassette(tmp_path: Path) -> None:
 
     assert text_of(await drain(gateway.model(ModelRole.PROBER).stream(PROMPT))) == "grabado"
     assert gateway.ledger.records()[0].origin is CallOrigin.REPLAYED
+
+
+async def test_gateway_with_tracer_emits_a_model_call_span(tmp_path: Path) -> None:
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    gateway = build_gateway(
+        settings(tmp_path, LlmMode.OFFLINE),
+        {ModelRole.PROBER: PlaybackModel(["hola"])},
+        tracer=provider.get_tracer("test"),
+    )
+
+    await drain(gateway.model(ModelRole.PROBER).stream(PROMPT))
+
+    [span] = exporter.get_finished_spans()
+    assert span.name == "agent_zero.model.call"
+    assert call_origin(gateway.model(ModelRole.PROBER)) is CallOrigin.SIMULATED

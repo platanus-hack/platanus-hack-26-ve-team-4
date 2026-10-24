@@ -30,8 +30,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await database.create_schema()
     app.state.database = database
     app.state.event_broker = EventBroker()
-    app.state.llm = build_gateway(settings)
     fleet = build_fleet(settings, database)
+    app.state.llm = build_gateway(settings, tracer=fleet.telemetry.tracer)
     app.state.fleet = fleet
     app.state.model_armor = fleet.armor
     app.state.audit_log = fleet.audit
