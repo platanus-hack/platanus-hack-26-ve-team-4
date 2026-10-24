@@ -2,7 +2,7 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: feat/direcciones-entrega
-pr: pendiente
+pr: 29
 estado: en revisión
 dominios: [victim, evals]
 requisitos: [CORE-06]
