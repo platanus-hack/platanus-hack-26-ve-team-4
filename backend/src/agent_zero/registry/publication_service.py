@@ -5,9 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_zero.armor.model_armor import ModelArmor
-from agent_zero.armor.models import Surface
 from agent_zero.registry.errors import ManifestRejectedError, VersionAlreadyPublishedError
 from agent_zero.registry.hashing import canonical_manifest_json, sha256_of
+from agent_zero.registry.manifest_screening import screen_manifest
 from agent_zero.registry.models import AgentVersion, VersionStatus
 from agent_zero.registry.projection import to_read
 from agent_zero.registry.repository import RegistryRepository
@@ -27,15 +27,7 @@ class PublicationService:
         self._clock = clock
 
     def screen(self, manifest: AgentManifest) -> tuple[str, ...]:
-        reasons: list[str] = []
-        verdict = self._armor.screen(manifest.system_prompt, Surface.SYSTEM_PROMPT)
-        if verdict.blocked:
-            reasons.extend(f"prompt del sistema: {f.detail}" for f in verdict.findings)
-        for tool in manifest.tools:
-            verdict = self._armor.screen(tool.description, Surface.TOOL_DESCRIPTION)
-            if verdict.blocked:
-                reasons.extend(f"herramienta {tool.name}: {f.detail}" for f in verdict.findings)
-        return tuple(reasons)
+        return screen_manifest(manifest, self._armor)
 
     async def publish(self, manifest: AgentManifest) -> AgentVersionRead:
         reasons = self.screen(manifest)
