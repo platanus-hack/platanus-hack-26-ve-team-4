@@ -35,3 +35,12 @@ export interface ConversationEntry {
   messages: string[];
   attempt: Attempt | null;
 }
+
+export interface DecoyReveal {
+  retained_seconds: number;
+  post_diversion_steps: number;
+  post_diversion_attempts: number;
+  honeytools_touched: string[];
+  credential_issued: boolean;
+  token_reused: boolean;
+}

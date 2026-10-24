@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import { errorMessage, isUnauthorized, requestJson } from "../../shared/api/http";
 import { AttemptChat } from "./AttemptChat";
 import { createSession } from "./api/createSession";
+import { RevealCard } from "./RevealCard";
 import { loadSession, saveSession } from "./storage";
 import type { ArenaSession } from "./types";
 
@@ -95,6 +96,7 @@ export function ParticipantPage() {
           laboratorio.
         </p>
         <AttemptChat key={session.id} session={session} onExpired={expire} />
+        <RevealCard key={`reveal-${session.id}`} session={session} />
       </main>
     );
   }

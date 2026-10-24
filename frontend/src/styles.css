@@ -418,3 +418,18 @@ progress {
     scroll-behavior: auto;
   }
 }
+.decoy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.decoy-table th,
+.decoy-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-top: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+.decoy-table-wrap {
+  overflow-x: auto;
+}

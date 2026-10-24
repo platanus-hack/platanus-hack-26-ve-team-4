@@ -13,6 +13,7 @@ import {
   operatorRequest,
   type Policy,
 } from "./api";
+import { DecoyPanel } from "./DecoyPanel";
 import { EvaluationPanel } from "./EvaluationPanel";
 import { downloadEvidence, EvidencePanel } from "./EvidencePanel";
 import { PolicyList } from "./PolicyList";
@@ -439,6 +440,7 @@ function OperatorDashboard({
               </article>
             ))}
           </section>
+          <DecoyPanel secret={secret} />
           <EvaluationPanel
             policies={data.policies}
             evaluations={data.evaluations}

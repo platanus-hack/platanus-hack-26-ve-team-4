@@ -156,3 +156,32 @@ export function operatorRequest<T>(
     signal,
   });
 }
+export interface DecoyRate {
+  k: number;
+  n: number;
+  value: number | null;
+}
+export interface DecoyCase {
+  session_id: string;
+  alias: string;
+  reason: string;
+  retained_seconds: number;
+  post_diversion_steps: number;
+  post_diversion_attempts: number;
+  honeytools_touched: string[];
+  credential_issued: boolean;
+  token_reused: boolean;
+  retained: boolean;
+  bait_taken: boolean;
+  deceived: boolean;
+}
+export interface DecoySummary {
+  diverted_n: number;
+  excluded_autonomous_n: number;
+  small_n: boolean;
+  retained: DecoyRate;
+  bait_taken: DecoyRate;
+  deceived: DecoyRate;
+  median_retained_seconds: number | null;
+  cases: DecoyCase[];
+}
