@@ -12,6 +12,7 @@ from agent_zero.shared.database import Database
 from agent_zero.telemetry.audit_schemas import AuditDecision
 from agent_zero.telemetry.otel_setup import Telemetry, build_telemetry
 from tests.agent_gateway.support import ORDER_OUTPUT, build_manifest, grants
+from tests.fleet.scenario_checks import assert_model_spans_nested_in_steps
 from tests.fleet.support import drain, enqueue_run, load_run, publish_approved
 from tests.fleet.support_handler import SupportFollowUpHandler
 from tests.identity.conftest import FakeClock
@@ -43,7 +44,7 @@ async def start_fleet(
     return fleet, handler
 
 
-@pytest.mark.requirement("E2E-01")
+@pytest.mark.requirement("E2E-01", "OBS-01")
 async def test_support_agent_survives_two_weeks_and_a_restart(tmp_path: Path) -> None:
     settings = Settings(
         data_dir=tmp_path,
@@ -84,7 +85,14 @@ async def test_support_agent_survives_two_weeks_and_a_restart(tmp_path: Path) ->
     assert telemetry.memory_exporter is not None
     spans = telemetry.memory_exporter.get_finished_spans()
     names = {span.name.removeprefix("agent_zero.") for span in spans}
-    assert {"runtime.run", "runtime.step", "gateway.call_tool", "gateway.audit"} <= names
+    assert {
+        "runtime.run",
+        "runtime.step",
+        "model.call",
+        "gateway.call_tool",
+        "gateway.audit",
+    } <= names
+    assert_model_spans_nested_in_steps(spans)
     trace_ids = {format(span.context.trace_id, "032x") for span in spans if span.context}
     assert trace_ids == {done.trace_id}
     for span in spans:

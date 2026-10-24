@@ -2,6 +2,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
+from strands.models.model import Model
+
 from agent_zero.agent_gateway.agent_gateway import AgentGateway
 from agent_zero.agent_gateway.gateway_auditor import GatewayAuditor
 from agent_zero.agent_gateway.gateway_parts import GatewayParts
@@ -17,6 +19,7 @@ from agent_zero.fleet.gateway_tool_access import GatewayToolProvider
 from agent_zero.fleet.registry_admission import RegistryAdmission
 from agent_zero.fleet.token_vault import TokenVault
 from agent_zero.identity.credential_issuer import CredentialIssuer
+from agent_zero.llm.traced_model import TracedModel
 from agent_zero.memory_bank.memory_cipher import MemoryCipher
 from agent_zero.runtime.handler_registry import HandlerRegistry
 from agent_zero.runtime.run_worker import RunWorker
@@ -43,6 +46,9 @@ class Fleet:
     admission: RegistryAdmission
     worker: RunWorker
     owns_telemetry: bool
+
+    def trace_model(self, model: Model, role: str) -> Model:
+        return TracedModel(model, role, self.telemetry.tracer)
 
     def start(self) -> None:
         self.worker.start()
