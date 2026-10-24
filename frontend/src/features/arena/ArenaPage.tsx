@@ -4,6 +4,7 @@ import { useArenaEvents } from "./hooks/useArenaEvents";
 import { useArenaState } from "./hooks/useArenaState";
 import { JoinCode } from "./JoinCode";
 import { ModeNotice } from "./ModeNotice";
+import { ReplayStage } from "./replay/ReplayStage";
 import { Scoreboard } from "./Scoreboard";
 import type { EventType } from "./types";
 
@@ -86,6 +87,7 @@ export function ArenaPage() {
       ) : (
         !arena.error && <p role="status">Cargando ronda…</p>
       )}
+      <ReplayStage events={events} />
       <section>
         <h2>Actividad reciente</h2>
         <p className="muted">
