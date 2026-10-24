@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from agent_zero.contract.loader import ContractError, parse_contract
 from agent_zero.contract.schema import DomainContract
 from agent_zero.guard.admin_service import PolicyStateError
+from agent_zero.guard.contract_registry import ContractConflictError
 from agent_zero.guard.dependencies import ContractDep, GuardDep, GuardKey
 from agent_zero.guard.learning_service import UnknownCallError
 from agent_zero.guard.orchestrator import guarded_check
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/api/guard", tags=["guard"])
 MAX_CONTRACT_BYTES = 100_000
 
 
-def summary(contract: DomainContract) -> dict[str, Any]:
+def summary(contract: DomainContract, source: str = "file") -> dict[str, Any]:
     return {
         "contract_id": contract.contract_id,
         "version": contract.version,
@@ -25,22 +26,46 @@ def summary(contract: DomainContract) -> dict[str, Any]:
         "invariants": [invariant.id for invariant in contract.invariants],
         "legitimate": len(contract.legitimate),
         "auto_activate": contract.auto_activate,
+        "enforce_invariants": contract.enforce_invariants,
+        "source": source,
     }
 
 
-@router.get("/contracts", dependencies=[OperatorOnly])
-async def contracts(guard: GuardDep) -> list[dict[str, Any]]:
-    return [summary(contract) for contract in guard.contracts.values()]
-
-
-@router.post("/contracts/validate", dependencies=[OperatorOnly])
-async def validate(request: Request) -> dict[str, Any]:
+async def _contract_text(request: Request) -> str:
     body = await request.body()
     if len(body) > MAX_CONTRACT_BYTES:
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Contrato demasiado grande.")
     try:
-        contract = parse_contract(body.decode("utf-8"))
-    except (ContractError, UnicodeDecodeError) as failure:
+        return body.decode("utf-8")
+    except UnicodeDecodeError as failure:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "El contrato debe ir en UTF-8."
+        ) from failure
+
+
+@router.get("/contracts", dependencies=[OperatorOnly])
+async def contracts(guard: GuardDep) -> list[dict[str, Any]]:
+    return [summary(contract, source) for contract, source in await guard.registry.listed()]
+
+
+@router.post("/contracts", dependencies=[OperatorOnly], status_code=status.HTTP_201_CREATED)
+async def register(request: Request, guard: GuardDep) -> dict[str, Any]:
+    text = await _contract_text(request)
+    try:
+        contract = await guard.registry.register(text)
+    except ContractError as failure:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(failure)) from failure
+    except ContractConflictError as failure:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(failure)) from failure
+    return {"contract": summary(contract, "api")}
+
+
+@router.post("/contracts/validate", dependencies=[OperatorOnly])
+async def validate(request: Request) -> dict[str, Any]:
+    text = await _contract_text(request)
+    try:
+        contract = parse_contract(text)
+    except ContractError as failure:
         return {"valid": False, "error": str(failure)}
     return {"valid": True, "contract": summary(contract)}
 
