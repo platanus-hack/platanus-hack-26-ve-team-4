@@ -37,7 +37,7 @@ jobs:
         working-directory: backend
     services:
       postgres:
-        image: postgres:17-alpine
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -83,6 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AGENT_ZERO_LLM_MODE: demo
+      # Deterministic vectors: the containers job does not download the embedding model.
+      AGENT_ZERO_KNOWLEDGE_EMBEDDER: fake
       AGENT_ZERO_LLM_DAILY_CALL_LIMIT: 5000
       AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT: 1200
     steps:

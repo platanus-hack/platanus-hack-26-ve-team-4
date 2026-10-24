@@ -39,14 +39,19 @@ async def _drop_databases(url: str, names: list[str]) -> None:
 @pytest.fixture
 def settings(tmp_path: Path) -> Iterator[Settings]:
     if POSTGRES_URL is None:
-        yield Settings(data_dir=tmp_path, environment="test")
+        yield Settings(data_dir=tmp_path, environment="test", knowledge_embedder="fake")
         return
     name = f"az_test_{secrets.token_hex(6)}"
-    names = [name, f"{name}_protected", f"{name}_honeypot"]
+    names = [name, f"{name}_protected", f"{name}_honeypot", f"{name}_knowledge"]
     # Created up front because some tests build their Database without the app lifespan.
     asyncio.run(_create_databases(POSTGRES_URL, names))
     url = make_url(POSTGRES_URL).set(database=name).render_as_string(hide_password=False)
-    yield Settings(data_dir=tmp_path, environment="test", database_url=SecretStr(url))
+    yield Settings(
+        data_dir=tmp_path,
+        environment="test",
+        database_url=SecretStr(url),
+        knowledge_embedder="fake",
+    )
     asyncio.run(_drop_databases(POSTGRES_URL, names))
 
 
