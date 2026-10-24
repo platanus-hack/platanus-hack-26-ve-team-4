@@ -3,10 +3,18 @@ from sqlalchemy import Table
 from agent_zero.identity.models import RevokedAgent, RevokedCredential
 from agent_zero.memory_bank.models import MemoryRecord
 from agent_zero.registry.models import AgentVersion
-from agent_zero.runtime.models import Run, RunEvent
+from agent_zero.runtime.models import Run, RunEvent, RunLease
 from agent_zero.shared.database import AppBase, Database
 
-FLEET_TABLES = (AgentVersion, MemoryRecord, RevokedAgent, RevokedCredential, Run, RunEvent)
+FLEET_TABLES = (
+    AgentVersion,
+    MemoryRecord,
+    RevokedAgent,
+    RevokedCredential,
+    Run,
+    RunEvent,
+    RunLease,
+)
 
 
 async def create_fleet_schema(database: Database) -> None:

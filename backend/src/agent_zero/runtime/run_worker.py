@@ -1,10 +1,13 @@
 import asyncio
 import contextlib
+import logging
 
 from agent_zero.config import Settings
 from agent_zero.runtime.repository import RunRepository
 from agent_zero.runtime.step_runner import StepRunner
 from agent_zero.runtime.wiring import RuntimeWiring
+
+logger = logging.getLogger(__name__)
 
 
 class RunWorker:
@@ -17,19 +20,24 @@ class RunWorker:
         self._in_flight: set[str] = set()
         self._task: asyncio.Task[None] | None = None
         self._stopping = asyncio.Event()
+        self._tick_lock = asyncio.Lock()
 
     async def run_once(self) -> int:
+        async with self._tick_lock:
+            return await self._run_ready()
+
+    async def _run_ready(self) -> int:
         async with self._sessions() as db:
             ready = await RunRepository(db).ready_ids(
                 self._clock(), frozenset(self._in_flight), self._concurrency
             )
         self._in_flight.update(ready)
-        await asyncio.gather(*(self._process(run_id) for run_id in ready))
-        return len(ready)
+        processed = await asyncio.gather(*(self._process(run_id) for run_id in ready))
+        return sum(processed)
 
-    async def _process(self, run_id: str) -> None:
+    async def _process(self, run_id: str) -> bool:
         try:
-            await self._runner.run_step(run_id)
+            return await self._runner.run_step(run_id)
         finally:
             self._in_flight.discard(run_id)
 
@@ -47,7 +55,11 @@ class RunWorker:
 
     async def _loop(self) -> None:
         while not self._stopping.is_set():
-            processed = await self.run_once()
+            try:
+                processed = await self.run_once()
+            except Exception:
+                logger.exception("El worker reintentará tras un fallo de infraestructura.")
+                processed = 0
             if processed == 0:
                 with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(self._stopping.wait(), self._poll_seconds)

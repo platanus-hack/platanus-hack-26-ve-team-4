@@ -65,3 +65,11 @@ class RunEvent(AppBase):
     kind: Mapped[RunEventKind] = mapped_column(Enum(RunEventKind, native_enum=False, length=24))
     detail: Mapped[str] = mapped_column(Text, default="")
     at: Mapped[datetime] = mapped_column(UtcDateTime)
+
+
+class RunLease(AppBase):
+    __tablename__ = "run_leases"
+
+    run_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    owner: Mapped[str] = mapped_column(String(40))
+    expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
