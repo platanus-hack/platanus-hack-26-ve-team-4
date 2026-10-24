@@ -4,18 +4,60 @@ import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 
-from sqlalchemy import delete, select, text
-from sqlalchemy.dialects.postgresql import insert
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import String, bindparam, delete, select, text
+from sqlalchemy.dialects.postgresql import ARRAY, insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from agent_zero.config import Settings
 from agent_zero.shared.database import Database, ensure_database, is_postgres
 from agent_zero.victim.knowledge_corpus import CORPUS_ROOT, KnowledgeChunk, load_corpus
 from agent_zero.victim.knowledge_embedder import Embedder, build_embedder
-from agent_zero.victim.knowledge_models import KnowledgeBase, KnowledgeChunkRecord
+from agent_zero.victim.knowledge_models import (
+    EMBEDDING_DIMENSION,
+    KnowledgeBase,
+    KnowledgeChunkRecord,
+)
 
 # Distinta de WRITE_LOCK_KEY: dos procesos que arrancan a la vez no siembran en paralelo.
 KNOWLEDGE_LOCK_KEY = 0x6B6E_6F77_6C65
+MAX_ARTICLES = 4
+RRF_K = 60
+# Lexemas sin operadores de tsquery ni barras: se combinan con O sin alterar la sintaxis.
+SAFE_LEXEME = r"^[^&|!():<>*'\\\s]+$"
+
+# Fusión por rango recíproco de dos listas: palabras clave (tsvector en español, términos con O)
+# y similitud semántica exacta (distancia coseno). Cada lista aporta 1 / (k + rango).
+HYBRID_QUERY = text(
+    """
+WITH q AS (
+  SELECT to_tsquery('simple', COALESCE(string_agg(lexeme, ' | '), '')) AS tsq
+  FROM unnest(tsvector_to_array(to_tsvector('spanish', :query))) AS lexeme
+  WHERE lexeme ~ :safe_lexeme
+),
+lex AS (
+  SELECT c.id, row_number() OVER (ORDER BY ts_rank(c.tsv, q.tsq) DESC, c.id) AS r
+  FROM knowledge_chunks c, q
+  WHERE c.collection = ANY(:collections) AND c.tsv @@ q.tsq
+  ORDER BY r LIMIT 20
+),
+sem AS (
+  SELECT c.id, row_number() OVER (ORDER BY c.embedding <=> :embedding, c.id) AS r
+  FROM knowledge_chunks c
+  WHERE c.collection = ANY(:collections)
+  ORDER BY r LIMIT 20
+)
+SELECT c.id, c.content, c.source, c.trust,
+       COALESCE(1.0 / (:k + lex.r), 0) + COALESCE(1.0 / (:k + sem.r), 0) AS score
+FROM lex FULL OUTER JOIN sem USING (id)
+JOIN knowledge_chunks c USING (id)
+ORDER BY score DESC, c.id
+LIMIT :limit
+"""
+).bindparams(
+    bindparam("collections", type_=ARRAY(String)),
+    bindparam("embedding", type_=Vector(EMBEDDING_DIMENSION)),
+)
 
 
 @dataclass(frozen=True)
@@ -93,6 +135,31 @@ class KnowledgeIndex:
             deleted=len(stale),
             unchanged=len(chunks) - len(changed),
         )
+
+    async def search(
+        self, query: str, collections: tuple[str, ...], limit: int = MAX_ARTICLES
+    ) -> list[dict[str, str]]:
+        """Fragmentos de esas colecciones, con su procedencia; nunca de otra colección."""
+        if not collections:
+            return []
+        [vector] = await self.embed([query])
+        async with self.database.sessions() as db:
+            rows = await db.execute(
+                HYBRID_QUERY,
+                {
+                    "query": query,
+                    "safe_lexeme": SAFE_LEXEME,
+                    "collections": list(collections),
+                    "embedding": vector,
+                    "k": RRF_K,
+                    "limit": limit,
+                },
+            )
+            return [
+                {"text": row.content, "source": row.source, "trust": row.trust}
+                for row in rows
+                if row.score > 0
+            ]
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         # fastembed es síncrono: se ejecuta fuera del bucle de eventos.

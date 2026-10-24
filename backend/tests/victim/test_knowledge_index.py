@@ -104,3 +104,58 @@ async def test_a_new_model_recomputes_every_vector(settings: Settings, tmp_path:
         finally:
             await knowledge.dispose()
         assert report.inserted + report.updated == expected
+
+
+@needs_postgres
+@pytest.mark.parametrize(
+    ("collections", "expected"),
+    [
+        (("oficial", "laboratorio"), {"official", "lab"}),
+        (("oficial", "senuelo"), {"official", "decoy"}),
+        ((), set()),
+    ],
+)
+async def test_the_search_only_returns_chunks_of_the_given_collections(
+    index: KnowledgeIndex, collections: tuple[str, ...], expected: set[str]
+) -> None:
+    await index.initialize()
+
+    articles = await index.search("reembolsos en Caracas", collections)
+
+    assert {article["trust"] for article in articles} == expected
+    assert all(set(article) == {"text", "source", "trust"} for article in articles)
+
+
+@needs_postgres
+async def test_the_terms_combine_with_or_and_rank_the_lexical_match_first(
+    index: KnowledgeIndex,
+) -> None:
+    await index.initialize()
+
+    # Ningún fragmento tiene todas las palabras; con Y no habría coincidencia de texto.
+    [first, *_] = await index.search(
+        "plazo de los reembolsos aprobados", ("laboratorio", "oficial")
+    )
+
+    assert first["source"] == "knowledge:reembolsos"
+
+
+@needs_postgres
+@pytest.mark.parametrize("query", ["de la que el", "¿?¡! & | ( ) : * '", r"\ \\"])
+async def test_a_query_without_usable_terms_falls_back_to_the_semantic_part(
+    index: KnowledgeIndex, query: str
+) -> None:
+    await index.initialize()
+
+    articles = await index.search(query, ("oficial", "laboratorio"))
+
+    assert 0 < len(articles) <= 2
+
+
+@needs_postgres
+async def test_at_most_four_chunks_are_returned(index: KnowledgeIndex, tmp_path: Path) -> None:
+    for number in range(6):
+        write(tmp_path / "corpus", "oficial", f"pagos-{number}", f"Pago número {number}.")
+    await index.initialize()
+
+    assert len(await index.search("pago", ("oficial",))) == 4
