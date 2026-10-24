@@ -3,7 +3,7 @@ fecha: 2026-10-24
 autor: "@franbastardo"
 rama: fix/pulsera-local-storage
 pr: 33
-estado: en revisión
+estado: integrado
 dominios: [frontend, sessions]
 requisitos: []
 ---

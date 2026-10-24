@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: fix/senuelo-continuidad
-pr: pendiente
-estado: en revisión
+pr: 37
+estado: integrado
 dominios: [victim]
 requisitos: [CORE-06]
 ---
