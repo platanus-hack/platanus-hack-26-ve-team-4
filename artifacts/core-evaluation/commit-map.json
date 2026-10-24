@@ -1,0 +1,194 @@
+{
+  "reason": "Repair intermediate commit dependencies before first publication. Final tested tree is unchanged.",
+  "backup_branch": "backup/core-before-atomic-repair-5131f08",
+  "original_head": "5131f0835e293955f5e355c65ac97d92f3094da6",
+  "commits": [
+    {
+      "original": "aca5d4038ac66cc195fb62994a0962a765db5c21",
+      "tree_unchanged": true,
+      "revised": "aca5d4038ac66cc195fb62994a0962a765db5c21",
+      "original_tree": "a4f34fc6fe711e24d73d3e2e91412b50d1a85d44",
+      "revised_tree": "a4f34fc6fe711e24d73d3e2e91412b50d1a85d44"
+    },
+    {
+      "original": "3028b6224def93748cef771aa7c1e734bb13d645",
+      "tree_unchanged": true,
+      "revised": "3028b6224def93748cef771aa7c1e734bb13d645",
+      "original_tree": "f34ae175b77fe59d69d9a02620391581c08e2a78",
+      "revised_tree": "f34ae175b77fe59d69d9a02620391581c08e2a78"
+    },
+    {
+      "original": "8eb6efa58d0128e1df63e41e2aff447ac2aca37e",
+      "tree_unchanged": false,
+      "revised": "1fab6b30b57f0120b0a814bd46a7f85cf321a1a5",
+      "original_tree": "4c20efd9b5987578b300cfb4aa6287c36f8f16d4",
+      "revised_tree": "521821a176ee3379bc5baf2143c27841c647714f"
+    },
+    {
+      "original": "aaa25f1a1287a9e383b19d3a0abb289e3002140c",
+      "tree_unchanged": false,
+      "revised": "369ca699b09ad9beabdc9f3e80500337654d9661",
+      "original_tree": "598422b1e37685cfd656c19fa9d00fd0abd72c87",
+      "revised_tree": "08aad88b17fc31c7a6a83b5b4ecf2caab06b009e"
+    },
+    {
+      "original": "8f3b820c1250044244679959b27508ebcee40edf",
+      "tree_unchanged": false,
+      "revised": "f063ca2e47405beb93810b66e368698a9e90cc14",
+      "original_tree": "a34fc0fe8591dedc77fbbdea841054a213d4ad2e",
+      "revised_tree": "58494693be9214fe680afd10f89fe3448d24a0e1"
+    },
+    {
+      "original": "adfc1c3090648172c9674002e90de2b8570065ea",
+      "tree_unchanged": false,
+      "revised": "84b0a8351f17c45156f3ebd6cdef4607bf2e64aa",
+      "original_tree": "d4b1480645354b5d3b28b13f0c1d0ea4e8acd948",
+      "revised_tree": "664777753ba549f3259ac0203314a87f085a0671"
+    },
+    {
+      "original": "d55f425716a950f16342d2b3888e3a8e7ab626f2",
+      "tree_unchanged": false,
+      "revised": "cd9068ece7c2d6ed079e3ec6bce33cb2061e1503",
+      "original_tree": "931f129605387a599f5ea0fe97c025988082b33f",
+      "revised_tree": "2963c833f065845c9e7d7318888eb5f98388f5d7"
+    },
+    {
+      "original": "569b21cf061e30c506fbfe6143696a8bb7c01d7c",
+      "tree_unchanged": false,
+      "revised": "d39aac90acf8bc2dceb185c539b70a303d49791d",
+      "original_tree": "fa34ca8be36ca531d6f6bf880f24691f19ab06bd",
+      "revised_tree": "842b250c45a0835b9a6994f22873193caf7ee334"
+    },
+    {
+      "original": "3024189ce508871f3c58587fe5b8c9393792ed34",
+      "tree_unchanged": false,
+      "revised": "0ad7715e3c20cef3a8cacff2bc909e38a134f128",
+      "original_tree": "80f294321ee9cc65c80d78bb4519678475d05adf",
+      "revised_tree": "f34d92db4f2bb6686ec131b320229e398edce779"
+    },
+    {
+      "original": "2a7265b3c5dd0e9c11856919084cdcf60c34249f",
+      "tree_unchanged": false,
+      "revised": "ee6e13938ef91625a26e8d11974ccc4c4ee24b5b",
+      "original_tree": "0b0008e6797079c183f67eaa6d95bf085af69ffe",
+      "revised_tree": "43a5197a7d45a47257c135d85d54e59ac5330ad3"
+    },
+    {
+      "original": "cb390007cd8b6e980d9198689ee8f5d450f5f5b3",
+      "tree_unchanged": true,
+      "revised": "247a1e958aaf0b9404545aefc0a618f243dc9c4c",
+      "original_tree": "1970c88a60d0d634149acc0644df701c915475f1",
+      "revised_tree": "1970c88a60d0d634149acc0644df701c915475f1"
+    },
+    {
+      "original": "aed15dd4f7ea21ccabd5886a05bcdfd2d5d5fd9d",
+      "tree_unchanged": true,
+      "revised": "20f97a771f309c0380b0a244d112a56ba870c926",
+      "original_tree": "952c941c3ba3c76b20d97e79f882fe93cd17a939",
+      "revised_tree": "952c941c3ba3c76b20d97e79f882fe93cd17a939"
+    },
+    {
+      "original": "a8519cc233c71d3ea13b3e075568fff8be11d0fb",
+      "tree_unchanged": true,
+      "revised": "bfa968494f4684517e18331e5632bd112c0844b4",
+      "original_tree": "450661165a7254b064f8024bc020ea1d37c2de42",
+      "revised_tree": "450661165a7254b064f8024bc020ea1d37c2de42"
+    },
+    {
+      "original": "98347dad6da9b4dd2b2bb96a05a425f468d3530b",
+      "tree_unchanged": true,
+      "revised": "64b1cacae9b890655c69203a0a7af9057589f5db",
+      "original_tree": "56d3ec5208d270a59bb3319a0e0420fa78100da5",
+      "revised_tree": "56d3ec5208d270a59bb3319a0e0420fa78100da5"
+    },
+    {
+      "original": "90dc89e57623fa95bece876ede4d92b15a702ba2",
+      "tree_unchanged": true,
+      "revised": "593985c229d2c27c6d41c94baeba52413e934fe2",
+      "original_tree": "d5a70f18492ec46e87906baa3f7e304ecc243471",
+      "revised_tree": "d5a70f18492ec46e87906baa3f7e304ecc243471"
+    },
+    {
+      "original": "aaee914a716b46b54db3c4e39c22ebb1e1d2011b",
+      "tree_unchanged": true,
+      "revised": "d6f09250c4aad0ca616ee2d010db31ed588809a3",
+      "original_tree": "f79d88920cddcd3314730e54f0e12dd4d07de598",
+      "revised_tree": "f79d88920cddcd3314730e54f0e12dd4d07de598"
+    },
+    {
+      "original": "f1bddfd2ab418784764a86808cfe2c2bf7d88c3a",
+      "tree_unchanged": true,
+      "revised": "649406c668c1fc366d7dccfd51a6cc678b357779",
+      "original_tree": "ed539e6cc00858a1fbd4a4af86a5cbfd02056c26",
+      "revised_tree": "ed539e6cc00858a1fbd4a4af86a5cbfd02056c26"
+    },
+    {
+      "original": "2741d0149819ae196e91ddebf851e3f608d5e093",
+      "tree_unchanged": true,
+      "revised": "0f53d94574dfa990ffeec502067b5f2e71e20ba4",
+      "original_tree": "735de313f96be45807ce320a6481c7acd5ec5fe3",
+      "revised_tree": "735de313f96be45807ce320a6481c7acd5ec5fe3"
+    },
+    {
+      "original": "cc35d0661eb6439fa6e416f1c871385a4a339362",
+      "tree_unchanged": true,
+      "revised": "568f642f6658d18d10ae944b36db081873cad6c9",
+      "original_tree": "a93b34645709996810aa9fdd4c41c6ecde90f513",
+      "revised_tree": "a93b34645709996810aa9fdd4c41c6ecde90f513"
+    },
+    {
+      "original": "9f701ba68cf7a55e75418d3ecaa41b5d663bdce3",
+      "tree_unchanged": true,
+      "revised": "9d678386790c2edcc9b711d001bc585884afd857",
+      "original_tree": "4414535a291976b3d79329d83c1f7e0257dec684",
+      "revised_tree": "4414535a291976b3d79329d83c1f7e0257dec684"
+    },
+    {
+      "original": "378b30daf137fda4bba0ccb283cfaf61693c2409",
+      "tree_unchanged": true,
+      "revised": "f48d615132127971a4970b0b70c3ed483dc57cf4",
+      "original_tree": "2efc41d46ac5f0d9c23f2c6b10ac1a9e2d0feac9",
+      "revised_tree": "2efc41d46ac5f0d9c23f2c6b10ac1a9e2d0feac9"
+    },
+    {
+      "original": "d6e9b8fecb28984dc6d0d7b5651a82bf74390f4a",
+      "tree_unchanged": true,
+      "revised": "e6cc36eafe240ec4976d8959be47ebeabe011388",
+      "original_tree": "f4bdac309382fcf930a00b2d3781637cf64bfa02",
+      "revised_tree": "f4bdac309382fcf930a00b2d3781637cf64bfa02"
+    },
+    {
+      "original": "fab5555f27c9cd217f46c05a6d8b96df6b19ce62",
+      "tree_unchanged": true,
+      "revised": "cee5a8a45086f9f03bed80e0035499bcfad60906",
+      "original_tree": "bb024f5422571dbc9837dd8aadd03b04106606f3",
+      "revised_tree": "bb024f5422571dbc9837dd8aadd03b04106606f3"
+    },
+    {
+      "original": "f64a3e23b5ff546645a1d43d1cf812d81e0b40af",
+      "tree_unchanged": true,
+      "revised": "a502824446d5c084edf81ba8bcd5f25872d38812",
+      "original_tree": "b0b059bfd759eb546defd7cb073ca80a378aba05",
+      "revised_tree": "b0b059bfd759eb546defd7cb073ca80a378aba05"
+    },
+    {
+      "original": "5131f0835e293955f5e355c65ac97d92f3094da6",
+      "tree_unchanged": true,
+      "revised": "933d5a1d8b851429750f6f5ab1330b0ba138f802",
+      "original_tree": "febaf1e8b5812ab955a64841785250fc1e0d2810",
+      "revised_tree": "febaf1e8b5812ab955a64841785250fc1e0d2810"
+    }
+  ],
+  "revised_head": "933d5a1d8b851429750f6f5ab1330b0ba138f802",
+  "validation": {
+    "commits_checked": 25,
+    "checks": [
+      "local_imports",
+      "undefined_names",
+      "application_startup",
+      "signed_session_admission",
+      "policy_read"
+    ],
+    "final_tested_tree_unchanged": true
+  }
+}
