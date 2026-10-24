@@ -15,7 +15,8 @@ def test_issue_signs_short_lived_credential(
     issued = CredentialIssuer(identity_settings, clock).issue(grant)
 
     payload, signature = issued.token.split(".")
-    assert payload and signature
+    assert payload
+    assert signature
     assert issued.principal.agent_id == "agent-soporte"
     assert issued.principal.version == "1.0.0"
     assert issued.principal.scopes == grant.scopes

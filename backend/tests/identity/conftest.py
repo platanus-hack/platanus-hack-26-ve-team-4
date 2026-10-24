@@ -31,7 +31,7 @@ def identity_settings(tmp_path: Path) -> Settings:
     return Settings(
         data_dir=tmp_path,
         environment="test",
-        identity_signing_key="clave-de-prueba",  # type: ignore[arg-type]
+        identity_signing_key="clave-de-prueba",
         identity_token_ttl_seconds=900,
     )
 
