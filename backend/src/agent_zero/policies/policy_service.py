@@ -9,10 +9,13 @@ from agent_zero.arena.transactions import serialize_write
 from agent_zero.events.event_store import EventStore
 from agent_zero.events.models import EventType
 from agent_zero.patches.explanation import with_explanation
+from agent_zero.policies.flow.dsl import covered_controls
+from agent_zero.policies.flow.models import FlowPolicyRecord
+from agent_zero.policies.flow.proposal import FlowProposal, compose
+from agent_zero.policies.flow.repository import flow_rules
 from agent_zero.policies.lifecycle import transition
 from agent_zero.policies.models import PolicyPointer, PolicyStatus, PolicyVersion
-from agent_zero.policies.repository import PolicyRepository, content_hash, policy_view
-from agent_zero.policies.validator_catalog import CONTROL_REASONS, OBJECTIVE_CONTROLS
+from agent_zero.policies.repository import PolicyRepository, content_hash
 from agent_zero.shared.clock import utc_now
 from agent_zero.shared.database import Database
 
@@ -36,9 +39,7 @@ class PolicyService:
 
     async def get(self, version: int) -> dict[str, Any]:
         async with self._database.sessions() as db:
-            return await with_explanation(
-                db, policy_view(await PolicyRepository(db).require(version))
-            )
+            return await with_explanation(db, await PolicyRepository(db).view(version))
 
     async def all(self) -> list[dict[str, Any]]:
         async with self._database.sessions() as db:
@@ -53,6 +54,7 @@ class PolicyService:
         *,
         related: list[tuple[str, str]] | None = None,
         evidence_attempt_ids: list[str] | None = None,
+        flow: FlowProposal | None = None,
     ) -> int | None:
         async with self._admission_lock, self._database.sessions() as db:
             await serialize_write(db)
@@ -61,28 +63,38 @@ class PolicyService:
                 return None
             active = await repository.active()
             targets = [(finding_id, objective_id), *(related or [])]
-            controls = {
-                control for _, objective in targets for control in OBJECTIVE_CONTROLS[objective]
-            }
-            rules = sorted(set(active.rules) | controls)
-            if rules == active.rules:
+            composition = compose(active.rules, await flow_rules(db, active.version), targets, flow)
+            if composition is None:
                 return None
             version = await repository.next_version()
             db.add(
                 PolicyVersion(
                     version=version,
                     parent_version=active.version,
-                    rules=rules,
-                    content_hash=content_hash(rules, active.version),
+                    rules=composition.rules,
+                    content_hash=content_hash(
+                        composition.rules, active.version, composition.flow_rules
+                    ),
                     status=PolicyStatus.CANDIDATE,
                     finding_ids=list(dict.fromkeys(finding for finding, _ in targets)),
-                    reason=" ".join(
-                        dict.fromkeys(CONTROL_REASONS[objective] for _, objective in targets)
+                    reason=composition.reason,
+                    validation={"evidence_attempt_ids": evidence_attempt_ids or []}
+                    | (
+                        {"synthesis": flow.synthesis}
+                        if flow is not None and flow.policy is None and flow.synthesis
+                        else {}
                     ),
-                    validation={"evidence_attempt_ids": evidence_attempt_ids or []},
                     created_at=utc_now(),
                 )
             )
+            if composition.flow_rules:
+                db.add(
+                    FlowPolicyRecord(
+                        version=version,
+                        rules=composition.flow_rules,
+                        synthesis=composition.synthesis,
+                    )
+                )
             await self._events.stage_public(
                 db,
                 EventType.PATCH_PROPOSED,
@@ -220,7 +232,8 @@ class PolicyService:
             for finding in await db.scalars(
                 select(FindingRecord).where(FindingRecord.status == FindingStatus.MITIGATED)
             ):
-                if not set(finding.missing_control.split("+")) <= set(parent.rules):
+                covered = set(parent.rules) | covered_controls(await flow_rules(db, parent.version))
+                if not set(finding.missing_control.split("+")) <= covered:
                     finding.status = FindingStatus.REOPENED
                     finding.updated_at = utc_now()
             target = parent.version

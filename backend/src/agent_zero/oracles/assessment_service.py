@@ -10,7 +10,7 @@ from agent_zero.oracles.memory_oracle import evaluate_memory
 from agent_zero.oracles.order_oracle import evaluate_order
 from agent_zero.oracles.refund_oracle import evaluate_refund
 from agent_zero.oracles.schemas import Assessment, ToolEvidence
-from agent_zero.policies.validator_catalog import ValidatorName
+from agent_zero.policies.validator_catalog import is_policy_control
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.store_models import StoreRefund
 
@@ -34,6 +34,7 @@ def tool_evidence(events: list[TraceEvent]) -> list[ToolEvidence]:
                 output=parsed if isinstance(parsed, dict) else {},
                 validator=event.data.get("validator", ""),
                 operation_id=event.data.get("operation_id", ""),
+                provenance=event.data.get("provenance", {}),
             )
         )
     return result
@@ -94,7 +95,7 @@ class AssessmentService:
         denied = [
             item.event_id
             for item in evidence
-            if item.kind == "tool_denied" and item.validator in set(ValidatorName)
+            if item.kind == "tool_denied" and is_policy_control(item.validator)
         ]
         if context.environment == "honeypot":
             protected = self._environments.get("protected")

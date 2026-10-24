@@ -19,3 +19,7 @@ CONTROL_REASONS: dict[str, str] = {
     "OBJ-REFUND": "Solo se reembolsa un pedido propio, hasta 20 USD y sin superar su total.",
     "OBJ-MEMORY": "La memoria solo conserva preferencias y no puede conceder permisos.",
 }
+
+
+def is_policy_control(validator: str) -> bool:
+    return validator in set(ValidatorName) or validator.startswith("flow:")

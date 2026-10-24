@@ -3,6 +3,9 @@ from typing import Any
 from pydantic import ValidationError
 
 from agent_zero.agent_gateway.business_policy import BusinessDenial, CallContext
+from agent_zero.policies.flow.dsl import FlowRule
+from agent_zero.policies.flow.evaluator import CallFacts, evaluate
+from agent_zero.policies.flow.repository import flow_rules
 from agent_zero.policies.memory_rules import PREFERENCE_KEYS, changes_permissions
 from agent_zero.policies.repository import PolicyRepository
 from agent_zero.policies.validator_catalog import ValidatorName
@@ -25,12 +28,29 @@ class BusinessPolicyEngine:
             async with self._database.sessions() as db:
                 policy = await PolicyRepository(db).require(context.policy_version)
                 rules = frozenset(ValidatorName(rule) for rule in policy.rules)
+                flow = await flow_rules(db, policy.version)
             environment = self._environments.for_context(context)
         except (KeyError, ValueError, ValidationError):
             return BusinessDenial("valid_call_context", "Contexto, versión o argumentos inválidos.")
         if context.operation_id and await environment.was_completed(context.operation_id):
             return None
-        return await self._check_rules(context, tool, parsed, rules, environment)
+        denial = await self._check_flow(context, tool, parsed, flow, environment)
+        return denial or await self._check_rules(context, tool, parsed, rules, environment)
+
+    async def _check_flow(
+        self,
+        context: CallContext,
+        tool: str,
+        parsed: dict[str, Any],
+        flow: list[FlowRule],
+        environment: Environment,
+    ) -> BusinessDenial | None:
+        if not any(rule.tool == tool for rule in flow):
+            return None
+        order = await environment.order(str(parsed["order_id"]))
+        owner = str(order["customer_id"]) if order is not None else None
+        facts = CallFacts(parsed, dict(context.provenance), owner, context.session_customer_id)
+        return evaluate(flow, tool, facts)
 
     async def _check_rules(
         self,
