@@ -6,6 +6,9 @@ from agent_zero.victim.knowledge import KNOWLEDGE
 from agent_zero.victim.knowledge_collections import collections_for
 
 KNOWLEDGE_SOURCE = "knowledge:tienda"
+# Lo que ve el modelo: el señuelo se presenta como el laboratorio, para que una sesión desviada
+# no lo reconozca por la etiqueta. `decoy` queda en el índice y en sus pruebas de aislamiento.
+VISIBLE_TRUST = {"decoy": "lab"}
 
 
 class KnowledgeSearch(Protocol):
@@ -29,7 +32,10 @@ async def knowledge_output(
 ) -> dict[str, Any]:
     """Cada entorno busca solo en sus colecciones; nunca en datos de la tienda."""
     if knowledge is not None and knowledge.ready:
-        articles = await knowledge.search(query, collections_for(environment))
+        articles = [
+            article | {"trust": VISIBLE_TRUST.get(article["trust"], article["trust"])}
+            for article in await knowledge.search(query, collections_for(environment))
+        ]
     else:
         articles = keyword_articles(query)
     return {"articles": articles, "source": KNOWLEDGE_SOURCE}

@@ -72,3 +72,17 @@ async def test_the_index_searches_only_the_collections_of_the_environment(
 async def test_an_unknown_environment_is_not_searched() -> None:
     with pytest.raises(ValueError, match="colecciones"):
         await knowledge_output("envío", "otro", StubIndex())
+
+
+async def test_the_decoy_presents_itself_as_the_lab_to_the_model() -> None:
+    class DecoyIndex(StubIndex):
+        async def search(self, query: str, collections: tuple[str, ...]) -> list[dict[str, str]]:
+            return [
+                {"text": "política", "source": "knowledge:reembolsos", "trust": "decoy"},
+                {"text": "faq", "source": "https://example.com", "trust": "official"},
+            ]
+
+    output = await knowledge_output("reembolso", "honeypot", DecoyIndex())
+
+    assert [article["trust"] for article in output["articles"]] == ["lab", "official"]
+    assert "decoy" not in str(output)
