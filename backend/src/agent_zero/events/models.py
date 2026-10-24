@@ -17,6 +17,7 @@ class EventType(StrEnum):
     TOOL_PROPOSED = "tool_proposed"
     TOOL_DENIED = "tool_denied"
     TOOL_COMPLETED = "tool_completed"
+    TOOL_FAILED = "tool_failed"
     ROUTE_CHANGED = "route_changed"
     ATTEMPT_EVALUATED = "attempt_evaluated"
     FINDING_OPENED = "finding_opened"

@@ -1,6 +1,6 @@
 # Fleet: composición de la plataforma
 
-Estado: implementado. `Fleet` conecta las primitivas de seguridad y runtime; `ProductCore` añade el escenario y los workers del producto. Esta separación permite conservar el recorrido de flota 1.0.0 junto con la arena 2.0.0.
+Estado: implementado. `Fleet` conecta las primitivas de seguridad y runtime; `ProductCore` añade el escenario y los workers del producto. Esta separación permite conservar el recorrido de flota 1.0.0 junto con la arena 2.2.0.
 
 ## Entradas reales
 

@@ -14,7 +14,7 @@ El despliegue es un monolito modular FastAPI/SQLAlchemy con workers asíncronos 
 | [App.tsx](../frontend/src/app/App.tsx) | Rutas de participante, arena y operación. |
 | [compose.yaml](../infra/compose.yaml) | Backend, frontend/proxy y volumen persistente. |
 
-Los handlers de arena se registran durante la inicialización. `ensure_agents()` publica/aprueba sus manifiestos al primer uso; publicar un manifiesto no instala código Python. La flota original conserva `support_conversation` 1.0.0; el núcleo utiliza manifiestos 2.1.0 y el handler `arena_attempt`.
+Los handlers de arena se registran durante la inicialización. `ensure_agents()` publica/aprueba sus manifiestos al primer uso; publicar un manifiesto no instala código Python. La flota original conserva `support_conversation` 1.0.0; el núcleo utiliza manifiestos 2.2.0 y el handler `arena_attempt`.
 
 ```mermaid
 flowchart TD

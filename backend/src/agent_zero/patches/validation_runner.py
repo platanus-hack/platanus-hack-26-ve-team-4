@@ -10,8 +10,9 @@ from agent_zero.attempts.models import Attempt, AttemptOutcome
 from agent_zero.events.models import EventType
 from agent_zero.events.schemas import TraceEvent
 from agent_zero.fleet.fleet_builder import Fleet
-from agent_zero.oracles.assessment_service import AssessmentService, tool_evidence
+from agent_zero.oracles.assessment_service import AssessmentService
 from agent_zero.oracles.schemas import Assessment
+from agent_zero.oracles.trace_reader import tool_evidence
 from agent_zero.patches.integrity_probe import integrity_probe, untrusted_effects
 from agent_zero.patches.replay_report import build_replay, legit_rows
 from agent_zero.patches.validation_cases import ValidationCase, validation_cases

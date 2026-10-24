@@ -19,5 +19,5 @@ def prober_manifest() -> AgentManifest:
         tools=(),
         scopes=("attempts:enqueue",),
         max_classification=DataClassification.PUBLIC,
-        allowed_regions=("cl",),
+        allowed_regions=("ve",),
     )

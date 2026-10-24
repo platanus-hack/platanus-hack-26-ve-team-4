@@ -16,7 +16,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. Los eventos 
 
 `product_events` tiene ID entero monotónico, tipo, visibilidad, referencias opcionales de intento/sesión/política, timestamp, JSON y una `dedup_key` única opcional. `product_event_delivery` añade una fila por evento con `delivered_at` inicialmente vacío.
 
-Los tipos actuales son `round_started`, `attempt_queued`, `attempt_started`, `attempt_completed`, `tool_proposed`, `tool_denied`, `tool_completed`, `route_changed`, `attempt_evaluated`, `finding_opened`, `patch_proposed`, `patch_validated`, `policy_activated`, `policy_rolled_back` y `probe_round_closed`. Este último es público, lo emite el planificador adaptive al cerrar la ronda de una versión (no confundir con `round_started`, que es la ronda de arena) y solo proyecta `probe_round`, `queries`, `violations` y `mutator`. Un tipo nuevo exige revisar emisor, visibilidad, proyección y lectores.
+Los tipos actuales son `round_started`, `attempt_queued`, `attempt_started`, `attempt_completed`, `tool_proposed`, `tool_denied`, `tool_completed`, `tool_failed`, `route_changed`, `attempt_evaluated`, `finding_opened`, `patch_proposed`, `patch_validated`, `policy_activated`, `policy_rolled_back` y `probe_round_closed`. Este último es público, lo emite el planificador adaptive al cerrar la ronda de una versión (no confundir con `round_started`, que es la ronda de arena) y solo proyecta `probe_round`, `queries`, `violations` y `mutator`. Un tipo nuevo exige revisar emisor, visibilidad, proyección y lectores.
 
 ## Publicar junto con el cambio de dominio
 

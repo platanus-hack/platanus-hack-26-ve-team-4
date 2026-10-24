@@ -91,6 +91,18 @@ class AgentGateway:
                 raise
             except ToolExecutionError as failure:
                 details["stage"] = GatewayStage.TOOL.value
+                if context is not None:
+                    await self._observe(
+                        "tool_failed",
+                        context,
+                        tool_name,
+                        {
+                            "arguments": arguments,
+                            "stage": GatewayStage.TOOL.value,
+                            "reason": GatewayReason.TOOL_FAILED.value,
+                            "error": type(failure.original).__name__,
+                        },
+                    )
                 outcome = GatewayOutcome(
                     GatewayDecision.DENY, GatewayReason.TOOL_FAILED, details, failed=True
                 )
@@ -137,16 +149,16 @@ class AgentGateway:
             details["input_threats"] = [kind.value for kind in screened.kinds]
             if screened.blocked:
                 raise GatewayDeniedError(GatewayReason.INPUT_BLOCKED, GatewayStage.INPUT_ARMOR)
-        output = await invoke_tool(tool, screened.arguments, context, principal, self._parts.tracer)
+        invoked = await invoke_tool(
+            tool, screened.arguments, context, principal, self._parts.tracer
+        )
+        output = invoked.text
         if context is not None:
             await self._observe(
                 "tool_completed",
                 context,
                 tool.spec.name,
-                {
-                    "arguments": screened.arguments,
-                    "output": output,
-                },
+                {"arguments": screened.arguments, "output": output, "effect": invoked.effect},
             )
         with self._parts.tracer.span("output_armor"):
             verdict = self._parts.armor.screen(output, Surface.TOOL_OUTPUT)

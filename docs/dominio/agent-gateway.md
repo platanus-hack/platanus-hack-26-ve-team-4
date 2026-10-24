@@ -24,9 +24,9 @@ La política estática comprueba permiso del manifiesto, clasificación suficien
 
 ## Transacción de negocio y evidencia
 
-[ProductCore](../../backend/src/agent_zero/arena/core.py) instala `BusinessPolicyEngine`, `TraceObserver` y un guard de [Environment.transaction](../../backend/src/agent_zero/victim/environments.py). En el escenario, ese guard usa `BEGIN IMMEDIATE`: lectura para autorizar y efecto comparten la reserva de escritura de SQLite, también con conexiones independientes.
+[ProductCore](../../backend/src/agent_zero/arena/core.py) instala `BusinessPolicyEngine`, `TraceObserver` y un guard de [Environment.transaction](../../backend/src/agent_zero/victim/environments.py). En el escenario, ese guard toma la reserva de escritura (`BEGIN IMMEDIATE` en SQLite, lock consultivo en Postgres): lectura para autorizar y efecto la comparten, también con conexiones independientes.
 
-La herramienta persiste resultado e identidad de operación antes de informar `tool_completed`. El evento se observa antes de Armor de salida: si una lectura indebida terminó y después se ocultó la respuesta, el oráculo sigue contando la acción. Mover ese evento detrás del filtro escondería evidencia.
+La herramienta persiste resultado e identidad de operación antes de informar `tool_completed`. El evento se observa antes de Armor de salida: si una lectura indebida terminó y después se ocultó la respuesta, el oráculo sigue contando la acción. Mover ese evento detrás del filtro escondería evidencia. Un handler contextual puede devolver `ToolOutput(text, effect)`: el modelo recibe `text` y la traza recibe `effect`. Si la herramienta lanza una excepción, el gateway emite `tool_failed` antes de propagarla. Formato completo en [traza de herramientas](./traza-herramientas.md).
 
 La transacción del entorno y los eventos en `app.db` no forman una transacción distribuida. La recuperación se apoya en checkpoints e identidades de operación: repetir una operación completada recupera su resultado y permite reconstruir la observación.
 

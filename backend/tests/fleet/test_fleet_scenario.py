@@ -51,6 +51,7 @@ async def test_support_agent_survives_two_weeks_and_a_restart(tmp_path: Path) ->
         environment="test",
         identity_signing_key="clave-de-prueba",
         otel_exporter="memory",
+        allowed_data_regions=["cl"],
     )
     clock = FakeClock()
     telemetry = build_telemetry(settings)

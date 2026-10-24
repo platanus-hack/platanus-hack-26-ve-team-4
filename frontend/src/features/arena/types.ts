@@ -5,6 +5,7 @@ export type EventType =
   | "tool_proposed"
   | "tool_denied"
   | "tool_completed"
+  | "tool_failed"
   | "route_changed"
   | "attempt_evaluated"
   | "finding_opened"

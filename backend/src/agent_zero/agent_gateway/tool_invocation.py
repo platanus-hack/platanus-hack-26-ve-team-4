@@ -3,7 +3,7 @@ from typing import Any
 from agent_zero.agent_gateway.business_policy import CallContext
 from agent_zero.agent_gateway.errors import ToolExecutionError
 from agent_zero.agent_gateway.stage_tracer import StageTracer
-from agent_zero.agent_gateway.tool_registry import RegisteredTool
+from agent_zero.agent_gateway.tool_registry import RegisteredTool, ToolOutput
 from agent_zero.identity.schemas import AgentPrincipal
 from agent_zero.telemetry import attributes
 
@@ -14,9 +14,9 @@ async def invoke_tool(
     context: CallContext | None,
     principal: AgentPrincipal,
     tracer: StageTracer,
-) -> str:
+) -> ToolOutput:
     failure: Exception | None = None
-    output = ""
+    output: str | ToolOutput = ""
     with tracer.span("tool", {attributes.TOOL: tool.spec.name}):
         try:
             if context is not None and tool.contextual_handler is not None:
@@ -27,4 +27,4 @@ async def invoke_tool(
             failure = error
     if failure is not None:
         raise ToolExecutionError(failure)
-    return output
+    return output if isinstance(output, ToolOutput) else ToolOutput(output)

@@ -8,7 +8,7 @@ from agent_zero.victim.fixtures import ORDERS, REFUND_LIMIT
 from agent_zero.victim.knowledge import KNOWLEDGE
 from agent_zero.victim.models import ToolName
 
-STORE_REGION = "cl"
+STORE_REGION = "ve"
 
 TOOL_SPECS: dict[ToolName, ToolSpec] = {
     ToolName.GET_ORDER: ToolSpec(

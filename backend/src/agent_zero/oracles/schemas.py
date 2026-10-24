@@ -30,6 +30,9 @@ class ToolEvidence(BaseModel):
     tool: str
     arguments: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
+    # Cambio de estado declarado por la herramienta (ver victim.trace_schemas.ToolEffect).
+    effect: dict[str, Any] = Field(default_factory=dict)
     validator: str = ""
     operation_id: str = ""
     provenance: dict[str, str] = Field(default_factory=dict)
+    readable: bool = True

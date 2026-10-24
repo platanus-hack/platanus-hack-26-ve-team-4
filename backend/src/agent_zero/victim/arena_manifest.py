@@ -5,7 +5,7 @@ from agent_zero.victim.honeytool_schemas import HONEYTOOL_DESCRIPTIONS
 from agent_zero.victim.tool_loop import SYSTEM_PROMPT
 from agent_zero.victim.tool_schemas import DESCRIPTIONS
 
-ARENA_VERSION = "2.1.0"
+ARENA_VERSION = "2.2.0"  # 2.1.0: herramientas cebo del señuelo. 2.2.0: región `ve`.
 ARENA_HANDLER = "arena_attempt"
 PATCH_HANDLER = "validate_patch"
 
@@ -30,7 +30,7 @@ def arena_manifest(decoy: bool = False) -> AgentManifest:
         ),
         scopes=(*(f"tool:{name}" for name in descriptions), "memory:read", "memory:write"),
         max_classification=DataClassification.CONFIDENTIAL,
-        allowed_regions=("cl",),
+        allowed_regions=("ve",),
     )
 
 
@@ -48,5 +48,5 @@ def patch_manifest() -> AgentManifest:
         tools=(),
         scopes=("policies:propose",),
         max_classification=DataClassification.INTERNAL,
-        allowed_regions=("cl",),
+        allowed_regions=("ve",),
     )

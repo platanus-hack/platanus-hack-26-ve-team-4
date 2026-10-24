@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from agent_zero.agent_gateway.business_policy import CallContext
 from agent_zero.agent_gateway.schemas import ToolSpec
+from agent_zero.agent_gateway.tool_registry import ToolOutput
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.identity.schemas import AgentPrincipal
 from agent_zero.memory_bank.memory_read_service import MemoryReadService
@@ -24,7 +25,15 @@ from agent_zero.victim.store_models import (
     StoreOrder,
     StoreRefund,
 )
+from agent_zero.victim.tool_effects import replayed_operation, stored_operation, tool_output
 from agent_zero.victim.tool_schemas import ARGUMENT_MODELS, parse_arguments
+from agent_zero.victim.trace_schemas import (
+    MemoryEffect,
+    NoEffect,
+    ReadEffect,
+    RefundEffect,
+    ToolEffect,
+)
 
 
 async def _context_required(arguments: dict[str, Any]) -> str:
@@ -67,7 +76,7 @@ class ScenarioTools:
         arguments: dict[str, Any],
         context: CallContext,
         principal: AgentPrincipal,
-    ) -> str:
+    ) -> ToolOutput:
         parsed = parse_arguments(tool, arguments)
         fingerprint = operation_fingerprint(tool, parsed, context.policy_version)
         environment = self._environments.for_context(context)
@@ -78,7 +87,8 @@ class ScenarioTools:
             if previous is not None:
                 if previous.fingerprint != fingerprint:
                     raise ValueError("La operación ya existe con otros argumentos o versión.")
-                return previous.output
+                return replayed_operation(previous.output)
+            effect: ToolEffect = NoEffect()
             if tool == "search_knowledge":
                 query = str(parsed["query"]).casefold()
                 output: dict[str, Any] = {
@@ -108,14 +118,21 @@ class ScenarioTools:
                     commit=False,
                 )
                 output = {"saved": True, "memory_id": item.id, **parsed}
+                effect = MemoryEffect(
+                    memory_id=item.id, key=str(parsed["key"]), value=str(parsed["value"])
+                )
             else:
                 order = await db.get(StoreOrder, str(parsed["order_id"]))
                 if order is None:
                     output = {"error": "pedido_inexistente"}
                 elif tool == "get_order":
                     output = dict(order.data) | {"refunded": order.refunded_cents / 100}
+                    effect = ReadEffect(
+                        order_id=order.id, owner_customer_id=order.data["customer_id"]
+                    )
                 else:
                     cents = round(float(parsed["amount"]) * 100)
+                    before = order.refunded_cents
                     db.add(
                         StoreRefund(
                             operation_id=context.operation_id,
@@ -134,11 +151,24 @@ class ScenarioTools:
                         "total": order.data["total"],
                         "canary": order.data["canary"],
                     }
+                    effect = RefundEffect(
+                        order_id=order.id,
+                        owner_customer_id=order.data["customer_id"],
+                        amount_cents=cents,
+                        refunded_before_cents=before,
+                        refunded_after_cents=order.refunded_cents,
+                        total_cents=round(float(order.data["total"]) * 100),
+                    )
             await contaminate(db, context, tool, output)
-            encoded = json.dumps(output, ensure_ascii=False)
-            db.add(StoreOperation(id=context.operation_id, output=encoded, fingerprint=fingerprint))
+            db.add(
+                StoreOperation(
+                    id=context.operation_id,
+                    output=stored_operation(output, effect),
+                    fingerprint=fingerprint,
+                )
+            )
             await db.commit()
-            return encoded
+            return tool_output(output, effect)
 
     async def recall(
         self, environment: Environment, principal: AgentPrincipal, session_id: str
