@@ -49,3 +49,12 @@ class Attempt(AppBase):
     defense_processed: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime)
+
+
+class AttemptLink(AppBase):
+    """Intento que continúa la conversación de otro de la misma sesión (chat del participante)."""
+
+    __tablename__ = "attempt_links"
+
+    attempt_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    previous_attempt_id: Mapped[str] = mapped_column(String(40), index=True)
