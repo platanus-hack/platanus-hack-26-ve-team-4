@@ -22,6 +22,7 @@ def limits(session_calls: int = 10) -> ModelLimits:
         session_calls=session_calls,
         campaign_calls=100,
         campaign_tokens=10_000,
+        daily_usd=5.0,
         breaker_failures=3,
         breaker_recovery_seconds=30,
     )

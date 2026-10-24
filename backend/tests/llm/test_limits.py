@@ -1,12 +1,13 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 
 from agent_zero.llm.errors import ModelLimitReachedError
 from agent_zero.llm.limits import LimitPolicy, ModelLimits
-from agent_zero.llm.models import LimitReason
+from agent_zero.llm.models import CallOrigin, LimitReason
 from agent_zero.llm.quota import InMemoryCallQuota
-from agent_zero.llm.schemas import CallScope, CallUsage
+from agent_zero.llm.schemas import CallCost, CallScope, CallUsage
+from tests.llm.records import call_record
 
 
 class FakeClock:
@@ -23,6 +24,7 @@ def build_limits(clock: FakeClock, **overrides: float) -> ModelLimits:
         "session_calls": 100,
         "campaign_calls": 100,
         "campaign_tokens": 1_000,
+        "daily_usd": 1.0,
         "breaker_failures": 2,
         "breaker_recovery_seconds": 30,
         **overrides,
@@ -74,3 +76,26 @@ def test_breaker_opens_per_role_and_recovers() -> None:
     limits.before("victim", CallScope())
     clock.now = 31
     limits.before("prober", CallScope())
+
+
+def test_daily_usd_budget_denies_once_spent() -> None:
+    limits = build_limits(FakeClock(), daily_usd=0.01)
+    limits.before("victim", CallScope())
+
+    limits.after("victim", CallScope(), True, CallUsage(input_tokens=1), cost_usd=0.01)
+
+    assert reason_of(limits, CallScope()) is LimitReason.DAILY_BUDGET
+
+
+def test_budget_survives_restarts_through_the_ledger() -> None:
+    limits = build_limits(FakeClock(), daily_usd=0.05)
+    spent_today = call_record(cost=CallCost(output_usd=0.05)).model_copy(
+        update={"origin": CallOrigin.LIVE, "at": datetime(2026, 10, 24, 12, tzinfo=UTC)}
+    )
+    spent_yesterday = spent_today.model_copy(update={"at": datetime(2026, 10, 23, tzinfo=UTC)})
+    simulated = call_record(cost=CallCost(output_usd=9.0))
+
+    limits.charge_history([spent_today, spent_yesterday, simulated])
+
+    assert limits.spent_today_usd() == 0.05
+    assert reason_of(limits, CallScope()) is LimitReason.DAILY_BUDGET

@@ -93,7 +93,9 @@ class InstrumentedModel(Model):
 
     def _fail(self, watch: CallWatch, error: Exception) -> NoReturn:
         if self._limits is not None:
-            self._limits.after(self.role, watch.scope, watch.refused, watch.usage)
+            self._limits.after(
+                self.role, watch.scope, watch.refused, watch.usage, watch.live_cost_usd
+            )
         if watch.refused:
             self._close(watch, CallOutcome.REFUSED, type(error).__name__)
             raise ModelRefusedError(self.role) from error
@@ -107,7 +109,7 @@ class InstrumentedModel(Model):
 
     def _finish(self, watch: CallWatch) -> None:
         if self._limits is not None:
-            self._limits.after(self.role, watch.scope, True, watch.usage)
+            self._limits.after(self.role, watch.scope, True, watch.usage, watch.live_cost_usd)
         if watch.refused:
             self._close(watch, CallOutcome.REFUSED)
             raise ModelRefusedError(self.role)

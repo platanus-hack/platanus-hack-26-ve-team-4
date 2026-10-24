@@ -58,6 +58,13 @@ class CallWatch:
     def refused(self) -> bool:
         return self.stop_reason == REFUSAL
 
+    @property
+    def live_cost_usd(self) -> float:
+        if self.origin is not CallOrigin.LIVE or self.usage is None:
+            return 0.0
+        cost = cost_or_none(self.model_id, self.usage)
+        return 0.0 if cost is None else cost.total_usd
+
     def observe(self, event: Any) -> None:
         self.usage = usage_from_event(event) or self.usage
         self.stop_reason = stop_reason_from_event(event) or self.stop_reason

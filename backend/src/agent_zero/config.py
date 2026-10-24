@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     llm_session_call_limit: int = Field(default=40, ge=1)
     llm_campaign_call_limit: int = Field(default=300, ge=1)
     llm_campaign_token_limit: int = Field(default=1_500_000, ge=1)
+    llm_daily_usd_limit: float = Field(default=2.0, gt=0)
     llm_breaker_failures: int = Field(default=3, ge=1)
     llm_breaker_recovery_seconds: float = Field(default=30.0, gt=0)
 

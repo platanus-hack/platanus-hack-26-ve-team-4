@@ -37,6 +37,7 @@ class CallOutcome(StrEnum):
 class LimitReason(StrEnum):
     BREAKER_OPEN = "breaker_open"
     DAILY_CEILING = "daily_ceiling"
+    DAILY_BUDGET = "daily_budget"
     SESSION_CEILING = "session_ceiling"
     CAMPAIGN_CEILING = "campaign_ceiling"
     PROVIDER_UNAVAILABLE = "provider_unavailable"
