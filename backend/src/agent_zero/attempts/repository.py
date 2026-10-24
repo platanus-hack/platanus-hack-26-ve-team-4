@@ -20,10 +20,12 @@ class AttemptRepository:
             select(Attempt).where(Attempt.session_id == session_id, Attempt.idempotency_key == key)
         )
 
-    async def in_flight(self, session_id: str | None = None) -> int:
+    async def in_flight(self, session_id: str | None = None, *, origin: str | None = None) -> int:
         query = select(func.count()).select_from(Attempt).where(Attempt.status.in_(IN_FLIGHT))
         if session_id is not None:
             query = query.where(Attempt.session_id == session_id)
+        if origin is not None:
+            query = query.where(Attempt.origin == origin)
         return int(await self.db.scalar(query) or 0)
 
     async def recent_count(self, session_id: str, since: datetime) -> int:

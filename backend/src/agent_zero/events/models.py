@@ -10,6 +10,7 @@ from agent_zero.shared.database import AppBase
 
 
 class EventType(StrEnum):
+    ROUND_STARTED = "round_started"
     ATTEMPT_QUEUED = "attempt_queued"
     ATTEMPT_STARTED = "attempt_started"
     ATTEMPT_COMPLETED = "attempt_completed"
@@ -42,3 +43,10 @@ class EventRecord(AppBase):
     data: Mapped[dict[str, Any]] = mapped_column(JSON)
     timestamp: Mapped[datetime] = mapped_column(UtcDateTime)
     dedup_key: Mapped[str | None] = mapped_column(String(180), unique=True, nullable=True)
+
+
+class EventDelivery(AppBase):
+    __tablename__ = "product_event_delivery"
+
+    event_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    delivered_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)

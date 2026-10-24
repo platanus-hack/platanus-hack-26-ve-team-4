@@ -1,5 +1,4 @@
-from typing import Any
-
+from agent_zero.arena.transactions import serialize_write
 from agent_zero.attempts.attempt_query_service import call_context
 from agent_zero.attempts.models import AttemptOutcome, AttemptStatus
 from agent_zero.attempts.repository import AttemptRepository
@@ -31,6 +30,7 @@ class AttemptExecutionHandler:
 
     async def step(self, context: StepContext) -> StepResult:
         async with self._fleet.database.sessions() as db:
+            await serialize_write(db)
             attempt = await AttemptRepository(db).get(str(context.input["attempt_id"]))
             if attempt is None or context.tools is None:
                 return Fail(reason="Intento no disponible o sin herramientas.")
@@ -39,18 +39,20 @@ class AttemptExecutionHandler:
             if attempt.status is AttemptStatus.QUEUED:
                 attempt.status = AttemptStatus.RUNNING
                 attempt.updated_at = self._fleet.clock()
-                await db.commit()
+            if not context.checkpoint:
+                await self._events.stage(
+                    db,
+                    EventDraft(
+                        type=EventType.ATTEMPT_STARTED,
+                        attempt_id=attempt.id,
+                        session_id=attempt.session_id,
+                        policy_version=attempt.policy_version,
+                    ),
+                    dedup_key=f"{attempt.id}:started",
+                )
+            await db.commit()
         scope = call_context(attempt)
         if not context.checkpoint:
-            await self._events.emit(
-                EventDraft(
-                    type=EventType.ATTEMPT_STARTED,
-                    attempt_id=attempt.id,
-                    session_id=attempt.session_id,
-                    policy_version=attempt.policy_version,
-                ),
-                dedup_key=f"{attempt.id}:started",
-            )
             state = await self._executor.start(scope, context.principal, attempt.messages)
             return Advance(checkpoint=state)
         if context.checkpoint["phase"] != "complete":
@@ -73,6 +75,7 @@ class AttemptExecutionHandler:
             scope, await self._events.for_attempt(attempt.id), reply
         )
         async with self._fleet.database.sessions() as db:
+            await serialize_write(db)
             stored = await AttemptRepository(db).get(attempt.id)
             if stored is None:
                 return Fail(reason="El intento dejó de existir.")
@@ -85,28 +88,33 @@ class AttemptExecutionHandler:
                 else AttemptStatus.EVALUATED
             )
             stored.updated_at = self._fleet.clock()
+            await self._events.stage(
+                db,
+                EventDraft(
+                    type=EventType.ATTEMPT_EVALUATED,
+                    attempt_id=attempt.id,
+                    session_id=attempt.session_id,
+                    policy_version=attempt.policy_version,
+                    data=assessment.model_dump(mode="json"),
+                ),
+                dedup_key=f"{attempt.id}:evaluated",
+            )
+            outcome = (
+                "apparent_success"
+                if assessment.outcome
+                in {
+                    AttemptOutcome.CONFIRMED_VIOLATION,
+                    AttemptOutcome.CONTAINED_HONEYPOT,
+                }
+                else assessment.outcome.value
+            )
+            await self._events.stage_public(
+                db,
+                EventType.ATTEMPT_EVALUATED,
+                attempt.policy_version,
+                outcome=outcome,
+                dedup_key=f"{attempt.id}:evaluated:public",
+            )
             await db.commit()
-        private: dict[str, Any] = assessment.model_dump(mode="json")
-        await self._events.emit(
-            EventDraft(
-                type=EventType.ATTEMPT_EVALUATED,
-                attempt_id=attempt.id,
-                session_id=attempt.session_id,
-                policy_version=attempt.policy_version,
-                data=private,
-            ),
-            dedup_key=f"{attempt.id}:evaluated",
-        )
-        outcome = (
-            "apparent_success"
-            if assessment.outcome
-            in {
-                AttemptOutcome.CONFIRMED_VIOLATION,
-                AttemptOutcome.CONTAINED_HONEYPOT,
-            }
-            else assessment.outcome.value
-        )
-        await self._events.public(
-            EventType.ATTEMPT_EVALUATED, attempt.policy_version, outcome=outcome
-        )
+        await self._events.dispatch_pending()
         return Complete(output={"attempt_id": attempt.id, "outcome": assessment.outcome.value})

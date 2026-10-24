@@ -1,6 +1,8 @@
 from agent_zero.events.schemas import TraceEvent
 
-PUBLIC_FIELDS = frozenset({"status", "outcome", "finding_id", "objective_id", "version", "passed"})
+PUBLIC_FIELDS = frozenset(
+    {"status", "outcome", "finding_id", "objective_id", "version", "passed", "round_id"}
+)
 
 
 def public_projection(event: TraceEvent) -> TraceEvent:

@@ -1,27 +1,16 @@
-import hashlib
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from agent_zero.arena.round_models import RoundMetadata
+from agent_zero.arena.transactions import serialize_write
 from agent_zero.events.broker import EventBroker
-from agent_zero.events.models import EventRecord, EventType, Visibility
+from agent_zero.events.event_delivery import deliver_pending, to_trace
+from agent_zero.events.models import EventDelivery, EventRecord, EventType, Visibility
 from agent_zero.events.public_projection import PUBLIC_FIELDS
 from agent_zero.events.schemas import EventDraft, TraceEvent
 from agent_zero.fleet.fleet_builder import Fleet
-from agent_zero.telemetry.audit_schemas import AuditDecision, AuditEvent
-
-
-def to_trace(row: EventRecord) -> TraceEvent:
-    return TraceEvent(
-        id=row.id,
-        type=row.type,
-        visibility=row.visibility,
-        attempt_id=row.attempt_id,
-        session_id=row.session_id,
-        policy_version=row.policy_version,
-        data=row.data,
-        timestamp=row.timestamp,
-    )
 
 
 class EventStore:
@@ -35,54 +24,88 @@ class EventStore:
             rows = await db.scalars(select(EventRecord).order_by(EventRecord.id.desc()).limit(500))
             for row in reversed(list(rows)):
                 self._broker.publish_event(to_trace(row))
+        await self.dispatch_pending()
+
+    async def dispatch_pending(self) -> int:
+        return await deliver_pending(self._fleet, self._broker)
 
     async def public_after(self, after_id: int) -> list[TraceEvent]:
         async with self._fleet.database.sessions() as db:
+            metadata = await db.get(RoundMetadata, 1)
+            first_id = metadata.first_event_id if metadata is not None else 0
             rows = await db.scalars(
                 select(EventRecord)
                 .where(
                     EventRecord.id > after_id,
+                    EventRecord.id >= first_id,
                     EventRecord.visibility == Visibility.PUBLIC,
                 )
                 .order_by(EventRecord.id)
             )
             return [to_trace(row) for row in rows]
 
-    async def emit(self, draft: EventDraft, *, dedup_key: str | None = None) -> TraceEvent:
-        # Redact values without changing field names, identifiers or the public allowlist.
-        data = self._sanitize(draft.data)
-        async with self._fleet.database.sessions() as db:
-            if dedup_key is not None:
-                previous = await db.scalar(
-                    select(EventRecord).where(EventRecord.dedup_key == dedup_key)
-                )
-                if previous is not None:
-                    return to_trace(previous)
-            row = EventRecord(
-                **draft.model_dump(exclude={"data"}),
-                data=data,
-                timestamp=self._fleet.clock(),
-                dedup_key=dedup_key,
+    async def stage(
+        self, db: AsyncSession, draft: EventDraft, *, dedup_key: str | None = None
+    ) -> TraceEvent:
+        """Persist an event in the caller's transaction, together with its domain change.
+
+        The caller must reserve the writer before any reads. No audit or subscriber
+        sees the draft until that transaction commits and the dispatcher publishes it.
+        """
+        if dedup_key is not None:
+            previous = await db.scalar(
+                select(EventRecord).where(EventRecord.dedup_key == dedup_key)
             )
-            db.add(row)
-            await db.commit()
-            event = to_trace(row)
-        self._fleet.audit.append(
-            AuditEvent(
-                actor="arena",
-                action=draft.type.value,
-                resource=draft.attempt_id or "arena",
-                decision=AuditDecision.INFO,
-                attributes={
-                    "event_id": event.id,
-                    "event_hash": hashlib.sha256(event.model_dump_json().encode()).hexdigest(),
-                    "policy_version": draft.policy_version,
-                    "session_id": draft.session_id,
-                },
-            )
+            if previous is not None:
+                return to_trace(previous)
+        row = EventRecord(
+            **draft.model_dump(exclude={"data"}),
+            data=self._sanitize(draft.data),
+            timestamp=self._fleet.clock(),
+            dedup_key=dedup_key,
         )
-        self._broker.publish_event(event)
+        db.add(row)
+        await db.flush()
+        db.add(EventDelivery(event_id=row.id))
+        await db.flush()
+        return to_trace(row)
+
+    async def emit(self, draft: EventDraft, *, dedup_key: str | None = None) -> TraceEvent:
+        async with self._fleet.database.sessions() as db:
+            await serialize_write(db)
+            event = await self.stage(db, draft, dedup_key=dedup_key)
+            await db.commit()
+        await self.dispatch_pending()
         return event
+
+    async def stage_public(
+        self,
+        db: AsyncSession,
+        kind: EventType,
+        policy_version: int,
+        *,
+        dedup_key: str | None = None,
+        **data: Any,
+    ) -> None:
+        await self.stage(
+            db,
+            EventDraft(
+                type=kind,
+                visibility=Visibility.PUBLIC,
+                policy_version=policy_version,
+                data={key: value for key, value in data.items() if key in PUBLIC_FIELDS},
+            ),
+            dedup_key=dedup_key,
+        )
+
+    async def public(
+        self, kind: EventType, policy_version: int, *, dedup_key: str | None = None, **data: Any
+    ) -> None:
+        async with self._fleet.database.sessions() as db:
+            await serialize_write(db)
+            await self.stage_public(db, kind, policy_version, dedup_key=dedup_key, **data)
+            await db.commit()
+        await self.dispatch_pending()
 
     def _sanitize(self, value: dict[str, Any]) -> dict[str, Any]:
         return {key: self._redact_value(item) for key, item in value.items()}
@@ -111,31 +134,20 @@ class EventStore:
             )
             return [to_trace(row) for row in rows]
 
-    async def public(
-        self, kind: EventType, policy_version: int, *, dedup_key: str | None = None, **data: Any
-    ) -> None:
-        await self.emit(
-            EventDraft(
-                type=kind,
-                visibility=Visibility.PUBLIC,
-                policy_version=policy_version,
-                data={key: value for key, value in data.items() if key in PUBLIC_FIELDS},
-            ),
-            dedup_key=dedup_key,
-        )
-
-    async def consecutive_denials(self, session_id: str) -> bool:
-        async with self._fleet.database.sessions() as db:
-            kinds = list(
-                await db.scalars(
-                    select(EventRecord.type)
-                    .where(
-                        EventRecord.session_id == session_id,
-                        EventRecord.visibility == Visibility.OPERATOR,
-                        EventRecord.type.in_([EventType.TOOL_DENIED, EventType.TOOL_COMPLETED]),
-                    )
-                    .order_by(EventRecord.id.desc())
-                    .limit(3)
+    async def consecutive_denials(self, session_id: str, db: AsyncSession | None = None) -> bool:
+        if db is None:
+            async with self._fleet.database.sessions() as own_db:
+                return await self.consecutive_denials(session_id, own_db)
+        kinds = list(
+            await db.scalars(
+                select(EventRecord.type)
+                .where(
+                    EventRecord.session_id == session_id,
+                    EventRecord.visibility == Visibility.OPERATOR,
+                    EventRecord.type.in_([EventType.TOOL_DENIED, EventType.TOOL_COMPLETED]),
                 )
+                .order_by(EventRecord.id.desc())
+                .limit(3)
             )
-            return len(kinds) == 3 and all(kind is EventType.TOOL_DENIED for kind in kinds)
+        )
+        return len(kinds) == 3 and all(kind is EventType.TOOL_DENIED for kind in kinds)

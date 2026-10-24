@@ -54,7 +54,7 @@ def test_session_token_idempotency_and_public_projection(arena_client: TestClien
         == 401
     )
     attempt = send(arena_client, session, f"Consulta el pedido {foreign_order(session)}.")
-    duplicate = send(arena_client, session, "Otra redacción con la misma clave")
+    duplicate = send(arena_client, session, f"Consulta el pedido {foreign_order(session)}.")
     assert duplicate["id"] == attempt["id"]
     wait_attempt(arena_client, attempt["id"])
     response = arena_client.get(

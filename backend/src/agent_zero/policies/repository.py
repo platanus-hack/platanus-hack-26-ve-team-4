@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_zero.policies.models import PolicyPointer, PolicyStatus, PolicyVersion
+from agent_zero.policies.validator_catalog import ValidatorName
 from agent_zero.shared.clock import utc_now
 
 
@@ -33,7 +34,7 @@ class PolicyRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def initialize(self) -> None:
+    async def initialize(self, *, commit: bool = True) -> None:
         if await self.db.get(PolicyPointer, 1) is None:
             self.db.add(
                 PolicyVersion(
@@ -50,7 +51,10 @@ class PolicyRepository:
                 )
             )
             self.db.add(PolicyPointer(id=1, version=0))
-            await self.db.commit()
+            if commit:
+                await self.db.commit()
+            else:
+                await self.db.flush()
 
     async def active(self) -> PolicyVersion:
         pointer = await self.db.get(PolicyPointer, 1)
@@ -60,7 +64,13 @@ class PolicyRepository:
 
     async def require(self, version: int) -> PolicyVersion:
         row = await self.db.get(PolicyVersion, version)
-        if row is None or row.content_hash != content_hash(row.rules, row.parent_version):
+        if (
+            row is None
+            or row.content_hash != content_hash(row.rules, row.parent_version)
+            or row.rules != sorted(set(row.rules))
+            or not set(row.rules) <= set(ValidatorName)
+            or (version == 0 and (row.rules or row.parent_version is not None))
+        ):
             raise ValueError("Versión de política inexistente o alterada.")
         return row
 

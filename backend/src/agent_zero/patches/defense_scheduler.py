@@ -1,7 +1,10 @@
 import json
 from typing import Any
 
+from sqlalchemy import select
+
 from agent_zero.analyzer.finding_service import FindingService
+from agent_zero.arena.round_models import RoundArchive
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.memory_bank.memory_quarantine_service import quarantine_matching
@@ -38,6 +41,14 @@ class DefenseScheduler:
         self._environments = environments
 
     async def tick(self) -> None:
+        async with self._fleet.database.sessions() as db:
+            if (
+                await db.scalar(
+                    select(RoundArchive.id).where(RoundArchive.status == "resetting").limit(1)
+                )
+                is not None
+            ):
+                return
         policies = await self._policies.all()
         for policy in policies:
             needs_finalizing = (
