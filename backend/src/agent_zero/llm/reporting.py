@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 from pydantic import Field
 
-from agent_zero.llm.models import CallOutcome
+from agent_zero.llm.models import CallOrigin, CallOutcome
 from agent_zero.llm.schemas import CallCost, CallRecord, CallUsage, FrozenModel
 
 
@@ -47,3 +47,14 @@ def summarize(records: Iterable[CallRecord]) -> list[RoleUsage]:
     for record in records:
         by_role[record.role].append(record)
     return [_role_usage(role, by_role[role]) for role in sorted(by_role)]
+
+
+def measured_tokens(records: Iterable[CallRecord]) -> tuple[int, int] | None:
+    """Tokens y llamadas con uso medido; `None` si el ledger no registró ninguno.
+
+    Las llamadas simuladas (modo demo) no cuentan: su uso no es un dato del proveedor.
+    """
+    used = [r for r in records if r.usage is not None and r.origin is not CallOrigin.SIMULATED]
+    if not used:
+        return None
+    return sum(r.usage.total_tokens for r in used if r.usage is not None), len(used)

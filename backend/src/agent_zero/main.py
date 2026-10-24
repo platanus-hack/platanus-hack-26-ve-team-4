@@ -22,6 +22,7 @@ from agent_zero.fleet.startup_guard import enforce_secure_settings
 from agent_zero.fleet.tables import create_fleet_schema
 from agent_zero.guard.container import build_guard
 from agent_zero.guard.router import router as guard_router
+from agent_zero.live.router import router as live_router
 from agent_zero.llm.factory import build_gateway
 from agent_zero.llm.models import ModelRole
 from agent_zero.llm.playback_model import PlaybackModel
@@ -94,6 +95,7 @@ def create_app(
     app.include_router(operator_router)
     app.include_router(evaluations_router)
     app.include_router(decoy_router)
+    app.include_router(live_router)
     app.include_router(prober_router)
     app.include_router(events_router)
     app.include_router(registry_router)
