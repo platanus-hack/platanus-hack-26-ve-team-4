@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,9 +8,12 @@ from agent_zero.config import Settings
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.router import router as events_router
 from agent_zero.fleet.fleet_builder import build_fleet
+from agent_zero.fleet.router import router as fleet_router
 from agent_zero.fleet.startup_guard import enforce_secure_settings
 from agent_zero.fleet.tables import create_fleet_schema
 from agent_zero.llm.factory import build_gateway
+from agent_zero.llm.models import ModelRole
+from agent_zero.llm.playback_model import PlaybackModel
 from agent_zero.memory_bank.router import router as memory_router
 from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.registry.router import router as registry_router
@@ -18,6 +21,7 @@ from agent_zero.runtime.router import router as runtime_router
 from agent_zero.sessions.router import router as sessions_router
 from agent_zero.shared.database import Database
 from agent_zero.shared.health_router import router as health_router
+from agent_zero.victim.registration import register_victim
 
 
 @asynccontextmanager
@@ -31,7 +35,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.database = database
     app.state.event_broker = EventBroker()
     fleet = build_fleet(settings, database)
-    app.state.llm = build_gateway(settings, tracer=fleet.telemetry.tracer)
+    app.state.llm = build_gateway(settings, app.state.llm_playback, tracer=fleet.telemetry.tracer)
+    register_victim(fleet, app.state.llm)
     app.state.fleet = fleet
     app.state.model_armor = fleet.armor
     app.state.audit_log = fleet.audit
@@ -45,9 +50,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await database.dispose()
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    llm_playback: Mapping[ModelRole, PlaybackModel] | None = None,
+) -> FastAPI:
     app = FastAPI(title="Agent Zero", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings or Settings()
+    app.state.llm_playback = llm_playback
     if app.state.settings.cors_origins:
         app.add_middleware(
             CORSMiddleware,
@@ -61,4 +70,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(registry_router)
     app.include_router(runtime_router, dependencies=[OperatorOnly])
     app.include_router(memory_router)
+    app.include_router(fleet_router)
     return app
