@@ -41,7 +41,7 @@ def run_proxy(url: str, messages: list[dict], *extra: str) -> list[dict]:
         str(SERVER),
     ]
     payload = "".join(json.dumps(message) + "\n" for message in messages)
-    env = dict(os.environ, AGENT_ZERO_GUARD_KEY="clave-prueba")
+    env = dict(os.environ, AGENT_ZERO_GUARD_API_KEY="clave-prueba")
     done = subprocess.run(
         command, input=payload, capture_output=True, text=True, timeout=30, env=env, cwd=str(ROOT)
     )

@@ -26,7 +26,7 @@ import { AgentZeroGuard, ToolDeniedError } from "./node/agent-zero-guard.mjs";
 const guard = new AgentZeroGuard({
   baseUrl: "http://127.0.0.1:8000",
   contractId: "banco-transferencias",
-  apiKey: process.env.AGENT_ZERO_GUARD_KEY,
+  apiKey: process.env.AGENT_ZERO_GUARD_API_KEY,
 });
 const transferir = guard.wrap("transferir", fn, {
   ownerOf: (args) => ({ cuenta: owners[args.cuenta] }),
@@ -44,7 +44,7 @@ Pruebas: `node --test examples/guard/node/`. Demo: `node examples/guard/node/ban
 Se coloca entre el cliente MCP y el servidor real. Solo biblioteca estándar, Python 3.9 o superior.
 
 ```bash
-export AGENT_ZERO_GUARD_KEY=...
+export AGENT_ZERO_GUARD_API_KEY=...
 python3 examples/guard/mcp_proxy.py --guard http://127.0.0.1:8000 \
   --contract banco-transferencias --subject ana \
   --trusted-tool consultar_saldo --owners-module banco_owners:owners \

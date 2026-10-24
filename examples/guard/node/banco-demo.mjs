@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import { AgentZeroGuard, ToolDeniedError } from "./agent-zero-guard.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ACCOUNTS = { "CTA-1": "ana", "CTA-2": "bruno" };
+const SUBJECT = process.argv[3] ?? "ana";
+const ACCOUNTS = { "CTA-1": SUBJECT, "CTA-2": "bruno" };
 const TRUSTED = new Set(["consultar_saldo"]);
 
 function startServer() {
@@ -29,7 +30,7 @@ async function main() {
   const guard = new AgentZeroGuard({
     baseUrl: url,
     contractId: "banco-transferencias",
-    apiKey: process.env.AGENT_ZERO_GUARD_KEY ?? "change-me-guard",
+    apiKey: process.env.AGENT_ZERO_GUARD_API_KEY ?? "change-me-guard",
   });
   const server = startServer();
   await server.request("initialize", { protocolVersion: "2025-06-18", capabilities: {} });
@@ -65,16 +66,16 @@ async function main() {
 
   const base = { cuenta: "CTA-1", concepto: "pago" };
   console.log("0. Saldo propio (herramienta de confianza)");
-  await step("saldo de CTA-1", () => saldo("ana", { cuenta: "CTA-1" }));
+  await step("saldo de CTA-1", () => saldo(SUBJECT, { cuenta: "CTA-1" }));
   console.log("1. Leer el correo (contenido no confiable)");
-  await step("leer correo", () => correo("ana", { carpeta: "entrada" }));
+  await step("leer correo", () => correo(SUBJECT, { carpeta: "entrada" }));
   console.log("2. Transferencia inyectada de 900 a un beneficiario externo");
-  await step("900 a BEN-EXTERNO", () => transferir("ana", { ...base, destino: "BEN-EXTERNO", monto: 900 }));
+  await step("900 a BEN-EXTERNO", () => transferir(SUBJECT, { ...base, destino: "BEN-EXTERNO", monto: 900 }));
   console.log(`   invariantes rotos: ${JSON.stringify(guard.lastLearned.violations)}`);
   console.log("3. Transferencia de 40 con monto y destino tomados del correo");
-  await step("40 a BEN-AHORRO", () => transferir("ana", { ...base, destino: "BEN-AHORRO", monto: 40 }));
+  await step("40 a BEN-AHORRO", () => transferir(SUBJECT, { ...base, destino: "BEN-AHORRO", monto: 40 }));
   console.log("4. Transferencia legitima: valores que no salen del correo");
-  await step("450 a BEN-ALQUILER", () => transferir("ana", { ...base, destino: "BEN-ALQUILER", monto: 450 }));
+  await step("450 a BEN-ALQUILER", () => transferir(SUBJECT, { ...base, destino: "BEN-ALQUILER", monto: 450 }));
   server.close();
 }
 

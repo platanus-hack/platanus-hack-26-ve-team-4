@@ -48,12 +48,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default="http://127.0.0.1:8000")
     parser.add_argument("--contract", default="banco-transferencias")
+    parser.add_argument("--subject", default="ana")
     args = parser.parse_args()
-    key = os.environ.get("AGENT_ZERO_GUARD_KEY", "change-me-guard")
-    env = dict(os.environ, AGENT_ZERO_GUARD_KEY=key)
+    key = os.environ.get("AGENT_ZERO_GUARD_API_KEY", "change-me-guard")
+    env = dict(os.environ, AGENT_ZERO_GUARD_API_KEY=key, BANCO_TITULAR=args.subject)
     command = [
         sys.executable, "mcp_proxy.py", "--guard", args.url, "--contract", args.contract,
-        "--subject", "ana", "--trusted-tool", "consultar_saldo",
+        "--subject", args.subject, "--trusted-tool", "consultar_saldo",
         "--owners-module", "banco_owners:owners", "--",
         sys.executable, "mcp_banco_server.py",
     ]

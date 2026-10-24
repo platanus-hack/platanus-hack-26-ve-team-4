@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
-ACCOUNTS = {"CTA-1": "ana", "CTA-2": "bruno"}
+ACCOUNTS = {"CTA-1": os.environ.get("BANCO_TITULAR", "ana"), "CTA-2": "bruno"}
 
 
 def owners(tool: str, arguments: dict[str, Any]) -> dict[str, str]:

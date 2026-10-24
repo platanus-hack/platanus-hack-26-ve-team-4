@@ -201,7 +201,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: Optional[list[str]] = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
-    guard = GuardClient(args.guard, args.contract, os.environ.get("AGENT_ZERO_GUARD_KEY", ""))
+    guard = GuardClient(args.guard, args.contract, os.environ.get("AGENT_ZERO_GUARD_API_KEY", ""))
     proxy = Proxy(guard, args.subject, args.trusted_tool, load_owners(args.owners_module), args.command)
     return proxy.run()
 
