@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from sqlalchemy import JSON, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -35,3 +36,14 @@ class FindingRecord(AppBase):
     status: Mapped[FindingStatus] = mapped_column(Enum(FindingStatus, native_enum=False))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime)
+
+
+class FindingExplanation(AppBase):
+    __tablename__ = "finding_explanations"
+
+    finding_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    status: Mapped[str] = mapped_column(String(20))
+    explanation: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    error: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime)

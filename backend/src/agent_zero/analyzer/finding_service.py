@@ -1,8 +1,10 @@
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from sqlalchemy import select
 
-from agent_zero.analyzer.models import FindingRecord, FindingStatus
+from agent_zero.analyzer.models import FindingExplanation, FindingRecord, FindingStatus
+from agent_zero.arena.transactions import serialize_write
 from agent_zero.attempts.models import Attempt
 from agent_zero.events.event_store import EventStore
 from agent_zero.events.models import EventType
@@ -36,9 +38,15 @@ def finding_view(row: FindingRecord) -> dict[str, Any]:
 
 
 class FindingService:
-    def __init__(self, database: Database, events: EventStore) -> None:
+    def __init__(
+        self,
+        database: Database,
+        events: EventStore,
+        enrich: Callable[[str, str], Awaitable[None]] | None = None,
+    ) -> None:
         self._database = database
         self._events = events
+        self._enrich = enrich
 
     async def record(self, attempt: Attempt, assessment: Assessment) -> None:
         for verdict in assessment.verdicts:
@@ -48,6 +56,7 @@ class FindingService:
             control = "+".join(OBJECTIVE_CONTROLS[verdict.objective_id])
             fingerprint = f"{verdict.objective_id}:{tool}:{control}"
             async with self._database.sessions() as db:
+                await serialize_write(db)
                 row = await db.scalar(
                     select(FindingRecord).where(FindingRecord.fingerprint == fingerprint)
                 )
@@ -76,19 +85,45 @@ class FindingService:
                     row.updated_at = utc_now()
                     if row.status is FindingStatus.MITIGATED:
                         row.status = FindingStatus.REOPENED
+                if created:
+                    await self._events.stage_public(
+                        db,
+                        EventType.FINDING_OPENED,
+                        attempt.policy_version,
+                        finding_id=row.id,
+                        objective_id=row.objective_id,
+                        dedup_key=f"finding:{row.id}:opened",
+                    )
                 await db.commit()
-            if created:
-                await self._events.public(
-                    EventType.FINDING_OPENED,
-                    attempt.policy_version,
-                    finding_id=row.id,
-                    objective_id=row.objective_id,
-                )
+            await self._events.dispatch_pending()
+            if self._enrich is not None:
+                await self._enrich(row.id, attempt.id)
 
     async def all(self) -> list[dict[str, Any]]:
         async with self._database.sessions() as db:
             rows = await db.scalars(select(FindingRecord).order_by(FindingRecord.created_at))
-            return [finding_view(row) for row in rows]
+            result = []
+            for row in rows:
+                explanation = await db.scalar(
+                    select(FindingExplanation)
+                    .where(FindingExplanation.finding_id == row.id)
+                    .order_by(FindingExplanation.created_at.desc())
+                    .limit(1)
+                )
+                item = finding_view(row)
+                item["analysis"] = (
+                    None
+                    if explanation is None
+                    else {
+                        "status": explanation.status,
+                        "advisory": True,
+                        "attempt_id": explanation.attempt_id,
+                        "error": explanation.error,
+                        **explanation.explanation,
+                    }
+                )
+                result.append(item)
+            return result
 
     async def mitigate(self, finding_ids: list[str]) -> None:
         async with self._database.sessions() as db:

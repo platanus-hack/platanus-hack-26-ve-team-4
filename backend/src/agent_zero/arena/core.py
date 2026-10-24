@@ -1,6 +1,8 @@
 import asyncio
 
 from agent_zero.analyzer.finding_service import FindingService
+from agent_zero.analyzer.enrichment import AnalyzerHandler, SemanticAnalyzerService
+from agent_zero.analyzer.manifest import analyzer_manifest
 from agent_zero.arena.models import ArenaState
 from agent_zero.arena.round_service import RoundService
 from agent_zero.attempts.attempt_execution_handler import AttemptExecutionHandler
@@ -46,7 +48,8 @@ class ProductCore:
         self.executor = ConversationExecutor(fleet, llm, self.environments, self.scenario)
         self.policies = PolicyService(fleet.database, self.events, self.admission_lock)
         self.assessments = AssessmentService(self.environments)
-        self.findings = FindingService(fleet.database, self.events)
+        self.semantic = SemanticAnalyzerService(fleet)
+        self.findings = FindingService(fleet.database, self.events, self.semantic.enqueue)
         self.attempts = AttemptQueryService(fleet.database)
         self.routing = RouteDecisionService(fleet, self.events)
         self.submissions = AttemptSubmissionService(
@@ -85,6 +88,8 @@ class ProductCore:
             CampaignHandler(self.fleet, self.submissions, self.attempts, self._llm, self.scenario)
         )
 
+        self.fleet.handlers.register(AnalyzerHandler(self.fleet, self._llm, self.events))
+
     async def ensure_agents(self) -> None:
         async with self._bootstrap_lock:
             if self._bootstrapped:
@@ -94,6 +99,7 @@ class ProductCore:
                 arena_manifest(decoy=True),
                 patch_manifest(),
                 prober_manifest(),
+                analyzer_manifest(),
             ):
                 async with self.fleet.database.sessions() as db:
                     try:

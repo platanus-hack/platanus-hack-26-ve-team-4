@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from agent_zero.analyzer.models import FindingStatus, ViolationStatus
 from agent_zero.prober.models import AttackFamily
@@ -22,3 +24,16 @@ class Finding(BaseModel):
     probable_cause: str
     confidence: float = Field(ge=0.0, le=1.0)
     status: FindingStatus = FindingStatus.OPEN
+
+
+class FindingAnalysis(BaseModel):
+    """Advisory text only. The schema cannot encode verdicts or policy changes."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    attack_family: AttackFamily
+    probable_cause: str = Field(min_length=1, max_length=1500)
+    reproduction_steps: list[Annotated[str, Field(min_length=1, max_length=500)]] = Field(
+        min_length=1, max_length=6
+    )
+    limitations: str = Field(min_length=1, max_length=1000)
