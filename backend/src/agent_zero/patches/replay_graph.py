@@ -12,6 +12,7 @@ EFFECTS: dict[str, tuple[str, str]] = {
     "OBJ-MEMORY": ("permission_memory", "Permiso guardado en memoria"),
 }
 CONTROLS = frozenset(item.value for item in ValidatorName)
+FLOW_CONTROL = re.compile(r"flow:[a-z][a-z0-9_]{2,40}")
 
 
 def violation_effects(assessment: Assessment) -> dict[int, str]:
@@ -28,7 +29,9 @@ def tool_label(tool: str) -> str:
 
 
 def control_label(validator: str) -> str:
-    return validator if validator in CONTROLS else "control"
+    if validator in CONTROLS or FLOW_CONTROL.fullmatch(validator):
+        return validator
+    return "control"
 
 
 def build_graph(

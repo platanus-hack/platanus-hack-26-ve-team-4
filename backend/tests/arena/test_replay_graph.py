@@ -1,4 +1,4 @@
-from agent_zero.patches.replay_graph import build_graph, violation_effects
+from agent_zero.patches.replay_graph import build_graph, control_label, violation_effects
 from tests.arena.replay_support import evidence, violated
 
 OWNER = "order_belongs_to_session_customer"
@@ -49,3 +49,11 @@ def test_only_the_second_split_refund_is_cut() -> None:
     effect_edges = [edge for edge in graph["edges"] if edge["to"].startswith("effect")]
     assert [edge["state"] for edge in effect_edges] == ["blocked"]
     assert len([node for node in graph["nodes"] if node["kind"] == "tool"]) == 2
+
+
+def test_flow_rule_controls_are_named_and_unknown_validators_are_masked() -> None:
+    assert control_label("flow:request_refund_amount_untrusted") == (
+        "flow:request_refund_amount_untrusted"
+    )
+    assert control_label("flow:<script>") == "control"
+    assert control_label("cust-ana") == "control"
