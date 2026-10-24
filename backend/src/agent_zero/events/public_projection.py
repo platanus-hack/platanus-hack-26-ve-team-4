@@ -1,7 +1,19 @@
 from agent_zero.events.schemas import TraceEvent
 
 PUBLIC_FIELDS = frozenset(
-    {"status", "outcome", "finding_id", "objective_id", "version", "passed", "round_id"}
+    {
+        "status",
+        "outcome",
+        "finding_id",
+        "objective_id",
+        "version",
+        "passed",
+        "round_id",
+        "queries",
+        "violations",
+        "probe_round",
+        "mutator",
+    }
 )
 
 

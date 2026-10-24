@@ -24,6 +24,7 @@ class EventType(StrEnum):
     PATCH_VALIDATED = "patch_validated"
     POLICY_ACTIVATED = "policy_activated"
     POLICY_ROLLED_BACK = "policy_rolled_back"
+    PROBE_ROUND_CLOSED = "probe_round_closed"
 
 
 class Visibility(StrEnum):
