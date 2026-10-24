@@ -49,7 +49,7 @@ async def test_lists_filter_by_status_and_agent(
         approved = await repository.list_by_status(VersionStatus.APPROVED)
         own = await repository.list_for_agent("agente-finanzas")
         own_approved = await repository.list_for_agent("agente-finanzas", VersionStatus.APPROVED)
+        assert await repository.get("nada", "1.0.0") is None
     assert len(approved) == 2
     assert len(own) == 2
     assert [r.version for r in own_approved] == ["1.0.0"]
-    assert await RegistryRepository(db).get("nada", "1.0.0") is None

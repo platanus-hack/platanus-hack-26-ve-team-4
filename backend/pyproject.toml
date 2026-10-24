@@ -52,6 +52,10 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 addopts = "--strict-markers"
+filterwarnings = [
+  "error::sqlalchemy.exc.SAWarning",
+  "error::pytest.PytestUnraisableExceptionWarning",
+]
 markers = [
     "requirement(*ids): vincula el test con requisitos de docs/trazabilidad.md",
 ]
