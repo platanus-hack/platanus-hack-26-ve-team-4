@@ -1,6 +1,6 @@
 COMPOSE := docker compose -f infra/compose.yaml
 
-.PHONY: install dev-backend dev-frontend format lint typecheck test check up down logs smoke
+.PHONY: install dev-backend dev-frontend format lint typecheck test check up down logs smoke fleet-server fleet-walkthrough
 
 install:
 	cd backend && uv sync
@@ -41,3 +41,16 @@ logs:
 
 smoke:
 	./infra/scripts/smoke.sh
+
+FLEET_PORT ?= 8000
+FLEET_MODE ?= live
+FLEET_DATA ?= ./data/fleet
+
+fleet-server:
+	cd backend && set -a && . ../.env && set +a && \
+	AGENT_ZERO_LLM_MODE=$(FLEET_MODE) AGENT_ZERO_OTEL_EXPORTER=memory AGENT_ZERO_DATA_DIR=$(FLEET_DATA) \
+	uv run uvicorn agent_zero.main:create_app --factory --port $(FLEET_PORT)
+
+fleet-walkthrough:
+	cd backend && set -a && . ../.env && set +a && \
+	uv run python -m agent_zero.walkthrough --base-url http://localhost:$(FLEET_PORT) --save $(FLEET_DATA)/recorrido.json

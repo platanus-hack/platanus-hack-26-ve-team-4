@@ -34,6 +34,8 @@ El MVP adapta políticas y controles; no reentrena el modelo. Cada parche necesi
 | [Demo en vivo](./docs/demo.md) | Experiencia pública, clasificación, revelación del honeypot y contingencias. |
 | [Plan de 36 horas](./docs/plan-36-horas.md) | Prioridades, hitos, distribución de trabajo y entrega. |
 | [Desarrollo](./docs/desarrollo.md) | Estructura, convenciones, comandos y CI. |
+| [Prueba de la flota](./docs/prueba-flota.md) | Cómo levantar la app y recorrer los siete componentes con llamadas reales. |
+| [Trazabilidad](./docs/trazabilidad.md) | Requisitos de la flota, pruebas de éxito y tests que los demuestran. |
 | [Equipo](./docs/equipo.md) | Frentes, responsables, propiedad del código y flujo de trabajo. |
 
 ## Equipo
