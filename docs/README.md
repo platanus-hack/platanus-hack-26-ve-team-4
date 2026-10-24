@@ -7,6 +7,7 @@ Punto de entrada para continuar Agent Zero. La implementación y las evidencias 
 | Necesitas… | Leer |
 | --- | --- |
 | Incorporarte y elegir la siguiente tarea | [Continuidad y traspaso](./continuidad.md). |
+| Saber qué cambió, cuándo y por qué | [Bitácora](./bitacora/README.md): una entrada por PR, con verificación y pendientes. |
 | Levantar el producto | [README del repositorio](../README.md) y [núcleo implementado](./nucleo.md). |
 | Entender el flujo y sus transacciones | [Arquitectura](./arquitectura.md) y [flujo de decisión](./dominio/flujo-de-decision.md). |
 | Cambiar una parte del código | [Índice por dominio](./dominio/README.md): archivos, contratos, invariantes, pruebas y extensiones. |
