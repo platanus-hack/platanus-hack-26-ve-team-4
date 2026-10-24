@@ -68,3 +68,24 @@ def test_live_falls_back_when_the_model_breaks_legitimate_calls_or_fails() -> No
     _, failed = propose(FakeLlm(RuntimeError("caído")), LlmMode.LIVE)
     assert failed["source"] == "derived"
     assert failed["synthesis_error"] == "RuntimeError"
+
+
+def test_live_adds_the_derived_floor_when_the_model_misses_the_injection() -> None:
+    injected = CallFacts(
+        "transferir",
+        {"cuenta": "CTA-1", "destino": "BEN-AHORRO", "monto": 900, "concepto": "x"},
+        "ana",
+        {"monto": "untrusted", "destino": "untrusted"},
+        {"cuenta": "ana"},
+    )
+    synthesizer = GuardSynthesizer(
+        cast(LlmGateway, FakeLlm(CandidatePolicy(rules=[limit(500)], rationale="r"))),
+        LlmMode.LIVE,
+    )
+    rules, report = asyncio.run(synthesizer.propose(BANK, [], BANK.violations(injected), injected))
+    assert report["source"] == "synthesized"
+    assert report["source_detail"] == "synthesized_with_derived_floor"
+    assert report["weaker_than_floor"]["injected_blocked"] == 0
+    assert report["gate"]["injected_blocked"] == report["gate"]["injected_total"]
+    assert "r_llm" in [rule.rule_id for rule in rules]
+    assert any(rule.deny_when.kind == "untrusted_origin" for rule in rules)

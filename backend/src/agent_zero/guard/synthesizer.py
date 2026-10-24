@@ -60,16 +60,25 @@ class GuardSynthesizer:
             "llm_mode": self._mode.value,
             "violated": [i.id for i in violated],
         }
+        floor = merge(inherited, derived_rules(contract, violated, facts))
+        floor_gate = gate(contract, floor, [facts])
         if self._mode is LlmMode.LIVE:
             candidate = await self._ask(contract, violated, facts, report)
             if candidate is not None:
                 rules = merge(inherited, candidate)
                 checked = gate(contract, rules, [facts])
+                if (
+                    checked["accepted"]
+                    and checked["injected_blocked"] < floor_gate["injected_blocked"]
+                ):
+                    report["weaker_than_floor"] = checked
+                    rules = merge(rules, floor)
+                    checked = gate(contract, rules, [facts])
+                    report["source_detail"] = "synthesized_with_derived_floor"
                 if checked["accepted"]:
                     return rules, {**report, "source": "synthesized", "gate": checked}
                 report["rejected_gate"] = checked
-        rules = merge(inherited, derived_rules(contract, violated, facts))
-        return rules, {**report, "source": "derived", "gate": gate(contract, rules, [facts])}
+        return floor, {**report, "source": "derived", "gate": floor_gate}
 
     async def _ask(
         self,
