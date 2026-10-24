@@ -4,6 +4,7 @@ import type { ConnectionState, EventType, TraceEvent } from "../types";
 const EVENT_TYPES: EventType[] = [
   "attempt_queued",
   "attempt_started",
+  "attempt_completed",
   "tool_proposed",
   "tool_denied",
   "tool_completed",
@@ -16,28 +17,56 @@ const EVENT_TYPES: EventType[] = [
   "policy_rolled_back",
 ];
 
-export function useArenaEvents(url = "/api/arena/events", limit = 100) {
+export function useArenaEvents(url = "/api/arena/events", limit = 100, roundId?: string) {
   const [events, setEvents] = useState<TraceEvent[]>([]);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
 
   useEffect(() => {
+    void roundId;
+    setEvents([]);
+    setConnection("connecting");
+    if (typeof EventSource === "undefined") {
+      setConnection("reconnecting");
+      return;
+    }
     const source = new EventSource(url);
+    let active = true;
     const handleEvent = (message: MessageEvent<string>) => {
-      const event = JSON.parse(message.data) as TraceEvent;
+      if (!active) return;
+      let event: TraceEvent;
+      try {
+        event = JSON.parse(message.data) as TraceEvent;
+      } catch {
+        return;
+      }
+      if (
+        !event ||
+        !Number.isSafeInteger(event.id) ||
+        event.visibility !== "public" ||
+        !EVENT_TYPES.includes(event.type)
+      )
+        return;
       setEvents((current) => {
         if (current.some((existing) => existing.id === event.id)) {
           return current;
         }
-        return [event, ...current].slice(0, limit);
+        return [event, ...current].sort((left, right) => right.id - left.id).slice(0, limit);
       });
     };
-    source.onopen = () => setConnection("open");
-    source.onerror = () => setConnection("reconnecting");
+    source.onopen = () => {
+      if (active) setConnection("open");
+    };
+    source.onerror = () => {
+      if (active) setConnection("reconnecting");
+    };
     for (const type of EVENT_TYPES) {
       source.addEventListener(type, handleEvent);
     }
-    return () => source.close();
-  }, [url, limit]);
+    return () => {
+      active = false;
+      source.close();
+    };
+  }, [url, limit, roundId]);
 
   return { events, connection };
 }

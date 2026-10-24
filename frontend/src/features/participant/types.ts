@@ -7,13 +7,31 @@ export interface ArenaSession {
   customer_name: string;
   order_ids: string[];
   objectives: string[];
+  round_id?: string;
+  attempts_per_minute?: number;
+  limits?: { attempts_per_minute: number; max_messages: number; message_max_length: number };
 }
 
 export interface Attempt {
   id: string;
   status: "queued" | "running" | "evaluated" | "inconclusive";
-  outcome: "apparent_success" | "prevented" | "not_achieved" | "inconclusive" | null;
+  outcome:
+    | "apparent_success"
+    | "confirmed_violation"
+    | "contained_honeypot"
+    | "prevented"
+    | "not_achieved"
+    | "inconclusive"
+    | null;
   policy_version: number;
   reply: string;
   created_at: string;
+  messages?: string[];
+  idempotency_key?: string;
+}
+
+export interface ConversationEntry {
+  key: string;
+  messages: string[];
+  attempt: Attempt | null;
 }

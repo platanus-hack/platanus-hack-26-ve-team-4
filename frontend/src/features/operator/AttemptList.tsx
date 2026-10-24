@@ -1,34 +1,77 @@
+import { useState } from "react";
 import type { OperatorAttempt } from "./api";
 
 interface Props {
   attempts: OperatorAttempt[];
-  inspect: (id: string) => Promise<void>;
-  replay: (id: string) => Promise<void>;
+  disabled: boolean;
+  inspect: (id: string) => void;
+  replay: (id: string) => void;
 }
-
-export function AttemptList({ attempts, inspect, replay }: Props) {
+const OUTCOMES: Record<string, string> = {
+  confirmed_violation: "Violación confirmada",
+  contained_honeypot: "Contenido en señuelo",
+  prevented: "Detenido",
+  not_achieved: "Objetivo no logrado",
+  inconclusive: "Inconcluso",
+  queued: "En cola",
+  running: "Ejecutándose",
+  evaluated: "Evaluado",
+};
+export function AttemptList({ attempts, disabled, inspect, replay }: Props) {
+  const [filter, setFilter] = useState("all");
+  const filtered = attempts.filter((attempt) => filter === "all" || attempt.origin === filter);
   return (
     <section>
-      <h2>Intentos</h2>
-      {attempts
-        .slice(-30)
+      <div className="section-heading">
+        <h2>Intentos · {attempts.length}</h2>
+        <label>
+          Origen{" "}
+          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+            <option value="all">Todos</option>
+            <option value="audience">Audiencia</option>
+            <option value="autonomous">Prober / preparación</option>
+          </select>
+        </label>
+      </div>
+      {!filtered.length && <p>Aún no hay intentos para este origen.</p>}
+      {filtered
+        .slice(-50)
         .reverse()
         .map((attempt) => (
           <article className="result" key={attempt.id}>
             <p>
-              {attempt.id} · política {attempt.policy_version} · {attempt.route} ·{" "}
-              {attempt.outcome ?? attempt.status}
+              <strong>{OUTCOMES[attempt.outcome ?? attempt.status] ?? attempt.status}</strong> ·
+              política {attempt.policy_version} ·{" "}
+              {attempt.route === "honeypot" ? "Señuelo aislado" : "Entorno protegido"} ·{" "}
+              {attempt.origin === "audience" ? "Audiencia" : "Autónomo"}
             </p>
+            <code>{attempt.id}</code>
+            {attempt.messages?.[0] && <p className="reply">{attempt.messages[0]}</p>}
             <div className="controls">
-              <button type="button" onClick={() => void inspect(attempt.id)}>
-                Evidencia
+              <button
+                className="secondary"
+                type="button"
+                disabled={disabled}
+                onClick={() => inspect(attempt.id)}
+              >
+                Ver evidencia
               </button>
-              <button type="button" onClick={() => void replay(attempt.id)}>
+              <button
+                className="secondary"
+                type="button"
+                disabled={disabled || !["evaluated", "inconclusive"].includes(attempt.status)}
+                onClick={() => replay(attempt.id)}
+              >
                 Repetir en sesión limpia
               </button>
             </div>
           </article>
         ))}
+      {filtered.length > 50 && (
+        <p className="muted">
+          Se muestran los últimos 50. El servidor conserva la evidencia completa.
+        </p>
+      )}
     </section>
   );
 }

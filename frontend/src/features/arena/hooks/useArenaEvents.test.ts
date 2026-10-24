@@ -26,6 +26,10 @@ class FakeEventSource {
     this.listeners.get(event.type)?.(message);
   }
 
+  emitRaw(value: string) {
+    this.listeners.get("attempt_queued")?.(new MessageEvent("attempt_queued", { data: value }));
+  }
+
   close() {
     this.closed = true;
   }
@@ -75,5 +79,45 @@ describe("useArenaEvents", () => {
     unmount();
 
     expect(source.closed).toBe(true);
+  });
+
+  it("resiste eventos malformados, privados y duplicados tras reconectar", () => {
+    const { result } = renderHook(() => useArenaEvents(undefined, 2));
+    const source = FakeEventSource.last as FakeEventSource;
+    act(() => {
+      source.emitRaw("{not-json");
+      source.emitRaw("null");
+      source.emit({ ...traceEvent(90), visibility: "operator" });
+      source.emit(traceEvent(3));
+      source.onerror?.();
+    });
+    expect(result.current.connection).toBe("reconnecting");
+    act(() => {
+      source.onopen?.();
+      source.emit(traceEvent(3));
+      source.emit(traceEvent(1));
+      source.emit(traceEvent(2));
+    });
+    expect(result.current.connection).toBe("open");
+    expect(result.current.events.map((event) => event.id)).toEqual([3, 2]);
+  });
+
+  it("cambia de ronda sin mezclar eventos ni conexiones anteriores", () => {
+    const { result, rerender } = renderHook(({ round }) => useArenaEvents(undefined, 100, round), {
+      initialProps: { round: "r1" },
+    });
+    const old = FakeEventSource.last as FakeEventSource;
+    act(() => old.emit(traceEvent(100)));
+    rerender({ round: "r2" });
+    expect(old.closed).toBe(true);
+    expect(result.current.events).toEqual([]);
+    const next = FakeEventSource.last as FakeEventSource;
+    act(() => {
+      next.emit(traceEvent(101));
+      old.emit(traceEvent(102));
+      old.onerror?.();
+    });
+    expect(result.current.events.map((event) => event.id)).toEqual([101]);
+    expect(result.current.connection).toBe("connecting");
   });
 });

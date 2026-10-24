@@ -1,6 +1,7 @@
 export type EventType =
   | "attempt_queued"
   | "attempt_started"
+  | "attempt_completed"
   | "tool_proposed"
   | "tool_denied"
   | "tool_completed"
@@ -24,3 +25,26 @@ export interface TraceEvent {
 }
 
 export type ConnectionState = "connecting" | "open" | "reconnecting";
+
+export interface ArenaState {
+  accepting: boolean;
+  revealed: boolean;
+  provisional: boolean;
+  policy_version: number;
+  attempts: number;
+  scores: { alias: string; score: number }[];
+  round_id?: string;
+  started_at?: string;
+  session_count?: number;
+  session_limit?: number;
+  audience_attempts?: number;
+  autonomous_attempts?: number;
+  queued_attempts?: number;
+  running_attempts?: number;
+  evaluated_attempts?: number;
+  inconclusive_attempts?: number;
+  prevented_attempts?: number;
+  open_findings?: number;
+  llm_mode?: string;
+  evidence_mode?: string;
+}
