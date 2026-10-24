@@ -8,6 +8,7 @@ from agent_zero.config import Settings
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.router import router as events_router
 from agent_zero.fleet.fleet_builder import build_fleet
+from agent_zero.fleet.startup_guard import enforce_secure_settings
 from agent_zero.fleet.tables import create_fleet_schema
 from agent_zero.llm.factory import build_gateway
 from agent_zero.memory_bank.router import router as memory_router
@@ -22,6 +23,7 @@ from agent_zero.shared.health_router import router as health_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
+    enforce_secure_settings(settings)
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     database = Database(settings.app_database_url)
     await create_fleet_schema(database)
