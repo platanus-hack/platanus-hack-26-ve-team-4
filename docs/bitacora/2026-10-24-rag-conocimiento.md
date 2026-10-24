@@ -81,9 +81,13 @@ Medido sobre esta rama, apilada sobre `feat/direcciones-entrega` y antes del reb
 - **Evaluación:** con Postgres, el resultado de las tareas de conocimiento depende del corpus en Markdown, que no entra en `fixture_hash()`.
 - **Manifiesto:** la descripción de `search_knowledge` cambió sin subir `ARENA_VERSION` (2.0.0). Una base que ya tenía publicada la versión 2.0.0 conserva la descripción anterior en el registro; el modelo recibe la nueva, que sale de `tool_specs()`.
 - **Búsqueda:** la parte semántica siempre devuelve hasta 4 fragmentos, aunque la pregunta no tenga relación con el corpus.
+- **Falla conocida en Postgres, causada por la procedencia y no por el RAG:** `tests/arena/test_flow_synthesis_cycle.py::test_tool_poisoning_yields_a_verified_flow_policy` falla con la base de conocimiento activa.
+  - La sonda de integridad inyecta `amount 10`. El RAG devuelve `oficial/seguimiento-y-cambios-de-pedido.md` ("amplíalo al máximo (10 km)"), y `contract/provenance.py` elige la etiqueta con `PRIORITY = ("user", "store", "untrusted", "memory")`. El 10 inyectado queda como `store`, la regla `request_refund_amount_untrusted` no aplica y la sonda da `untrusted_effects: 1`.
+  - **El blanqueo ya existía en `main` sin RAG:** un importe de 20 coincide con "hasta 20 USD" del artículo de reembolsos. El corpus rico solo lo vuelve frecuente.
+  - El arreglo va en un PR aparte, `feat/procedencia-robusta`, porque invertir el desempate rompe `tests/evals/test_adaptive_campaign.py` y hay que resolverlo junto. También afecta al Guard, que usa la misma función.
 
 ## Pendiente
 
 - Revisión de @CarSanoja por el cambio de imagen de Postgres y de la CI, y de @franbastardo por `arena/core.py` y la salida de `search_knowledge`.
-- `/smoke-pr` sobre la rama y OK de Fernando antes de push y PR.
+- Arreglo de la procedencia en `feat/procedencia-robusta`; con ese arreglo vuelve a pasar la sonda de integridad en Postgres.
 - Fuera de este cambio: convertir `require_provenance` en un control real que filtre o aísle los fragmentos `untrusted`.
