@@ -44,6 +44,7 @@ _HOMOGLYPH_TABLE = str.maketrans({**HOMOGLYPHS, **{k.upper(): v for k, v in HOMO
 _LEET_AS_I = str.maketrans({**LEET_COMMON, "1": "i", "|": "i"})
 _LEET_AS_L = str.maketrans({**LEET_COMMON, "1": "l", "|": "l"})
 _INNER_PUNCTUATION = re.compile(r"(?<=\w)[.\-_*·'`]+(?=\w)")
+_PUNCTUATION_AS_SPACE = re.compile(r"(?<=\w)[.\-_*·]+(?=\w)")
 _SPACED_LETTERS = re.compile(r"(?<!\w)(?:\w[ \t]){1,}\w(?!\w)")
 _WHITESPACE = re.compile(r"\s+")
 
@@ -70,6 +71,10 @@ def strip_inner_punctuation(text: str) -> str:
     return _INNER_PUNCTUATION.sub("", text)
 
 
+def punctuation_to_spaces(text: str) -> str:
+    return _PUNCTUATION_AS_SPACE.sub(" ", text)
+
+
 def join_spaced_letters(text: str) -> str:
     return _SPACED_LETTERS.sub(lambda match: re.sub(r"[ \t]", "", match.group(0)), text)
 
@@ -83,6 +88,7 @@ def text_variants(text: str) -> tuple[str, ...]:
     stripped = strip_inner_punctuation(raw)
     bases = (
         raw,
+        punctuation_to_spaces(raw),
         stripped,
         join_spaced_letters(raw),
         join_spaced_letters(stripped),
