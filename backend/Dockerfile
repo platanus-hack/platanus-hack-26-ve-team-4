@@ -19,6 +19,7 @@ RUN useradd --system --uid 10001 --create-home app \
     && chown app:app /data
 WORKDIR /app
 COPY --from=build --chown=app:app /app/.venv /app/.venv
+COPY --chown=app:app contracts /app/contracts
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

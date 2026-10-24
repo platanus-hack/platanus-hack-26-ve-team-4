@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     # app uses that database and adds `<name>_protected` and `<name>_honeypot` for the stores.
     database_url: SecretStr | None = None
     operator_secret: SecretStr = SecretStr("change-me")
+    guard_api_key: SecretStr = SecretStr("change-me-guard")
+    contracts_dir: Path = Path("./contracts")
     cors_origins: list[str] = []
 
     llm_mode: LlmMode = LlmMode.OFFLINE

@@ -20,6 +20,8 @@ from agent_zero.fleet.fleet_builder import build_fleet
 from agent_zero.fleet.router import router as fleet_router
 from agent_zero.fleet.startup_guard import enforce_secure_settings
 from agent_zero.fleet.tables import create_fleet_schema
+from agent_zero.guard.container import build_guard
+from agent_zero.guard.router import router as guard_router
 from agent_zero.llm.factory import build_gateway
 from agent_zero.llm.models import ModelRole
 from agent_zero.llm.playback_model import PlaybackModel
@@ -56,6 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     core = ProductCore(fleet, app.state.llm, app.state.event_broker)
     await core.initialize()
     app.state.core = core
+    app.state.guard = build_guard(settings, database, app.state.llm)
     fleet.start()
     core.worker.start()
     try:
@@ -97,4 +100,5 @@ def create_app(
     app.include_router(runtime_router, dependencies=[OperatorOnly])
     app.include_router(memory_router)
     app.include_router(fleet_router)
+    app.include_router(guard_router)
     return app
