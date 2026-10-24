@@ -220,3 +220,30 @@ El costo se calcula con la tabla de `pricing.py`: entrada, salida, lecturas y es
 El backend se organiza por dominios en `backend/src/agent_zero/`: `sessions`, `events`, `routing`, `victim`, `attempts`, `prober`, `analyzer`, `policies` y `llm`, con un núcleo `shared`. El frontend agrupa `participant`, `arena` y `operator` en `frontend/src/features/`. La estructura detallada, las convenciones y los comandos están en [desarrollo](./desarrollo.md).
 
 Ya existen la creación de sesiones, el broker de eventos con SSE, la capa de IA, los contratos de `AttackCase`, hallazgos y políticas, y el ciclo de vida de políticas. Fixtures completos, el agente víctima, el Prober, el analizador y el honeypot siguen pendientes. Los criterios para aceptar el sistema se encuentran en [evaluación](./evaluacion.md).
+
+## 13. Flota de agentes
+
+La flota agrupa siete dominios independientes que `fleet.fleet_builder.build_fleet` conecta sobre una misma base y un mismo reloj. Los requisitos y sus pruebas están en [trazabilidad](./trazabilidad.md).
+
+| Dominio | Papel en la flota |
+| --- | --- |
+| `registry` | Repositorio de agentes versionados con ciclo `draft → approved → deprecated`, descubrimiento por capacidad, departamento o etiqueta, hash sha256 del manifiesto y revisión de Model Armor al publicar. |
+| `runtime` | Ejecución asíncrona con checkpoints, esperas de días (`resume_at`), reintentos, cancelación e idempotencia. El worker consulta la admisión antes de cada paso. |
+| `memory_bank` | Memoria por agente y sujeto, cifrada en reposo, con TTL, procedencia y borrado por sujeto. Toda escritura pasa por Model Armor. |
+| `identity` | Credenciales firmadas de corta duración con scopes, clearance y regiones; verificación en cada llamada y revocación por credencial o por agente. |
+| `agent_gateway` | Punto único hacia herramientas y datos. Las herramientas se registran con clasificación, región y scope; los handlers del runtime solo reciben un `ToolAccess` ligado al gateway. |
+| `armor` | Model Armor: bloquea inyección y envenenamiento, incluso ofuscados, y redacta PII. |
+| `telemetry` | Spans OpenTelemetry con atributos saneados y registro de auditoría append-only encadenado por hash. |
+
+La admisión (`RegistryAdmission`) une registro e identidad: solo emite una credencial para una versión aprobada y no revocada, y la guarda en una bóveda en memoria con la misma caducidad. Cada paso de un run la solicita de nuevo, de modo que tras semanas de espera el agente se vuelve a validar contra el registro. Los pasos reanudados continúan el `trace_id` del primer paso.
+
+Una llamada a herramienta recorre siempre el mismo orden, y cada etapa es un span hijo del span `gateway.call_tool`:
+
+1. Identidad: firma, caducidad, revocación y scope `tool:<nombre>`.
+2. Política: versión aprobada, herramienta presente en el manifiesto, clasificación frente al nivel del agente, región frente al agente y a las regiones permitidas, y límite de tasa.
+3. Model Armor sobre los argumentos: se bloquea la inyección y se redacta la PII.
+4. Ejecución de la herramienta.
+5. Model Armor sobre la salida: se bloquea el envenenamiento y se redacta la PII.
+6. Auditoría: una entrada con actor, decisión (`allow`, `deny` o `redact` en los atributos), motivo y `trace_id`.
+
+Las decisiones de denegación lanzan `GatewayDeniedError` con un motivo del enum `GatewayReason`; una herramienta que falla se audita como error y su excepción se propaga al runtime sin copiar su mensaje a los spans.
