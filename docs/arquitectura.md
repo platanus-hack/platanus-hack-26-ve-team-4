@@ -194,8 +194,29 @@ Se propone iniciar con un mensaje cada tres segundos por sesión y entradas de h
 
 El panel mostrará llamadas, tokens, errores y latencias. El coste estimado será la suma de tokens de entrada y salida por el precio configurado del proveedor; se registrarán modelo y fecha de referencia, sin fijar tarifas de memoria.
 
+### Capa de IA
+
+El dominio `llm` concentra el acceso al modelo. Usa Strands Agents con su proveedor de Anthropic y el modelo `claude-haiku-5-5` para los cinco roles: víctima, señuelo, Prober, analizador y generador de parches. Cada rol tiene su propio esfuerzo (`low` en los roles de volumen, `medium` en análisis y parches), su tope de tokens de salida y una sustitución de modelo opcional por configuración. No se envían `temperature`, `top_p` ni `top_k`, porque la API los rechaza.
+
+Cada llamada atraviesa una cadena fija:
+
+| Capa | Responsabilidad |
+| --- | --- |
+| `InstrumentedModel` | Topes diarios, por sesión y por campaña; circuit breaker por rol; ledger JSONL con uso, costo, latencia, alcance y versión de prompt; detección de `stop_reason: "refusal"`. |
+| `RetryingModel` | Reintentos con backoff exponencial y jitter, solo ante errores transitorios. El SDK va con `max_retries=0` para que no se reintente dos veces. |
+| `RecordingModel` | En modo `record`, guarda cada llamada en una cassette para reproducirla después. |
+| Proveedor | `AnthropicModel` en `live` y `record`, `CassetteModel` en `replay` y `PlaybackModel` guionado en `offline`. |
+
+`offline` es el modo por defecto y no hace llamadas de red. `replay` reproduce una cassette grabada, de modo que la demo y las pruebas de evaluación se pueden repetir sin coste. `live` y `record` exigen clave y fallan al arrancar si falta.
+
+Un rechazo del modelo (`ModelRefusedError`) es un resultado de primera clase: el intento se registra como `refused` y no cuenta como fallo del proveedor. Haiku 5.5 no tiene fallback de servidor, así que la decisión de qué hacer ante un rechazo queda en el dominio que llamó. Los errores transitorios agotados se convierten en `ModelLimitReachedError` con motivo `provider_unavailable`, y el intento queda inconcluso.
+
+La salida estructurada usa el formato JSON nativo de la API. Si una validación de Pydantic falla, se repite la llamada con el error como turno de reparación, con un presupuesto acotado (uno por defecto). El caché de prompts se activa en el system prompt, las herramientas y el último turno.
+
+El costo se calcula con la tabla de `pricing.py`: entrada, salida, lecturas y escrituras de caché, con la tarifa larga cuando el prompt supera 100.000 tokens. Las tarifas tienen fecha de referencia del 24 de octubre de 2026.
+
 ## 12. Estructura de implementación
 
-El backend se organiza por dominios en `backend/src/agent_zero/`: `sessions`, `events`, `routing`, `victim`, `attempts`, `prober`, `analyzer` y `policies`, con un núcleo `shared`. El frontend agrupa `participant`, `arena` y `operator` en `frontend/src/features/`. La estructura detallada, las convenciones y los comandos están en [desarrollo](./desarrollo.md).
+El backend se organiza por dominios en `backend/src/agent_zero/`: `sessions`, `events`, `routing`, `victim`, `attempts`, `prober`, `analyzer`, `policies` y `llm`, con un núcleo `shared`. El frontend agrupa `participant`, `arena` y `operator` en `frontend/src/features/`. La estructura detallada, las convenciones y los comandos están en [desarrollo](./desarrollo.md).
 
-Ya existen la creación de sesiones, el broker de eventos con SSE, los contratos de `AttackCase`, hallazgos y políticas, y el ciclo de vida de políticas. Fixtures completos, el agente víctima, el Prober, el analizador y el honeypot siguen pendientes. Los criterios para aceptar el sistema se encuentran en [evaluación](./evaluacion.md).
+Ya existen la creación de sesiones, el broker de eventos con SSE, la capa de IA, los contratos de `AttackCase`, hallazgos y políticas, y el ciclo de vida de políticas. Fixtures completos, el agente víctima, el Prober, el analizador y el honeypot siguen pendientes. Los criterios para aceptar el sistema se encuentran en [evaluación](./evaluacion.md).
