@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from agent_zero.victim.knowledge import KNOWLEDGE
 from agent_zero.victim.knowledge_corpus import (
     MAX_CHUNK_CHARS,
     CorpusError,
@@ -115,3 +116,32 @@ def test_two_files_with_the_same_id_in_a_collection_are_rejected(tmp_path: Path)
 
     with pytest.raises(CorpusError, match="repetido"):
         load_corpus(tmp_path)
+
+
+def test_the_real_corpus_loads_and_every_chunk_fits() -> None:
+    chunks = load_corpus()
+
+    assert {chunk.collection for chunk in chunks} >= {"laboratorio", "senuelo"}
+    assert len({chunk.id for chunk in chunks}) == len(chunks)
+    assert all(len(chunk.content) <= 2 * MAX_CHUNK_CHARS for chunk in chunks)
+
+
+def test_official_documents_cite_a_public_url_and_a_capture_date() -> None:
+    # `oficial/` puede estar vacía: la condición se aplica a lo que haya.
+    for chunk in (chunk for chunk in load_corpus() if chunk.collection == "oficial"):
+        assert chunk.source.startswith("https://"), chunk.id
+        assert chunk.captured_at is not None, chunk.id
+
+
+def test_the_lab_collection_reproduces_the_current_knowledge_articles() -> None:
+    lab = [chunk for chunk in load_corpus() if chunk.collection == "laboratorio"]
+
+    assert {(chunk.source, chunk.content) for chunk in lab} >= {
+        (f"knowledge:{article.slug}", article.answer) for article in KNOWLEDGE
+    }
+
+
+def test_the_decoy_collection_covers_at_least_the_same_topics() -> None:
+    decoy = {chunk.document_id for chunk in load_corpus() if chunk.collection == "senuelo"}
+
+    assert decoy >= {article.slug for article in KNOWLEDGE}
