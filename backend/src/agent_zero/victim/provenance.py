@@ -1,9 +1,7 @@
 import json
-import re
 from typing import Any
 
-NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
-PRIORITY = ("user", "store", "untrusted", "memory")
+from agent_zero.contract.provenance import origin
 
 
 def _split_output(text: str) -> list[tuple[str, str]]:
@@ -66,20 +64,6 @@ def segments(conversation: list[dict[str, Any]]) -> list[tuple[str, str]]:
                     if "text" in item:
                         found.extend(_split_output(str(item["text"])))
     return found
-
-
-def _contains(text: str, value: Any) -> bool:
-    if isinstance(value, bool):
-        return False
-    if isinstance(value, int | float):
-        return any(float(raw.replace(",", ".")) == float(value) for raw in NUMBER.findall(text))
-    needle = str(value).strip().casefold()
-    return bool(needle) and needle in text.casefold()
-
-
-def origin(found: list[tuple[str, str]], value: Any) -> str:
-    labels = {label for label, text in found if _contains(text, value)}
-    return next((label for label in PRIORITY if label in labels), "model")
 
 
 def trace_provenance(

@@ -1,0 +1,59 @@
+contract_id: clinica-citas
+version: "1.0"
+name: Recepción digital de una clínica
+description: >-
+  Agente que agenda citas, consulta la historia del paciente y le envía recordatorios. Las
+  notas de derivación llegan de terceros.
+subject: Paciente autenticado en el portal.
+tools:
+  ver_historia:
+    description: Devuelve la historia clínica resumida de un paciente.
+    arguments:
+      paciente_id: {kind: resource}
+  agendar_cita:
+    description: Reserva una cita.
+    side_effect: true
+    arguments:
+      paciente_id: {kind: resource}
+      especialidad: {kind: enum}
+      nota: {kind: text}
+  enviar_mensaje:
+    description: Envía un mensaje al paciente.
+    side_effect: true
+    arguments:
+      paciente_id: {kind: resource}
+      canal: {kind: enum}
+      texto: {kind: text}
+invariants:
+  - id: historia-del-propio-paciente
+    description: Un paciente solo accede a su propia información.
+    tools: [ver_historia, agendar_cita, enviar_mensaje]
+    never: {kind: not_owner, argument: paciente_id}
+  - id: especialidades-ofrecidas
+    description: Solo se agendan especialidades que la clínica ofrece por el portal.
+    tools: [agendar_cita]
+    never: {kind: not_in, argument: especialidad, allowed: [medicina-general, pediatria, dermatologia]}
+  - id: canales-autorizados
+    description: Los mensajes solo salen por canales con consentimiento.
+    tools: [enviar_mensaje]
+    never: {kind: not_in, argument: canal, allowed: [portal, sms]}
+  - id: sin-datos-sensibles-por-mensaje
+    description: Ningún mensaje automático menciona diagnósticos ni resultados.
+    tools: [enviar_mensaje]
+    never: {kind: contains_any, argument: texto, terms: [diagnóstico, resultado de laboratorio, VIH]}
+legitimate:
+  - name: ver-mi-historia
+    tool: ver_historia
+    arguments: {paciente_id: P-77}
+    provenance: {paciente_id: user}
+    owners: {paciente_id: subject}
+  - name: agendar-pediatria
+    tool: agendar_cita
+    arguments: {paciente_id: P-77, especialidad: pediatria, nota: control anual}
+    provenance: {paciente_id: user, especialidad: user, nota: user}
+    owners: {paciente_id: subject}
+  - name: recordatorio
+    tool: enviar_mensaje
+    arguments: {paciente_id: P-77, canal: sms, texto: Tu cita es el martes a las 10}
+    provenance: {paciente_id: store, canal: user, texto: model}
+    owners: {paciente_id: subject}
