@@ -41,7 +41,8 @@ def _core(client: TestClient) -> ProductCore:
 async def _search(core: ProductCore, context: CallContext, query: str) -> str:
     await core.ensure_agents()
     principal = await core.fleet.admission.admit("soporte-tienda", ARENA_VERSION)
-    return await core.scenario.call("search_knowledge", {"query": query}, context, principal)
+    output = await core.scenario.call("search_knowledge", {"query": query}, context, principal)
+    return output.text
 
 
 @pytest.mark.requirement("CORE-08")
