@@ -27,8 +27,8 @@ def test_independent_workers_serialize_authorization_with_the_effect(
     core: ProductCore = cast(FastAPI, manual_client.app).state.core
 
     async def race() -> None:
-        # Independent pools and locks model separate processes sharing SQLite files.
-        other = Environments(core.fleet.settings.data_dir)
+        # Independent pools and locks model separate processes sharing the same databases.
+        other = Environments(core.fleet.settings)
         await other.initialize()
         fleet = build_fleet(core.fleet.settings, core.fleet.database)
         register_store_tools(fleet.tools)

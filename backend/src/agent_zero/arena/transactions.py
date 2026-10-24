@@ -1,9 +1,10 @@
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from agent_zero.shared.database import acquire_write_lock
 
 
 async def serialize_write(db: AsyncSession) -> None:
-    """Acquire SQLite's writer reservation before reading admission or control state.
+    """Acquire the database writer reservation before reading admission or control state.
 
     A process-local asyncio lock cannot serialize multiple API/worker processes. All
     decisions that read then mutate arena state use this database transaction too.
@@ -11,4 +12,4 @@ async def serialize_write(db: AsyncSession) -> None:
     """
     if db.in_transaction():
         raise RuntimeError("La reserva de escritura debe preceder las lecturas.")
-    await db.execute(text("BEGIN IMMEDIATE"))
+    await acquire_write_lock(db)

@@ -4,18 +4,20 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Table, select, text
+from sqlalchemy import Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_zero.agent_gateway.business_policy import CallContext
+from agent_zero.config import Settings
 from agent_zero.memory_bank.models import MemoryRecord
-from agent_zero.shared.database import AppBase, Database
+from agent_zero.shared.database import AppBase, Database, acquire_write_lock, ensure_database
 from agent_zero.victim.environment_state import reset_store, seed_customer, snapshot_store
 from agent_zero.victim.fixtures import SYNTHETIC_CUSTOMER_IDS
 from agent_zero.victim.store_models import StoreBase, StoreOperation, StoreOrder
+
+ENVIRONMENTS = ("protected", "honeypot")
 
 _transaction: ContextVar[tuple[str, AsyncSession] | None] = ContextVar(
     "store_transaction", default=None
@@ -51,7 +53,7 @@ class Environment:
     async def transaction(self) -> AsyncIterator[None]:
         """Serialize authorization and effects across workers, processes and retries."""
         async with self.lock, self.database.sessions() as db:
-            await db.execute(text("BEGIN IMMEDIATE"))
+            await acquire_write_lock(db)
             token = _transaction.set((self.key, db))
             try:
                 yield
@@ -80,15 +82,15 @@ class Environment:
 
 
 class Environments:
-    def __init__(self, data_dir: Path) -> None:
+    def __init__(self, settings: Settings) -> None:
+        self._urls = {name: settings.environment_database_url(name) for name in ENVIRONMENTS}
         self._environments = {
-            name: Environment(
-                Database(f"sqlite+aiosqlite:///{data_dir / (name + '.db')}"), name, name
-            )
-            for name in ("protected", "honeypot")
+            name: Environment(Database(url), name, name) for name, url in self._urls.items()
         }
 
     async def initialize(self) -> None:
+        for url in self._urls.values():
+            await ensure_database(url)
         for environment in self._environments.values():
             await environment.initialize()
 

@@ -1,6 +1,24 @@
 name: agent-zero
 
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: agent_zero
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: agent_zero
+    volumes:
+      - agent-zero-postgres:/var/lib/postgresql/data
+    ports:
+      # Only on this machine, to inspect the data with psql or a client.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_zero -d agent_zero"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: ../backend
@@ -10,6 +28,8 @@ services:
         required: false
     environment:
       AGENT_ZERO_DATA_DIR: /data
+      # The backend also creates agent_zero_protected and agent_zero_honeypot on startup.
+      AGENT_ZERO_DATABASE_URL: postgresql+asyncpg://agent_zero:${POSTGRES_PASSWORD}@postgres:5432/agent_zero
       AGENT_ZERO_OPERATOR_SECRET: ${AGENT_ZERO_OPERATOR_SECRET:?Set AGENT_ZERO_OPERATOR_SECRET in .env}
       AGENT_ZERO_LLM_MODE: ${AGENT_ZERO_LLM_MODE:-demo}
       AGENT_ZERO_ARENA_SESSION_LIMIT: ${AGENT_ZERO_ARENA_SESSION_LIMIT:-100}
@@ -17,6 +37,9 @@ services:
       AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT: ${AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT:-1200}
     volumes:
       - agent-zero-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -36,3 +59,4 @@ services:
 
 volumes:
   agent-zero-data:
+  agent-zero-postgres:

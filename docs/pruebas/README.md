@@ -58,6 +58,14 @@ uv run pytest -q
 uv run pytest --collect-only -q
 ```
 
+Para repetir la suite contra Postgres, como hace el job `backend-postgres` de la CI, basta un servidor desechable. Cada prueba que usa el fixture `settings` crea sus tres bases y las borra al terminar; las que construyen su propio `Settings` siguen en SQLite:
+
+```bash
+docker run -d --name az-test-pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -p 55432:5432 postgres:17-alpine
+cd backend
+AGENT_ZERO_TEST_DATABASE_URL=postgresql+asyncpg://test:test@localhost:55432/postgres uv run pytest -q
+```
+
 La colección de referencia contiene 862 casos: 860 normales y dos de proveedor real. Un cambio futuro puede aumentar el total; no reducir casos para reproducir el número histórico. Pytest trata `SAWarning` y `PytestUnraisableExceptionWarning` como errores mediante [pyproject.toml](../../backend/pyproject.toml).
 
 Una regresión detectada durante la implementación fue una consulta que reutilizaba una sesión SQLAlchemy después de salir de `async with`; se corrigió el alcance en [test_repository.py](../../backend/tests/registry/test_repository.py). Una advertencia de GC puede aparecer en el test siguiente: atribuir el checkout original y corregir el recurso, sin silenciar el warning.
@@ -90,7 +98,7 @@ No usar reset sobre el ensayo de otra persona. Devuelve 409 si queda trabajo act
 
 | Nivel | Entrada | Dependencia externa |
 | --- | --- | --- |
-| Unitarias e integración en pytest | [Matriz por dominio](./por-dominio.md) | SQLite y proveedores de prueba; sin red de IA. |
+| Unitarias e integración en pytest | [Matriz por dominio](./por-dominio.md) | SQLite y proveedores de prueba; sin red de IA. Con `AGENT_ZERO_TEST_DATABASE_URL`, las pruebas que usan el fixture `settings` corren contra Postgres. |
 | Componentes frontend | `cd frontend && pnpm test` | jsdom; no equivale a revisión visual. |
 | Flota HTTP | [prueba-flota.md](../prueba-flota.md) | Servidor propio; `demo` no consume IA. |
 | Ejercicio de arena | `infra/scripts/smoke.sh --exercise` | Servidor y nginx; escribe en la ronda. |

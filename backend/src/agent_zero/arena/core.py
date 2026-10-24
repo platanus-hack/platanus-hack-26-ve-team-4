@@ -44,7 +44,7 @@ class ProductCore:
         self._bootstrap_lock = asyncio.Lock()
         self._bootstrapped = False
         self.events = EventStore(fleet, broker)
-        self.environments = Environments(fleet.settings.data_dir)
+        self.environments = Environments(fleet.settings)
         self.rounds = RoundService(fleet, self.events, self.environments)
         self.scenario = ScenarioTools(fleet, self.environments)
         self.engine = BusinessPolicyEngine(fleet.database, self.environments)

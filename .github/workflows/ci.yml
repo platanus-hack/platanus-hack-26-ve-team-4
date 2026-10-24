@@ -30,6 +30,33 @@ jobs:
       - run: uv run mypy src tests scripts
       - run: uv run pytest
 
+  backend-postgres:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test" --health-interval 5s --health-retries 10
+    env:
+      # Each test that uses the `settings` fixture gets its own fresh databases on this server.
+      AGENT_ZERO_TEST_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --frozen
+      - run: uv run pytest
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -52,7 +79,7 @@ jobs:
       - run: pnpm build
 
   containers:
-    needs: [backend, frontend]
+    needs: [backend, backend-postgres, frontend]
     runs-on: ubuntu-latest
     env:
       AGENT_ZERO_LLM_MODE: demo
@@ -67,6 +94,7 @@ jobs:
           import secrets
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as target:
               target.write("AGENT_ZERO_OPERATOR_SECRET=" + secrets.token_urlsafe(32) + "\n")
+              target.write("POSTGRES_PASSWORD=" + secrets.token_hex(16) + "\n")
           PY
       - run: docker compose -f infra/compose.yaml up --build --detach --wait
       - run: ./infra/scripts/smoke.sh
