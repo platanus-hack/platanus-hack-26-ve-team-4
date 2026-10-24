@@ -3,6 +3,8 @@ from typing import Any
 
 from strands.types.content import Messages
 
+from agent_zero.llm.demo_flow_policy import demo_flow_policy
+
 
 def structured_payload(model_name: str, messages: Messages) -> dict[str, Any]:
     text = next(
@@ -48,4 +50,6 @@ def structured_payload(model_name: str, messages: Messages) -> dict[str, Any]:
             ],
             "limitations": "Asesoría del modo demo; las pruebas deciden la activación.",
         }
+    if model_name == "FlowPolicy":
+        return demo_flow_policy(payload)
     raise ValueError(f"El modo demo no implementa el contrato estructurado {model_name}.")

@@ -19,6 +19,7 @@ from agent_zero.llm.gateway import LlmGateway
 from agent_zero.oracles.assessment_service import AssessmentService
 from agent_zero.patches.defense_scheduler import DefenseScheduler
 from agent_zero.patches.explanation import PatchExplainer
+from agent_zero.patches.policy_synthesizer import PolicySynthesizer
 from agent_zero.patches.validation_handler import PatchValidationHandler
 from agent_zero.patches.validation_runner import ValidationRunner
 from agent_zero.policies.policy_engine import BusinessPolicyEngine
@@ -65,6 +66,7 @@ class ProductCore:
         self.defense = DefenseScheduler(
             fleet, self.policies, self.findings, self.attempts, self.environments
         )
+        self.defense.synthesizer = PolicySynthesizer(fleet, llm, self.attempts, self.events)
         self.worker = AttemptWorker(fleet, self.events, self.findings, self.defense)
         self.evaluation_runner = EvaluationRunner(
             fleet,

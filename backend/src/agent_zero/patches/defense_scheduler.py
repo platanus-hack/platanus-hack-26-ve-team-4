@@ -8,6 +8,7 @@ from agent_zero.arena.round_models import RoundArchive
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.memory_bank.memory_quarantine_service import quarantine_matching
+from agent_zero.patches.policy_synthesizer import PolicySynthesizer
 from agent_zero.policies.memory_rules import changes_permissions
 from agent_zero.policies.policy_service import PolicyService
 from agent_zero.policies.validator_catalog import ValidatorName
@@ -25,6 +26,11 @@ def _permission_memory(content: str) -> bool:
         return True
 
 
+def _synthesized(row: dict[str, Any]) -> bool:
+    synthesis = row.get("synthesis") or {}
+    return synthesis.get("source") == "synthesized"
+
+
 class DefenseScheduler:
     def __init__(
         self,
@@ -34,6 +40,7 @@ class DefenseScheduler:
         attempts: AttemptQueryService,
         environments: Environments,
     ) -> None:
+        self.synthesizer: PolicySynthesizer | None = None
         self._fleet = fleet
         self._policies = policies
         self._findings = findings
@@ -111,29 +118,39 @@ class DefenseScheduler:
         for finding in findings:
             if finding["status"] not in {"open", "reopened"}:
                 continue
-            tried = any(
-                finding["id"] in row["finding_ids"]
+            earlier = [
+                row
+                for row in policies
+                if finding["id"] in row["finding_ids"]
                 and row["parent_version"] == active
                 and (
                     not row["validation"].get("evidence_attempt_ids")
                     or set(finding["attempt_ids"]) <= set(row["validation"]["evidence_attempt_ids"])
                 )
-                for row in policies
-            )
-            if not tried:
-                related = [
-                    row
-                    for row in findings
-                    if row["id"] != finding["id"]
-                    and finding["attempt_ids"][-1] in row["attempt_ids"]
-                ]
-                await self._policies.propose(
-                    finding["id"],
-                    finding["objective_id"],
-                    related=[(row["id"], row["objective_id"]) for row in related],
-                    evidence_attempt_ids=finding["attempt_ids"],
+            ]
+            if any(not _synthesized(row) for row in earlier):
+                continue
+            related = [
+                row
+                for row in findings
+                if row["id"] != finding["id"] and finding["attempt_ids"][-1] in row["attempt_ids"]
+            ]
+            flow = None
+            if not earlier and self.synthesizer and self._fleet.settings.arena_flow_synthesis:
+                flow = await self.synthesizer.synthesize(
+                    finding["objective_id"], finding["attempt_ids"][-1]
                 )
-                break
+            synthesized = flow is not None and flow.policy is not None
+            await self._policies.propose(
+                finding["id"],
+                finding["objective_id"],
+                related=[]
+                if synthesized
+                else [(row["id"], row["objective_id"]) for row in related],
+                evidence_attempt_ids=finding["attempt_ids"],
+                flow=flow,
+            )
+            break
 
     async def _quarantine(self, policy: dict[str, Any]) -> None:
         if ValidatorName.MEMORY_KEYS in policy["rules"]:

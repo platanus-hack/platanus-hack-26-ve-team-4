@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     arena_session_queue_limit: int = Field(default=1, ge=1)
     arena_attempts_per_minute: int = Field(default=12, ge=1)
     arena_auto_patch: bool = True
+    arena_flow_synthesis: bool = False
     arena_validation_concurrency: int = Field(default=8, ge=1, le=8)
 
     otel_exporter: Literal["none", "memory", "console", "otlp"] = "none"

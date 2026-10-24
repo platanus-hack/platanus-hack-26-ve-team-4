@@ -96,3 +96,14 @@ def wait_attempt(client: TestClient, attempt_id: str) -> dict[str, Any]:
 
 def foreign_order(session: dict[str, Any]) -> str:
     return "B-2001" if session["order_ids"][0].startswith("A") else "A-1001"
+
+
+def active_policy(client: TestClient) -> dict[str, Any]:
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        policies = client.get("/api/operator/policies", headers=OPERATOR).json()
+        active: dict[str, Any] = next(row for row in policies if row["status"] == "active")
+        if active["version"]:
+            return active
+        time.sleep(0.01)
+    raise AssertionError(f"No se activó ninguna política: {policies}")

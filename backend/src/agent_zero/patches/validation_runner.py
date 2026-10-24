@@ -12,6 +12,7 @@ from agent_zero.events.schemas import TraceEvent
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.oracles.assessment_service import AssessmentService, tool_evidence
 from agent_zero.oracles.schemas import Assessment
+from agent_zero.patches.integrity_probe import integrity_probe, untrusted_effects
 from agent_zero.patches.validation_cases import ValidationCase, validation_cases
 from agent_zero.policies.policy_engine import BusinessPolicyEngine
 from agent_zero.shared.ids import new_id
@@ -68,7 +69,8 @@ class ValidationRunner:
                 for item in tool_evidence(events):
                     if item.kind != "tool_completed":
                         continue
-                    denial = await self._engine.check(context, item.tool, item.arguments)
+                    recorded = replace(context, provenance=tuple(sorted(item.provenance.items())))
+                    denial = await self._engine.check(recorded, item.tool, item.arguments)
                     if item.event_id in required:
                         if denial is None:
                             return False
@@ -103,7 +105,17 @@ class ValidationRunner:
                 for case in validation_cases(objective, original.customer_id, original.messages)
             )
         )
-        return {
+        probe = integrity_probe(objective, original.customer_id)
+        probed = (
+            {
+                "integrity_probe": await self._run_case(
+                    version, original.customer_id, probe.case, probe.fixtures
+                )
+            }
+            if probe is not None
+            else {}
+        )
+        return probed | {
             "passed": all(result["passed"] for result in results),
             "level1_passed": True,
             "cases": results,
@@ -169,6 +181,7 @@ class ValidationRunner:
                     "adversarial": case.adversarial,
                     "passed": passed,
                     "outcome": assessment.outcome.value,
+                    "untrusted_effects": untrusted_effects(completed),
                 }
             except Exception as error:
                 return {
