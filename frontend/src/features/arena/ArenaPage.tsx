@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { errorMessage } from "../../shared/api/http";
+import { CoevolutionChart } from "./CoevolutionChart";
 import { useArenaEvents } from "./hooks/useArenaEvents";
 import { useArenaState } from "./hooks/useArenaState";
 import { JoinCode } from "./JoinCode";
@@ -27,6 +28,7 @@ const EVENT_LABELS: Record<EventType, string> = {
   patch_validated: "Validación de control completada",
   policy_activated: "Nueva política activada",
   policy_rolled_back: "Política revertida",
+  probe_round_closed: "Ronda del Prober cerrada",
 };
 function elapsed(start: string | undefined, now: number) {
   const total = start ? Math.max(0, Math.floor((now - Date.parse(start)) / 1000)) : 0;
@@ -83,6 +85,7 @@ export function ArenaPage() {
           </div>
           <JoinCode />
           <Scoreboard arena={arena.data} />
+          <CoevolutionChart />
         </>
       ) : (
         !arena.error && <p role="status">Cargando ronda…</p>

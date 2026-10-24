@@ -15,6 +15,7 @@ const EVENT_TYPES: EventType[] = [
   "patch_validated",
   "policy_activated",
   "policy_rolled_back",
+  "probe_round_closed",
 ];
 
 export function useArenaEvents(url = "/api/arena/events", limit = 100, roundId?: string) {

@@ -432,4 +432,48 @@ progress {
 }
 .decoy-table-wrap {
   overflow-x: auto;
+
+.coevolution {
+  margin: 24px 0;
+}
+.coevolution-plot {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+.coevo-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+.coevo-line {
+  stroke: var(--color-danger);
+  stroke-width: 2;
+}
+.coevo-ci {
+  stroke: var(--color-danger);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+.coevo-dot {
+  fill: var(--color-danger);
+  stroke: var(--color-bg);
+  stroke-width: 2;
+}
+.coevo-label {
+  fill: var(--color-muted);
+  font-size: 11px;
+}
+.coevo-counter {
+  font-variant-numeric: tabular-nums;
+}
+.coevo-table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.coevo-table th,
+.coevo-table td {
+  text-align: left;
+  padding: 4px 12px 4px 0;
+  border-bottom: 1px solid var(--color-border);
 }

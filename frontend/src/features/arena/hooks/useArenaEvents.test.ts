@@ -72,6 +72,17 @@ describe("useArenaEvents", () => {
     expect(result.current.events.map((event) => event.id)).toEqual([2, 1]);
   });
 
+  it("acepta el cierre de ronda del Prober", () => {
+    const { result } = renderHook(() => useArenaEvents());
+    const source = FakeEventSource.last as FakeEventSource;
+
+    act(() => {
+      source.emit({ ...traceEvent(5), type: "probe_round_closed", data: { queries: 8 } });
+    });
+
+    expect(result.current.events.map((event) => event.type)).toEqual(["probe_round_closed"]);
+  });
+
   it("cierra la conexión al desmontar", () => {
     const { unmount } = renderHook(() => useArenaEvents());
     const source = FakeEventSource.last as FakeEventSource;

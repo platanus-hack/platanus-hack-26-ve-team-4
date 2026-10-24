@@ -11,7 +11,31 @@ export type EventType =
   | "patch_proposed"
   | "patch_validated"
   | "policy_activated"
-  | "policy_rolled_back";
+  | "policy_rolled_back"
+  | "probe_round_closed";
+
+export interface CoevolutionRound {
+  version: number;
+  queries: number;
+  evaluable: number;
+  inconclusive: number;
+  pending: number;
+  violations: number;
+  success_rate: number | null;
+  ci_low: number | null;
+  ci_high: number | null;
+  queries_to_break: number | null;
+  censored: boolean;
+  first_break: { mutator: string; family: string | null } | null;
+}
+
+export interface CoevolutionResponse {
+  budget: number;
+  evidence_mode: string;
+  status: string | null;
+  versions: CoevolutionRound[];
+  summary: { baseline: CoevolutionRound; latest: CoevolutionRound } | null;
+}
 
 export interface TraceEvent {
   id: number;

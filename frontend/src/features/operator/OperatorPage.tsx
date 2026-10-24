@@ -321,6 +321,7 @@ function OperatorDashboard({
               >
                 <option value="templates">Plantillas reproducibles</option>
                 <option value="llm">Mutación con modelo</option>
+                <option value="adaptive">Adaptativa con presupuesto por versión</option>
               </select>
               <button
                 type="submit"
