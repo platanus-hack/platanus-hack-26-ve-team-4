@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "product": "Agent Zero",
+  "name": "Execution workbench",
+  "language": "es",
+  "principle": "La ejecución observada es el centro: mensaje, llamada, efecto, oráculo y control verificable comparten una navegación causal.",
+  "identity": {
+    "mark": "Anillo interrumpido con un punto de lectura; forma vectorial propia y reproducible en CSS o SVG.",
+    "signature": "Carril continuo de eventos con pasos numerados, conexiones y un foco inequívoco sobre la evidencia seleccionada.",
+    "hashFingerprint": "La huella gráfica de una política se deriva exclusivamente de su hash real; si no hay hash, se omite.",
+    "visualPriority": ["Evidencia seleccionada", "Resultado y efecto", "Acción contextual", "Contexto y procedencia", "Metadatos"],
+    "avoid": ["Grillas de tarjetas de igual peso", "Grandes bloques decorativos de escena", "Gradientes y brillo sin significado", "Animación aleatoria", "Falsos terminales con texto fabricado", "Insignias que no describen un estado verificable"]
+  },
+  "tokens": {
+    "dark": {
+      "colorScheme": "dark",
+      "background": "#0B0D10",
+      "rail": "#0E1115",
+      "surface": "#111419",
+      "surfaceRaised": "#181D24",
+      "surfaceHover": "#1E2530",
+      "surfaceSelected": "#2D2618",
+      "text": "#EEF0F4",
+      "textMuted": "#9BA5B4",
+      "textFaint": "#7C8797",
+      "border": "#272E38",
+      "borderStrong": "#3C4756",
+      "accent": "#F2C66D",
+      "accentHover": "#FFDA91",
+      "accentText": "#17130C",
+      "accentSoft": "#312919",
+      "success": "#84D5A8",
+      "successSoft": "#172B23",
+      "violation": "#F17E88",
+      "violationSoft": "#331D25",
+      "warning": "#F2C66D",
+      "warningSoft": "#312919",
+      "honeypot": "#79CAD8",
+      "honeypotSoft": "#172C32",
+      "neutral": "#B5BFCC",
+      "neutralSoft": "#202731",
+      "codeBackground": "#0C1015",
+      "diffAddedBackground": "#172B23",
+      "diffRemovedBackground": "#331D25",
+      "focusRing": "#F2C66D",
+      "overlay": "#030609B8"
+    },
+    "light": {
+      "colorScheme": "light",
+      "background": "#F6F5F1",
+      "rail": "#EEEFEA",
+      "surface": "#FFFFFF",
+      "surfaceRaised": "#F0F1EC",
+      "surfaceHover": "#E9ECE7",
+      "surfaceSelected": "#FFF2CB",
+      "text": "#18212A",
+      "textMuted": "#546170",
+      "textFaint": "#657180",
+      "border": "#D9DED9",
+      "borderStrong": "#A9B3B3",
+      "accent": "#855B12",
+      "accentHover": "#6F4707",
+      "accentText": "#FFFFFF",
+      "accentSoft": "#FFF2CB",
+      "success": "#226849",
+      "successSoft": "#E1F1E7",
+      "violation": "#AA3446",
+      "violationSoft": "#FBE8EC",
+      "warning": "#855B12",
+      "warningSoft": "#FFF2CB",
+      "honeypot": "#22687F",
+      "honeypotSoft": "#DFF0F4",
+      "neutral": "#546170",
+      "neutralSoft": "#E9EDEF",
+      "codeBackground": "#F3F5F6",
+      "diffAddedBackground": "#E1F1E7",
+      "diffRemovedBackground": "#FBE8EC",
+      "focusRing": "#855B12",
+      "overlay": "#18212A66"
+    },
+    "typography": {
+      "displayFamily": "'Space Grotesk', 'Arial', sans-serif",
+      "bodyFamily": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "monoFamily": "'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace",
+      "numeric": "tabular-nums",
+      "roles": {
+        "wordmark": {"family": "display", "sizePx": 16, "lineHeightPx": 20, "weight": 600, "trackingEm": -0.04},
+        "pageTitle": {"family": "display", "sizePx": 26, "lineHeightPx": 30, "weight": 500, "trackingEm": -0.035},
+        "sectionTitle": {"family": "body", "sizePx": 15, "lineHeightPx": 22, "weight": 600, "trackingEm": -0.015},
+        "body": {"family": "body", "sizePx": 13, "lineHeightPx": 20, "weight": 400, "trackingEm": 0},
+        "control": {"family": "body", "sizePx": 12, "lineHeightPx": 18, "weight": 500, "trackingEm": 0},
+        "metadata": {"family": "body", "sizePx": 11, "lineHeightPx": 16, "weight": 400, "trackingEm": 0},
+        "code": {"family": "mono", "sizePx": 12, "lineHeightPx": 19, "weight": 400, "trackingEm": -0.015},
+        "eyebrow": {"family": "mono", "sizePx": 10, "lineHeightPx": 15, "weight": 500, "trackingEm": 0.1},
+        "projectionTitle": {"family": "display", "sizePx": 44, "lineHeightPx": 50, "weight": 500, "trackingEm": -0.04},
+        "projectionBody": {"family": "body", "sizePx": 20, "lineHeightPx": 30, "weight": 400, "trackingEm": 0}
+      }
+    },
+    "spacingPx": [2, 4, 6, 8, 12, 16, 20, 24, 32, 40],
+    "radiusPx": {"badge": 4, "control": 6, "panel": 8, "dialog": 12, "round": 999},
+    "borderWidthPx": {"default": 1, "selected": 2},
+    "shadow": {"panel": "none", "floating": "0 16px 48px #00000030"},
+    "motion": {"selectionMs": 120, "panelMs": 180, "easing": "cubic-bezier(.2,.8,.2,1)", "activePulseMs": 1400, "reducedMotion": "Desactivar pulsos, desplazamiento animado y transiciones de tamaño."}
+  },
+  "layout": {
+    "operator": {
+      "headerHeightPx": 56,
+      "statusBarHeightPx": 34,
+      "railWidthPx": 64,
+      "registryWidthPx": 232,
+      "registryMinWidthPx": 200,
+      "inspectorWidthPx": 360,
+      "inspectorMinWidthPx": 300,
+      "canvasMinWidthPx": 440,
+      "columns": "64px 232px minmax(440px, 1fr) 360px",
+      "mainScroll": "Cada región tiene su propio desplazamiento; cabeceras de registro e inspector permanecen visibles.",
+      "responsive": [
+        {"belowPx": 1180, "behavior": "Inspector como panel desplegable, abierto desde la selección del evento."},
+        {"belowPx": 900, "behavior": "Registro y ejecución se muestran secuencialmente; conservar selección, filtros y botón Volver."},
+        {"belowPx": 600, "behavior": "Navegación compacta y controles de 44 px; evitar cuatro paneles comprimidos."}
+      ]
+    },
+    "projection": {
+      "maxPrimaryMetrics": 3,
+      "composition": "Una historia focal: participación, comparación o revelación. QR y enlace visible durante participación.",
+      "detail": "Mostrar herramienta, decisión y efecto legibles; el operador elige un caso real para ampliar.",
+      "privateFields": "No enviar rutas ocultas, canarios, tokens ni evidencia privada al cliente público antes de la autorización del servidor."
+    },
+    "participant": {
+      "contentMaxWidthPx": 640,
+      "stickyContext": "Identidad sintética, acceso a pedidos propios, objetivo y cuota restante.",
+      "composer": "Admite la secuencia de mensajes soportada por el backend y mantiene el envío al alcance del pulgar.",
+      "result": "La respuesta aparente y el resultado provisional se distinguen del veredicto final."
+    }
+  },
+  "hierarchy": {
+    "header": ["Selector de ronda y origen de datos", "Escenario y política activa", "Proyectar", "Acciones autorizadas de operación"],
+    "statusStrip": ["Entradas", "Cola", "En ejecución", "Capacidad", "Conexión y último evento"],
+    "registryRow": ["Estado con texto e icono", "Mensaje o nombre de ejecución", "Alias y origen", "Política", "Duración medida"],
+    "canvas": ["Identificación y resultado del intento", "Mensajes completos y turnos", "Eventos observados", "Efectos", "Veredicto del oráculo", "Hallazgo, candidato, validación, activación y replay relacionados"],
+    "inspectorTabs": ["Evidencia", "JSON", "Efectos", "Contexto"],
+    "maxPrimaryActionsPerContext": 1,
+    "removeFromOperationalNavigation": ["Informe de decisiones", "Catálogo visual de componentes", "Mapa UX de la propuesta"]
+  },
+  "density": {
+    "compact": {"tableRowMinHeightPx": 36, "controlMinHeightPx": 32, "cellHorizontalPaddingPx": 12, "sectionPaddingPx": 16},
+    "comfortable": {"tableRowMinHeightPx": 44, "controlMinHeightPx": 36, "cellHorizontalPaddingPx": 16, "sectionPaddingPx": 20},
+    "coarsePointer": {"targetMinHeightPx": 44, "targetMinWidthPx": 44, "inputFontSizePx": 16},
+    "rules": [
+      "Usar filas, carriles y separadores para datos relacionados; reservar paneles para regiones con navegación propia.",
+      "Truncar solo vistas previas; el mensaje y la evidencia completos son accesibles en el canvas o inspector.",
+      "Las herramientas, IDs, tiempos, importes y hashes usan tipografía monoespaciada y números tabulares.",
+      "Alinear importes y duraciones a la derecha en tablas.",
+      "Los valores resumen abren el conjunto de registros que los calcula.",
+      "Preservar el foco, la selección y el desplazamiento al recibir nuevos eventos."
+    ]
+  },
+  "stateGrammar": {
+    "selection": {"surface": "surfaceSelected", "indicator": "accent", "behavior": "El mismo evento mantiene la selección en registro, canvas e inspector."},
+    "queued": {"color": "neutral", "shape": "circle-outline", "label": "En cola", "motion": "none"},
+    "running": {"color": "accent", "shape": "circle-pulse", "label": "Ejecutándose", "motion": "Solo si el origen confirma ejecución activa."},
+    "confirmedViolation": {"color": "violation", "shape": "diamond", "label": "Violación confirmada", "requirement": "Veredicto del oráculo y referencia de evidencia."},
+    "prevented": {"color": "success", "shape": "shield-check", "label": "Detenido por control", "requirement": "Decisión de control observada; no inferir a partir del texto de la respuesta."},
+    "containedHoneypot": {"color": "honeypot", "shape": "branch", "label": "Contenido en señuelo", "requirement": "Solo en operación o tras revelación autorizada; no equivale a hallazgo mitigado."},
+    "notAchieved": {"color": "neutral", "shape": "circle-minus", "label": "Objetivo no logrado", "requirement": "No convertir en prueba de una defensa específica."},
+    "inconclusive": {"color": "warning", "shape": "triangle", "label": "Inconcluso", "requirement": "Mostrar causa, fase y posibilidad real de repetir."},
+    "validationPassed": {"color": "success", "shape": "check", "label": "Validación aprobada", "requirement": "Mostrar casos, denominadores y resultados individuales."},
+    "validationRejected": {"color": "violation", "shape": "x", "label": "Validación rechazada", "requirement": "Mantener política anterior y mostrar el caso que rechazó el cambio."},
+    "activationWaiting": {"color": "warning", "shape": "hourglass", "label": "Esperando drenaje", "requirement": "Mostrar intentos pendientes y versión con la que terminarán."},
+    "disabledAction": {"color": "textFaint", "requirement": "Motivo visible junto al control; no depender únicamente de un tooltip."},
+    "empty": {"requirement": "Indicar qué falta, por qué está vacío y la siguiente acción disponible; no rellenar con fixtures invisibles."},
+    "unknown": {"label": "No disponible", "requirement": "No sustituir ausencia de medición por cero ni por una cifra fabricada."},
+    "stale": {"color": "warning", "label": "Sin actualización", "requirement": "Conservar última captura y mostrar su fecha, conexión y opción de reintentar."},
+    "allStates": ["Texto además de color", "Icono o forma semántica", "Razón accesible", "Fecha cuando corresponda"]
+  },
+  "interactionRules": {
+    "commandPalette": "Cmd/Ctrl+K busca ejecuciones, sesiones, hallazgos y políticas por texto o ID; solo ofrece acciones autorizadas y disponibles.",
+    "registry": "Búsqueda, filtros combinables, ordenación, columnas y selección persistentes; seleccionar abre ejecución sin perder contexto.",
+    "trace": "Cada evento abre sus argumentos, respuesta y evidencias; JSON original accesible en un clic. Dibujar causalidad solo con referencias reales; de otro modo mostrar secuencia cronológica.",
+    "comparison": "Alinear dos ejecuciones por herramienta o paso comparable y marcar diferencias de decisión, argumentos y efectos; explicar si la alineación es aproximada.",
+    "mutation": "Mostrar estado pendiente y resultado del servidor; mantener el objeto actualizado y la referencia de la acción.",
+    "sse": "Distinguir conectado, reconectando, desactualizado y error; reanudar desde el último evento sin duplicarlo.",
+    "readOnlySnapshot": "Al abrir una captura real, las acciones de modificación se muestran como no disponibles en esa fuente; navegar, inspeccionar y exportar siguen funcionando.",
+    "roundReset": "El backend documentado aún reinicia mediante un directorio de datos nuevo. Mostrar esta limitación en el flujo; no simular un reinicio operativo.",
+    "destructiveHistory": "Archivar una ronda no elimina sus evidencias. La reversión de política no deshace efectos de negocio anteriores.",
+    "copy": "IDs, hashes y JSON se copian con confirmación breve junto al control.",
+    "keyboard": "Tab recorre controles en orden de lectura; Escape cierra inspector flotante o diálogo y devuelve el foco al origen."
+  },
+  "provenance": {
+    "modes": [
+      {"id": "live", "label": "En vivo", "requirement": "Conexión al backend y actualización confirmada; incluir último evento recibido."},
+      {"id": "snapshot", "label": "Captura real", "requirement": "Origen, fecha de captura, modo del proveedor y ejecución de procedencia visibles."},
+      {"id": "playback", "label": "Playback de pruebas", "requirement": "Identificar la evidencia simulada y evitar presentarla como resultado del proveedor real."},
+      {"id": "fixture", "label": "Datos de diseño", "requirement": "Separar explícitamente los registros inventados de cualquier evidencia real."}
+    ],
+    "metrics": "Toda métrica muestra alcance, denominador y registros de origen. El presupuesto desconocido se muestra No medido.",
+    "secrets": "Nunca incrustar secretos de operación o tokens de participante en el artifact, JSON de diseño, captura pública o enlace de proyección.",
+    "inference": "Distinguir efecto observado, decisión de control, veredicto determinista e interpretación de la interfaz."
+  },
+  "components21st": [
+    {
+      "name": "Sidebar",
+      "author": "shadcn",
+      "url": "https://21st.dev/@shadcn/components/sidebar",
+      "use": "Rail contraíble de navegación estable, selector de ronda y atajos.",
+      "adaptation": "Rail de 64 px, marca Zero propia, selección ámbar y tooltip accesible; el informe de diseño queda fuera de la navegación operativa."
+    },
+    {
+      "name": "Resizable",
+      "author": "ReUI / Sean Hello",
+      "url": "https://21st.dev/@sean0205/components/resizable/handle",
+      "use": "Registro, canvas e inspector ajustables.",
+      "adaptation": "Separadores de 1 px con objetivo de arrastre amplio y ajuste por teclado; guardar tamaños y respetar mínimos de lectura."
+    },
+    {
+      "name": "Data Table",
+      "author": "Layro System / Mohamed Uvaish",
+      "url": "https://21st.dev/@uvain/components/data-table-bulk-actions",
+      "use": "Intentos, hallazgos y sesiones con búsqueda, ordenación, columnas y exportación seleccionada.",
+      "adaptation": "Filas de 36 o 44 px, estados semánticos, selección conectada al canvas y columnas propias del dominio."
+    },
+    {
+      "name": "Command Palette",
+      "author": "Rafael Porto",
+      "url": "https://21st.dev/@rafa-porto/components/command-palette/command-palette",
+      "use": "Búsqueda global por ID y acciones de teclado.",
+      "adaptation": "Resultados agrupados por ejecución, sesión, hallazgo y política; mantener contexto y permisos del servidor."
+    },
+    {
+      "name": "Animated Tabs",
+      "author": "kuratlielia",
+      "url": "https://21st.dev/@kuratlielia/components/tabs",
+      "use": "Pestañas del inspector Evidencia / JSON / Efectos / Contexto.",
+      "adaptation": "Indicador sobrio, foco visible, navegación por teclado y altura estable durante la lectura de evidencia."
+    },
+    {
+      "name": "AI Chat Input",
+      "author": "HextaUI / Preet Suthar",
+      "url": "https://21st.dev/@preetsuthar17/components/ai-chat-input",
+      "use": "Composer de participante y secuencia de mensajes de experimentación.",
+      "adaptation": "Mostrar cuota y límite real de mensajes; retirar selectores de modelo, adjuntos y otros controles sin soporte del producto."
+    },
+    {
+      "name": "Stepper with titles and descriptions",
+      "author": "Origin UI",
+      "url": "https://21st.dev/@originui/components/stepper/with-titles-and-descriptions",
+      "use": "Pista compacta de escenas y requisitos del demo.",
+      "adaptation": "Escena actual, condición de avance y resultado; el contenido principal permanece centrado en evidencia real."
+    }
+  ],
+  "componentAttribution": {
+    "verification": "URLs consultadas directamente en 21st.dev durante la revisión de diseño.",
+    "integration": "Referencias de componentes publicados en React/Tailwind. El HTML puede adaptar sus patrones, pero no debe afirmar que incorporó su código React si no lo hizo."
+  },
+  "reviewCriteria": [
+    "La primera pantalla muestra una ejecución o un estado vacío útil, y permite llegar a sus argumentos y veredicto sin cambiar de módulo.",
+    "La selección conecta registro, canvas e inspector.",
+    "La versión fijada al intento y la política actualmente activa se distinguen.",
+    "Las diferencias entre violación, contención, bloqueo e inconcluso permanecen visibles.",
+    "Los datos faltantes y las acciones no implementadas no se rellenan con simulaciones silenciosas.",
+    "El modo de datos y su fecha permanecen visibles en cada vista.",
+    "La proyección es legible y usa exclusivamente información pública autorizada.",
+    "El móvil mantiene objetivos, identidad, cuota y estado de envío disponibles."
+  ]
+}
