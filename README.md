@@ -151,7 +151,7 @@ Empezar por [continuidad y traspaso](./docs/continuidad.md). El [índice documen
 
 | Área | Resultado |
 | --- | --- |
-| Backend | 1096 pruebas aprobadas y dos LIVE opcionales omitidas; Ruff, formato y mypy estricto aprobados (24 oct). |
+| Backend | 1112 pruebas aprobadas y dos LIVE opcionales omitidas; Ruff, formato y mypy estricto aprobados (24 oct). |
 | Frontend | 68 pruebas aprobadas; Biome, TypeScript y build aprobados (24 oct). |
 | Guard agnóstico | Tres contratos (comida, banca, clínica): cada invariante produce una política activa, el ataque repetido queda bloqueado y todas las tareas legítimas siguen pasando. Agente bancario de ejemplo ejecutado contra el servidor real. |
 | Comparación DEMO | 270 ejecuciones y 732 llamadas simuladas; 90/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones. |
