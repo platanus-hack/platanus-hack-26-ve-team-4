@@ -10,7 +10,7 @@ Estado: consolidación determinista y enriquecimiento LLM implementados. Este do
 | [models.py](../../backend/src/agent_zero/analyzer/models.py) | `FindingRecord` en `findings`; explicación por intento en `finding_explanations`. |
 | [schemas.py](../../backend/src/agent_zero/analyzer/schemas.py) | `FindingAnalysis`, DTO cerrado para el rol `ANALYZER`. |
 | [enrichment.py](../../backend/src/agent_zero/analyzer/enrichment.py) | Encolar `finding_analysis` y ejecutar el análisis como run durable. |
-| [manifest.py](../../backend/src/agent_zero/analyzer/manifest.py) | Manifiesto 2.0.0 `analizador`, sin herramientas de negocio. |
+| [manifest.py](../../backend/src/agent_zero/analyzer/manifest.py) | Manifiesto 2.2.0 `analizador`, sin herramientas de negocio. |
 | [operator_router.py](../../backend/src/agent_zero/arena/operator_router.py) | `GET /api/operator/findings`, con secreto de operación. |
 
 `FindingRecord` conserva objetivo, herramienta, control ausente, primera versión afectada, intentos, IDs de evidencia, causa determinista, fechas y estado. No existe un endpoint público para crear o cerrar hallazgos; el panel los consulta y el ciclo de defensa actualiza sus estados.

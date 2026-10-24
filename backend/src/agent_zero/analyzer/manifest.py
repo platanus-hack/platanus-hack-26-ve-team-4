@@ -18,5 +18,5 @@ def analyzer_manifest() -> AgentManifest:
         tools=(),
         scopes=("findings:write",),
         max_classification=DataClassification.INTERNAL,
-        allowed_regions=("cl",),
+        allowed_regions=("ve",),
     )

@@ -20,7 +20,7 @@ Estado: implementado. Guarda recuerdos con dueño, sujeto, TTL y procedencia. La
 
 | Camino | Sujeto y almacenamiento |
 | --- | --- |
-| Arena 2.0.0 | `subject_id=session_id`; memoria en el archivo protegido o señuelo correspondiente. |
+| Arena 2.2.0 | `subject_id=session_id`; memoria en el archivo protegido o señuelo correspondiente. |
 | Evaluación/validación | Base temporal nueva por ejecución; se descarta al salir del contexto. |
 | Recorrido `support_conversation` 1.0.0 | Sujeto de cliente sintético y memoria de plataforma en `app.db`. |
 

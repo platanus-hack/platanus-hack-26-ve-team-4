@@ -80,5 +80,5 @@ async def test_honeytools_refuse_to_run_outside_the_decoy(decoy_client: TestClie
         with pytest.raises(ValueError, match="no disponible"):
             await honeytools.call(CREDENTIAL_TOOL, {}, context, principal)
     decoy = replace(context, environment="honeypot")
-    output = json.loads(await honeytools.call(CREDENTIAL_TOOL, {}, decoy, principal))
+    output = json.loads((await honeytools.call(CREDENTIAL_TOOL, {}, decoy, principal)).text)
     assert output["clave_api"].startswith(HONEYTOKEN_PREFIX)

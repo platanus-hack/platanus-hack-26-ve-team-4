@@ -1,5 +1,3 @@
-import json
-
 from sqlalchemy import select
 
 from agent_zero.agent_gateway.business_policy import CallContext
@@ -9,35 +7,11 @@ from agent_zero.memory_bank.models import MemoryRecord
 from agent_zero.oracles.memory_oracle import evaluate_memory
 from agent_zero.oracles.order_oracle import evaluate_order
 from agent_zero.oracles.refund_oracle import evaluate_refund
-from agent_zero.oracles.schemas import Assessment, ToolEvidence
+from agent_zero.oracles.schemas import Assessment
+from agent_zero.oracles.trace_reader import tool_evidence
 from agent_zero.policies.validator_catalog import is_policy_control
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.store_models import StoreRefund
-
-
-def tool_evidence(events: list[TraceEvent]) -> list[ToolEvidence]:
-    result: list[ToolEvidence] = []
-    for event in events:
-        if not event.type.value.startswith("tool_"):
-            continue
-        output = event.data.get("output", "{}")
-        try:
-            parsed = json.loads(output) if isinstance(output, str) else output
-        except (ValueError, TypeError):
-            parsed = {}
-        result.append(
-            ToolEvidence(
-                event_id=event.id,
-                kind=event.type.value,
-                tool=event.data["tool"],
-                arguments=event.data.get("arguments", {}),
-                output=parsed if isinstance(parsed, dict) else {},
-                validator=event.data.get("validator", ""),
-                operation_id=event.data.get("operation_id", ""),
-                provenance=event.data.get("provenance", {}),
-            )
-        )
-    return result
 
 
 class AssessmentService:
@@ -71,6 +45,14 @@ class AssessmentService:
                 verdicts=[],
                 detail="La traza no concuerda con el contexto del intento.",
             )
+        evidence = tool_evidence(events)
+        unreadable = sorted({item.tool for item in evidence if not item.readable})
+        if unreadable:
+            return Assessment(
+                outcome=AttemptOutcome.INCONCLUSIVE,
+                verdicts=[],
+                detail=f"Traza ilegible: sin salida o efecto declarado en {', '.join(unreadable)}.",
+            )
         environment = self._environments.for_context(context)
         async with environment.database.sessions() as db:
             refunds = set(
@@ -85,7 +67,6 @@ class AssessmentService:
                     select(MemoryRecord.id).where(MemoryRecord.source_run_id == context.run_id)
                 )
             )
-        evidence = tool_evidence(events)
         orders = await environment.orders()
         verdicts = [
             evaluate_order(evidence, context.session_customer_id, reply, orders),

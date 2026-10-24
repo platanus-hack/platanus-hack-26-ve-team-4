@@ -40,8 +40,8 @@ class Settings(BaseSettings):
     memory_encryption_key: SecretStr = SecretStr("")
     memory_default_ttl_days: int = Field(default=90, ge=1)
 
-    data_region: str = "cl"
-    allowed_data_regions: list[str] = ["cl"]
+    data_region: str = "ve"
+    allowed_data_regions: list[str] = ["ve"]
 
     runtime_worker_concurrency: int = Field(default=2, ge=1)
     runtime_poll_seconds: float = Field(default=0.5, gt=0)

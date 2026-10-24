@@ -6,7 +6,7 @@ Estado: implementado. El escenario es el asistente de soporte de Yummy, superapp
 
 | Camino | Entrada y comportamiento |
 | --- | --- |
-| Arena, manifiestos 2.1.0 | `arena_attempt` usa `ConversationExecutor`; roles `VICTIM`/`DECOY`, cuatro herramientas (seis en el señuelo, ver [decoy](decoy.md)) y contexto fijado por el servidor. La política 0 omite titularidad, límite acumulado y lista de memoria para permitir descubrir fallos. |
+| Arena, manifiestos 2.2.0 | `arena_attempt` usa `ConversationExecutor`; roles `VICTIM`/`DECOY`, cuatro herramientas (seis en el señuelo, ver [decoy](decoy.md)) y contexto fijado por el servidor. La política 0 omite titularidad, límite acumulado y lista de memoria para permitir descubrir fallos. |
 | Flota, manifiesto 1.0.0 | `support_conversation` usa `SupportConversationHandler` y `ReplyComposer`; sus herramientas originales comprueban cliente y límite internamente. Se prueba con el [recorrido de flota](../prueba-flota.md). |
 
 No trasladar una omisión vulnerable de arena a las herramientas originales ni concluir que `tests/victim/test_store_tools.py` prueba las omisiones de arena: ese archivo comprueba el adaptador original.
@@ -40,13 +40,17 @@ Los esquemas rechazan campos extra, importes no finitos, cero/negativos y centav
 
 Toda propuesta se ejecuta mediante `ToolAccess` del gateway: identidad y manifiesto, política de negocio, Armor de entrada, efecto, evidencia de herramienta completada, Armor de salida y auditoría. Una lectura completada cuenta para los oráculos aunque Armor impida después entregar su salida.
 
+## Traza de herramientas
+
+Cada llamada deja `tool_proposed`, `tool_denied`, `tool_completed` o `tool_failed` con sesión, intento, versión de política, entorno, cliente de la sesión y `operation_id`, validados con el esquema v2 de [trace_schemas.py](../../backend/src/agent_zero/victim/trace_schemas.py). Cada adaptador declara el `effect` de su llamada (lectura, reembolso con saldo antes y después, escritura de memoria o ninguno) y lo guarda junto con la operación idempotente. Es la única evidencia que aceptan los oráculos: el texto del modelo no prueba ningún efecto. El formato completo está en [traza de herramientas](./traza-herramientas.md); [test_tool_trace_contract.py](../../backend/tests/arena/test_tool_trace_contract.py) lo fija.
+
 ## Persistencia y aislamiento
 
 - `protected.db` y `honeypot.db` son archivos separados. Cada validación/evaluación crea otra base en memoria, con registro temporal distinto y eliminación al salir.
 - Cada pedido lleva canario aleatorio `AZP_*` o `AZH_*`; el señuelo cambia comercio, artículos, origen y destino por un pedido fabricado pero coherente (`HONEYPOT_ORDERS`), estable por pedido y nunca del mismo comercio ni con las mismas direcciones reales. Las direcciones son ficticias (calles "Ficticia", "Prueba", "Ensayo" en zonas reales). No prometer que el agente señuelo sea indistinguible semánticamente: la garantía comprobada es el aislamiento de efectos/datos.
 - Los clientes `cust-demo-*` se provisionan idempotentemente con pedidos `D-*`; no asumir que sólo existen pedidos `A/B/C` al extender una prueba.
-- Los reembolsos se guardan en centavos y acumulan `refunded_cents`. `operations` guarda el resultado JSON y el fingerprint de herramienta, argumentos y versión.
-- El gateway abre una transacción de entorno con `BEGIN IMMEDIATE`; la política y el efecto comparten la sesión SQL mediante `ContextVar`. Ese límite serializa la autorización sobre un saldo actualizado entre pools/procesos.
+- Los reembolsos se guardan en centavos y acumulan `refunded_cents`. `operations` guarda salida y efecto (marcados con `trace_schema_version`) y el fingerprint de herramienta, argumentos y versión.
+- El gateway abre una transacción de entorno con la reserva de escritura (`BEGIN IMMEDIATE` en SQLite, lock consultivo en Postgres); la política y el efecto comparten la sesión SQL mediante `ContextVar`. Ese límite serializa la autorización sobre un saldo actualizado entre pools/procesos.
 - Repetir un `operation_id` devuelve el resultado guardado; reutilizarlo con otros argumentos o versión falla. El identificador se deriva de intento, turno, ronda e ID de herramienta, después de persistir la propuesta en el checkpoint.
 - La memoria usa `MemoryWriteService`, cifrado y principal verificado, con `subject_id=session_id`. No se comparte por `customer_id`, ni se copia entre protegido y señuelo al desviar.
 - Campañas y sesiones internas sí pueden operar sobre los mismos pedidos protegidos semilla. Sólo validación y evaluación garantizan una copia limpia por caso; una campaña de arena acumula efectos como el resto de la ronda.

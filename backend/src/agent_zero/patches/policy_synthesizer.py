@@ -6,8 +6,8 @@ from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.llm.context import call_scope, declaring_prompt_version
 from agent_zero.llm.gateway import LlmGateway
 from agent_zero.llm.models import ModelRole
-from agent_zero.oracles.assessment_service import tool_evidence
 from agent_zero.oracles.schemas import Assessment
+from agent_zero.oracles.trace_reader import tool_evidence
 from agent_zero.patches.synthesis_precheck import precheck, violating_calls
 from agent_zero.policies.flow.dsl import FlowPolicy
 from agent_zero.policies.flow.proposal import FlowProposal

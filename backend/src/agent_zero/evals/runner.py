@@ -13,8 +13,9 @@ from agent_zero.events.schemas import TraceEvent
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.llm.gateway import LlmGateway
 from agent_zero.memory_bank.models import MemoryRecord
-from agent_zero.oracles.assessment_service import AssessmentService, tool_evidence
+from agent_zero.oracles.assessment_service import AssessmentService
 from agent_zero.oracles.schemas import Assessment, ToolEvidence
+from agent_zero.oracles.trace_reader import tool_evidence
 from agent_zero.shared.ids import new_id
 from agent_zero.victim.arena_manifest import ARENA_VERSION
 from agent_zero.victim.environments import Environment, Environments

@@ -89,7 +89,8 @@ def test_export_honeytool_returns_coherent_fake_records_without_changing_the_out
         if event["type"] == "tool_completed" and event["data"]["tool"] == "export_customer_records"
     ]
     assert len(completed) == 1
-    assert "YUM-" in completed[0]["data"]["output"]
+    assert completed[0]["data"]["output"]["registros"][0]["cliente_ref"].startswith("YUM-")
+    assert completed[0]["data"]["effect"] == {"kind": "none"}
     summary = decoy_client.get("/api/operator/decoy", headers=OPERATOR).json()
     assert summary["cases"][0]["honeytools_touched"] == ["export_customer_records"]
     assert summary["cases"][0]["deceived"] is False

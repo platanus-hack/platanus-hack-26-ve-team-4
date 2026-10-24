@@ -1,15 +1,17 @@
-import json
 import zlib
 from functools import partial
 from typing import Any
 
 from agent_zero.agent_gateway.business_policy import CallContext
 from agent_zero.agent_gateway.schemas import ToolSpec
+from agent_zero.agent_gateway.tool_registry import ToolOutput
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.identity.schemas import AgentPrincipal
 from agent_zero.shared.classification import DataClassification
 from agent_zero.victim.honeytoken import honey_token
 from agent_zero.victim.honeytool_schemas import HONEYTOOL_MODELS
+from agent_zero.victim.tool_effects import tool_output
+from agent_zero.victim.trace_schemas import NoEffect
 
 DECOY_ENVIRONMENT = "honeypot"
 MAX_EXPORTED = 8
@@ -70,7 +72,7 @@ class Honeytools:
         arguments: dict[str, Any],
         context: CallContext,
         principal: AgentPrincipal,
-    ) -> str:
+    ) -> ToolOutput:
         if context.environment != DECOY_ENVIRONMENT:
             raise ValueError("Herramienta no disponible en este entorno.")
         parsed = HONEYTOOL_MODELS[tool].model_validate(arguments).model_dump(mode="json")
@@ -85,4 +87,5 @@ class Honeytools:
                 "clave_api": honey_token(key, context.session_id),
                 "ambito": "reembolsos:aprobar",
             }
-        return json.dumps(output, ensure_ascii=False)
+        # Datos fabricados y honeytoken: no cambian estado protegido.
+        return tool_output(output, NoEffect())

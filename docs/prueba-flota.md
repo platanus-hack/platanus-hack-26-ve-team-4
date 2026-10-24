@@ -1,6 +1,6 @@
 # Prueba HTTP de la flota
 
-Este recorrido ejecuta la aplicación y sus siete componentes de plataforma: Registry, Runtime, Memory Bank, Identity, Gateway, Armor y Observability. Es distinto del ciclo de parches de la arena: utiliza `support_conversation` y el manifiesto `soporte-tienda` **1.0.0**, cuyos permisos niegan reembolsos. La arena usa manifiestos **2.0.0** y otro handler.
+Este recorrido ejecuta la aplicación y sus siete componentes de plataforma: Registry, Runtime, Memory Bank, Identity, Gateway, Armor y Observability. Es distinto del ciclo de parches de la arena: utiliza `support_conversation` y el manifiesto `soporte-tienda` **1.0.0**, cuyos permisos niegan reembolsos. La arena usa manifiestos **2.2.0** y otro handler.
 
 El punto de entrada es [walkthrough/__main__.py](../backend/src/agent_zero/walkthrough/__main__.py). [test_walkthrough.py](../backend/tests/walkthrough/test_walkthrough.py) ejecuta el mismo recorrido con modelo guionado; [evidencias](./pruebas/evidencias.md) conserva el ensayo DEMO aprobado de **22/22 comprobaciones**. Esta guía no requiere llamadas reales por defecto.
 

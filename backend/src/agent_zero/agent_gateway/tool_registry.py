@@ -7,8 +7,23 @@ from agent_zero.agent_gateway.errors import DuplicateToolError
 from agent_zero.agent_gateway.schemas import ToolSpec
 from agent_zero.identity.schemas import AgentPrincipal
 
+
+@dataclass(frozen=True)
+class ToolOutput:
+    """Salida de un handler contextual: el texto para el modelo y el efecto para la traza.
+
+    `effect` describe el cambio de estado que produjo la llamada; el gateway lo entrega al
+    observador sin mostrárselo al modelo.
+    """
+
+    text: str
+    effect: dict[str, Any] | None = None
+
+
 ToolHandler = Callable[[dict[str, Any]], Awaitable[str]]
-ContextualToolHandler = Callable[[dict[str, Any], CallContext, AgentPrincipal], Awaitable[str]]
+ContextualToolHandler = Callable[
+    [dict[str, Any], CallContext, AgentPrincipal], Awaitable[str | ToolOutput]
+]
 
 
 @dataclass(frozen=True)

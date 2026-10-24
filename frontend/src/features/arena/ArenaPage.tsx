@@ -21,6 +21,7 @@ const EVENT_LABELS: Record<EventType, string> = {
   tool_proposed: "Herramienta propuesta",
   tool_denied: "Control de herramienta aplicado",
   tool_completed: "Herramienta completada",
+  tool_failed: "Herramienta con error",
   route_changed: "Ruta actualizada",
   attempt_evaluated: "Intento evaluado",
   finding_opened: "Hallazgo confirmado",
