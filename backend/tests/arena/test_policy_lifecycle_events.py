@@ -210,10 +210,26 @@ def test_repeated_activation_and_rollback_do_not_announce_again(
         await core.fleet.worker.stop()
         version = await ready_policy(core)
         assert await core.policies.activate(version, core.attempts.drained) is True
+        # The atomic activation alone stages POLICY_ACTIVATED, before any finalize.
+        await core.events.dispatch_pending()
+        activated = await read_outbox(core)
+        assert [record.type for record, _ in activated] == [
+            EventType.PATCH_PROPOSED,
+            EventType.PATCH_VALIDATED,
+            EventType.POLICY_ACTIVATED,
+        ]
+        activated_record, activated_delivery = activated[-1]
+        assert activated_delivery.delivered_at is not None
+        assert activated_record.dedup_key == f"policy:{version}:activated"
         # The ACTIVE branch answers without staging a second activation.
         assert await core.policies.activate(version, core.attempts.drained) is True
         await core.policies.finalize(version)
         await core.policies.finalize(version)
+        after_finalize = await read_outbox(core)
+        activations = [
+            record for record, _ in after_finalize if record.type is EventType.POLICY_ACTIVATED
+        ]
+        assert [record.id for record in activations] == [activated_record.id]
         reverted = await core.policies.rollback(
             version, "Ensayo de reversión", core.attempts.drained
         )
