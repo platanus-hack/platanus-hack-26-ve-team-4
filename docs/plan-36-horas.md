@@ -92,6 +92,7 @@ La revisión final debe confirmar:
 | Evaluación amplia | [Artefacto](../artifacts/core-evaluation/demo-270.json): 270 ejecuciones y 732 llamadas simuladas, 90/90 → 0/90 violaciones, 45/45 tareas útiles por versión, cero inconclusos. |
 | Proveedor real | [Once comprobaciones del ciclo completo](../artifacts/core-evaluation/live-p0.json), 93 llamadas LIVE, cinco roles y coste estimado de 0,0101596 USD a partir de tokens medidos. Comparación amplia real aún pendiente. |
 | Contenedores | Ambas imágenes construidas; proxy, ejercicio completo y reset archivado comprobados en modo demo. |
+| Backend | 860 pruebas aprobadas y dos LIVE opcionales omitidas, con advertencias tratadas como errores; Ruff, formato y mypy aprobados. |
 | Frontend | 47 pruebas, tipado, lint y build aprobados. La revisión visual en navegador sigue pendiente. |
 | Entrega pública | URL pública, prueba desde un teléfono externo, medición de carga y grabación de respaldo pendientes. |
 
