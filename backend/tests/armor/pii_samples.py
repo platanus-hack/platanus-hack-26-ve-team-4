@@ -14,3 +14,20 @@ PHONES: tuple[str, ...] = (
     "04241234567",
     "0212 555 12 34",
 )
+
+ZERO_WIDTH_SPACE = chr(0x200B)
+NO_BREAK_SPACE = chr(0xA0)
+FULLWIDTH_AT = chr(0xFF20)
+
+EVASIVE_CARDS: tuple[str, ...] = (
+    "4111.1111.1111.1111",
+    "4111/1111/1111/1111",
+    f"4111{NO_BREAK_SPACE}1111{NO_BREAK_SPACE}1111{NO_BREAK_SPACE}1111",
+    f"4111{ZERO_WIDTH_SPACE}1111{ZERO_WIDTH_SPACE}1111{ZERO_WIDTH_SPACE}1111",
+)
+EVASIVE_CEDULAS: tuple[str, ...] = ("V12345678", "V 12345678", "E1234567")
+EVASIVE_EMAILS: tuple[str, ...] = (
+    f"juan@ejem{ZERO_WIDTH_SPACE}plo.com",
+    f"juan{FULLWIDTH_AT}ejemplo.com",
+    f"ju{ZERO_WIDTH_SPACE}an@ejemplo.com",
+)

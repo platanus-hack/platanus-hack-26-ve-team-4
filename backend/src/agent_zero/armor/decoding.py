@@ -22,20 +22,21 @@ def looks_like_text(value: str) -> bool:
     return readable >= MIN_TEXT_RATIO * len(value)
 
 
+def decode_base64_token(candidate: str) -> str | None:
+    token = candidate.rstrip("=")
+    padding = -len(token) % 4
+    if padding == 3:
+        return None
+    try:
+        raw = base64.b64decode(token + "=" * padding, validate=True).decode("utf-8")
+    except (binascii.Error, ValueError, UnicodeDecodeError):
+        return None
+    return raw if looks_like_text(raw) else None
+
+
 def decode_base64_tokens(text: str) -> list[str]:
-    decoded: list[str] = []
-    for match in BASE64_TOKEN.finditer(text):
-        token = match.group(0).rstrip("=")
-        padding = -len(token) % 4
-        if padding == 3:
-            continue
-        try:
-            raw = base64.b64decode(token + "=" * padding, validate=True).decode("utf-8")
-        except (binascii.Error, ValueError, UnicodeDecodeError):
-            continue
-        if looks_like_text(raw):
-            decoded.append(raw)
-    return decoded
+    decoded = (decode_base64_token(match.group(0)) for match in BASE64_TOKEN.finditer(text))
+    return [item for item in decoded if item is not None]
 
 
 def rot13(text: str) -> str:

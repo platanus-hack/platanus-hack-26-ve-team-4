@@ -1,3 +1,5 @@
+import base64
+
 import pytest
 
 from agent_zero.armor.models import PiiKind
@@ -5,11 +7,16 @@ from agent_zero.armor.pii_redactor import redact_with_kinds
 from tests.armor.pii_samples import (
     CEDULAS,
     EMAILS,
+    EVASIVE_CARDS,
+    EVASIVE_CEDULAS,
+    EVASIVE_EMAILS,
+    FULLWIDTH_AT,
     INVALID_CARDS,
     INVALID_RUTS,
     PHONES,
     VALID_CARDS,
     VALID_RUTS,
+    ZERO_WIDTH_SPACE,
 )
 
 
@@ -58,3 +65,33 @@ def test_multiple_types_in_one_text() -> None:
 def test_order_numbers_are_not_pii() -> None:
     text = "Mi pedido #48213 costó 24990 pesos, llegó el 2026-10-12."
     assert redact_with_kinds(text) == (text, ())
+
+
+@pytest.mark.requirement("ARM-03", "MEM-03")
+@pytest.mark.parametrize(
+    ("samples", "kind"),
+    [
+        (EVASIVE_CARDS, PiiKind.CARD),
+        (EVASIVE_CEDULAS, PiiKind.CEDULA),
+        (EVASIVE_EMAILS, PiiKind.EMAIL),
+    ],
+)
+def test_evasive_variants_are_still_redacted(samples: tuple[str, ...], kind: PiiKind) -> None:
+    for sample in samples:
+        text, kinds = redact_with_kinds(f"Mi dato es {sample}, gracias.")
+        assert text == f"Mi dato es {kind.tag}, gracias.", repr(sample)
+        assert kinds == (kind,), repr(sample)
+
+
+@pytest.mark.requirement("ARM-03", "MEM-03")
+def test_base64_encoded_email_is_redacted() -> None:
+    encoded = base64.b64encode(b"contacto: cliente@example.com").decode()
+    text, kinds = redact_with_kinds(f"adjunto {encoded} fin")
+    assert text == "adjunto [EMAIL] fin"
+    assert kinds == (PiiKind.EMAIL,)
+
+
+@pytest.mark.requirement("ARM-04")
+def test_text_without_pii_is_returned_untouched() -> None:
+    original = f"Hola{ZERO_WIDTH_SPACE} mundo {FULLWIDTH_AT} sin datos, V 12 y e 5"
+    assert redact_with_kinds(original) == (original, ())
