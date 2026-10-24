@@ -15,6 +15,7 @@ from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.llm.gateway import LlmGateway
 from agent_zero.oracles.assessment_service import AssessmentService
 from agent_zero.patches.defense_scheduler import DefenseScheduler
+from agent_zero.patches.explanation import PatchExplainer
 from agent_zero.patches.validation_handler import PatchValidationHandler
 from agent_zero.patches.validation_runner import ValidationRunner
 from agent_zero.policies.policy_engine import BusinessPolicyEngine
@@ -81,7 +82,10 @@ class ProductCore:
             AttemptExecutionHandler(self.fleet, self.executor, self.events, self.assessments)
         )
         self.fleet.handlers.register(
-            PatchValidationHandler(self.policies, self.attempts, self.events, self.validator)
+            PatchValidationHandler(
+                self.policies, self.attempts, self.events, self.validator,
+                PatchExplainer(self.fleet, self._llm),
+            )
         )
 
         self.fleet.handlers.register(

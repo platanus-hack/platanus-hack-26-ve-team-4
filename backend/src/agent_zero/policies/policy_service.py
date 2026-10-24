@@ -8,6 +8,7 @@ from agent_zero.analyzer.models import FindingRecord, FindingStatus
 from agent_zero.arena.transactions import serialize_write
 from agent_zero.events.event_store import EventStore
 from agent_zero.events.models import EventType
+from agent_zero.patches.explanation import with_explanation
 from agent_zero.policies.lifecycle import transition
 from agent_zero.policies.models import PolicyPointer, PolicyStatus, PolicyVersion
 from agent_zero.policies.repository import PolicyRepository, content_hash, policy_view
@@ -35,11 +36,15 @@ class PolicyService:
 
     async def get(self, version: int) -> dict[str, Any]:
         async with self._database.sessions() as db:
-            return policy_view(await PolicyRepository(db).require(version))
+            return await with_explanation(
+                db, policy_view(await PolicyRepository(db).require(version))
+            )
 
     async def all(self) -> list[dict[str, Any]]:
         async with self._database.sessions() as db:
-            return await PolicyRepository(db).all()
+            return [
+                await with_explanation(db, policy) for policy in await PolicyRepository(db).all()
+            ]
 
     async def propose(
         self,
