@@ -3,7 +3,7 @@ fecha: 2026-10-24
 autor: "@franbastardo"
 rama: feat/chat-participante
 pr: 47
-estado: en revisión
+estado: integrado
 dominios: [frontend, attempts, victim]
 requisitos: []
 ---
