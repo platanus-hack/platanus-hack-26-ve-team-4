@@ -328,6 +328,10 @@ details label {
 .ranking li > strong {
   float: right;
 }
+.ranking li > small {
+  display: block;
+  margin: 4px 0 0 12px;
+}
 .timeline {
   list-style: none;
   padding: 0;
