@@ -6,6 +6,7 @@ from strands.types.streaming import StreamEvent
 
 from agent_zero.llm.playback_model import PlaybackModel
 from agent_zero.victim.model_turn import model_turn
+from agent_zero.victim.tool_schemas import tool_specs
 
 
 def start(identity: str, index: int = 0) -> dict[str, Any]:
@@ -35,6 +36,7 @@ async def parse(events: list[dict[str, Any]]) -> Any:
         PlaybackModel([cast(list[StreamEvent], events)]),
         [{"role": "user", "content": [{"text": "Consulta dos pedidos."}]}],
         "Laboratorio",
+        tool_specs(),
     )
 
 

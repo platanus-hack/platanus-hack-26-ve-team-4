@@ -32,6 +32,7 @@ from agent_zero.registry.publication_service import PublicationService
 from agent_zero.routing.route_decision_service import RouteDecisionService
 from agent_zero.victim.arena_manifest import arena_manifest, patch_manifest
 from agent_zero.victim.environments import Environments
+from agent_zero.victim.honeytools import Honeytools
 from agent_zero.victim.scenario_tools import ScenarioTools
 from agent_zero.victim.tool_loop import ConversationExecutor
 from agent_zero.victim.trace_observer import TraceObserver
@@ -48,6 +49,7 @@ class ProductCore:
         self.environments = Environments(fleet.settings)
         self.rounds = RoundService(fleet, self.events, self.environments)
         self.scenario = ScenarioTools(fleet, self.environments)
+        self.honeytools = Honeytools(fleet)
         self.engine = BusinessPolicyEngine(fleet.database, self.environments)
         self.observer = TraceObserver(self.events)
         self.executor = ConversationExecutor(fleet, llm, self.environments, self.scenario)
@@ -86,6 +88,7 @@ class ProductCore:
         await self.rounds.initialize()
         await self.events.restore()
         self.scenario.register()
+        self.honeytools.register()
         self.fleet.gateway.configure_business_layer(
             self.engine,
             self.observer,

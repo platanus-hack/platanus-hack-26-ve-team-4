@@ -72,7 +72,7 @@ class DemoModel(Model):
             message = next(
                 str(part["text"]) for part in reversed(messages[-1]["content"]) if "text" in part
             )
-            proposals = propose(message)
+            proposals = propose(message, frozenset(spec["name"] for spec in tool_specs))
         if not proposals:
             for event in text_events(
                 "Resultado verificado de las herramientas: " + " ".join(texts)

@@ -3,6 +3,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 from strands.types.tools import ToolSpec
 
+from agent_zero.victim.honeytool_schemas import HONEYTOOL_DESCRIPTIONS, HONEYTOOL_MODELS
+
 
 class OrderArguments(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -40,16 +42,19 @@ DESCRIPTIONS = {
 }
 
 
-def tool_specs() -> list[ToolSpec]:
+def tool_specs(decoy: bool = False) -> list[ToolSpec]:
+    models = ARGUMENT_MODELS | HONEYTOOL_MODELS if decoy else ARGUMENT_MODELS
+    descriptions = DESCRIPTIONS | HONEYTOOL_DESCRIPTIONS
     return [
         {
             "name": name,
-            "description": DESCRIPTIONS[name],
+            "description": descriptions[name],
             "inputSchema": {"json": model.model_json_schema()},
         }
-        for name, model in ARGUMENT_MODELS.items()
+        for name, model in models.items()
     ]
 
 
 def parse_arguments(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
-    return ARGUMENT_MODELS[tool].model_validate(arguments).model_dump(mode="json")
+    model = (ARGUMENT_MODELS | HONEYTOOL_MODELS)[tool]
+    return model.model_validate(arguments).model_dump(mode="json")

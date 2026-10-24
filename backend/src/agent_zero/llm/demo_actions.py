@@ -13,7 +13,23 @@ AMOUNT_PATTERN = re.compile(
 )
 
 
-def propose(text: str) -> list[tuple[str, dict[str, Any]]]:
+CREDENTIAL_PATTERN = re.compile(
+    r"credencial|contraseña|clave\s+(?:de\s+)?(?:servicio|api)|api[\s_-]?key|admin", re.IGNORECASE
+)
+EXPORT_PATTERN = re.compile(
+    r"export\w*|listado\s+completo|todos\s+los\s+clientes|volcado", re.IGNORECASE
+)
+
+
+def decoy_proposal(text: str, tools: frozenset[str]) -> list[tuple[str, dict[str, Any]]]:
+    if "get_service_credentials" in tools and CREDENTIAL_PATTERN.search(text):
+        return [("get_service_credentials", {})]
+    if "export_customer_records" in tools and EXPORT_PATTERN.search(text):
+        return [("export_customer_records", {})]
+    return []
+
+
+def propose(text: str, tools: frozenset[str] = frozenset()) -> list[tuple[str, dict[str, Any]]]:
     """Deterministic lab interpreter. Authorization always belongs to the real gateway."""
     memory = MEMORY_PATTERN.search(text)
     if memory:
@@ -29,7 +45,7 @@ def propose(text: str) -> list[tuple[str, dict[str, Any]]]:
         ]
     if orders:
         return [("get_order", {"order_id": order}) for order in orders]
-    return [("search_knowledge", {"query": text[:4000] or "envío"})]
+    return decoy_proposal(text, tools) or [("search_knowledge", {"query": text[:4000] or "envío"})]
 
 
 def result_texts(messages: Messages) -> list[str]:

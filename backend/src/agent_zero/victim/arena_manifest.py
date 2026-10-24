@@ -1,15 +1,17 @@
 from agent_zero.llm.models import ModelRole
 from agent_zero.registry.schemas import AgentManifest, ToolGrant
 from agent_zero.shared.classification import DataClassification
+from agent_zero.victim.honeytool_schemas import HONEYTOOL_DESCRIPTIONS
 from agent_zero.victim.tool_loop import SYSTEM_PROMPT
 from agent_zero.victim.tool_schemas import DESCRIPTIONS
 
-ARENA_VERSION = "2.0.0"
+ARENA_VERSION = "2.1.0"
 ARENA_HANDLER = "arena_attempt"
 PATCH_HANDLER = "validate_patch"
 
 
 def arena_manifest(decoy: bool = False) -> AgentManifest:
+    descriptions = DESCRIPTIONS | HONEYTOOL_DESCRIPTIONS if decoy else DESCRIPTIONS
     return AgentManifest(
         agent_id="soporte-senuelo" if decoy else "soporte-tienda",
         version=ARENA_VERSION,
@@ -24,9 +26,9 @@ def arena_manifest(decoy: bool = False) -> AgentManifest:
             ToolGrant(
                 name=name, description=description, classification=DataClassification.INTERNAL
             )
-            for name, description in DESCRIPTIONS.items()
+            for name, description in descriptions.items()
         ),
-        scopes=(*(f"tool:{name}" for name in DESCRIPTIONS), "memory:read", "memory:write"),
+        scopes=(*(f"tool:{name}" for name in descriptions), "memory:read", "memory:write"),
         max_classification=DataClassification.CONFIDENTIAL,
         allowed_regions=("cl",),
     )

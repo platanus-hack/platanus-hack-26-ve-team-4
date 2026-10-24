@@ -36,7 +36,14 @@ def test_status_lists_the_victim_handler_and_tools(tmp_path: Path) -> None:
         "support_conversation",
         "validate_patch",
     ]
-    assert status["tools"] == ["get_order", "request_refund", "save_memory", "search_knowledge"]
+    assert status["tools"] == [
+        "export_customer_records",
+        "get_order",
+        "get_service_credentials",
+        "request_refund",
+        "save_memory",
+        "search_knowledge",
+    ]
     assert status["llm_mode"] == "offline"
 
 

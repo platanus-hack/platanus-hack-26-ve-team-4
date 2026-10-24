@@ -3,8 +3,8 @@ from typing import Any, cast
 from pydantic import BaseModel, Field
 from strands.models.model import Model
 from strands.types.content import Messages
+from strands.types.tools import ToolSpec
 
-from agent_zero.victim.tool_schemas import tool_specs
 from agent_zero.victim.turn_accumulator import TurnAccumulator
 
 
@@ -20,9 +20,11 @@ class ModelTurn(BaseModel):
     message: dict[str, Any]
 
 
-async def model_turn(model: Model, messages: Messages, system_prompt: str) -> ModelTurn:
+async def model_turn(
+    model: Model, messages: Messages, system_prompt: str, specs: list[ToolSpec]
+) -> ModelTurn:
     accumulator = TurnAccumulator()
-    async for raw in model.stream(messages, tool_specs=tool_specs(), system_prompt=system_prompt):
+    async for raw in model.stream(messages, tool_specs=specs, system_prompt=system_prompt):
         accumulator.accept(cast(dict[str, Any], raw))
     proposed = [ProposedTool.model_validate(item) for item in accumulator.finish()]
     text = "".join(accumulator.text)
