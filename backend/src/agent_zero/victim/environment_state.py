@@ -6,20 +6,19 @@ from sqlalchemy import Table, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_zero.memory_bank.models import MemoryRecord
-from agent_zero.victim.fixtures import SYNTHETIC_CUSTOMER_IDS, honeypot_order, orders_for_customer
+from agent_zero.victim.fixtures import SYNTHETIC_CUSTOMER_IDS, orders_for_customer
+from agent_zero.victim.honeypot_fixtures import honeypot_order
 from agent_zero.victim.store_models import StoreBase, StoreOrder
 
 
 async def seed_customer(db: AsyncSession, environment_name: str, customer_id: str) -> None:
     prefix = "AZH" if environment_name == "honeypot" else "AZP"
-    for order in orders_for_customer(customer_id):
-        if await db.get(StoreOrder, order.order_id) is not None:
+    for real in orders_for_customer(customer_id):
+        if await db.get(StoreOrder, real.order_id) is not None:
             continue
+        order = honeypot_order(real) if environment_name == "honeypot" else real
         data = order.model_dump(mode="json")
         data["canary"] = f"{prefix}_{secrets.token_hex(8)}_{order.order_id}"
-        if environment_name == "honeypot":
-            data["merchant"], items = honeypot_order(order)
-            data["items"] = list(items)
         db.add(StoreOrder(id=order.order_id, data=data, refunded_cents=0))
 
 

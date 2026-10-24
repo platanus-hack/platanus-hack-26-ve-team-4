@@ -4,7 +4,8 @@ from typing import Any
 from agent_zero.agent_gateway.schemas import ToolSpec
 from agent_zero.agent_gateway.tool_registry import ToolRegistry
 from agent_zero.shared.classification import DataClassification
-from agent_zero.victim.fixtures import KNOWLEDGE, ORDERS, REFUND_LIMIT
+from agent_zero.victim.fixtures import ORDERS, REFUND_LIMIT
+from agent_zero.victim.knowledge import KNOWLEDGE
 from agent_zero.victim.models import ToolName
 
 STORE_REGION = "cl"

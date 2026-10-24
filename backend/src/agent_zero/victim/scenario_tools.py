@@ -16,7 +16,7 @@ from agent_zero.shared.classification import DataClassification
 from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.environments import Environment, Environments
 from agent_zero.victim.fixture_outputs import contaminate, install_fixture
-from agent_zero.victim.fixtures import KNOWLEDGE
+from agent_zero.victim.knowledge import KNOWLEDGE
 from agent_zero.victim.operation_identity import operation_fingerprint
 from agent_zero.victim.store_models import (
     ControlledFixtureRecord,
