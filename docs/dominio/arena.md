@@ -10,6 +10,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 | --- | --- |
 | [core.py](../../backend/src/agent_zero/arena/core.py) | Construye `ProductCore`, registra handlers y manifiestos, conecta gateway, workers, evaluación y recuperación. |
 | [arena_service.py](../../backend/src/agent_zero/arena/arena_service.py) | Lee métricas y puntuación en un solo snapshot; cambia admisión/revelación. |
+| [scoring.py](../../backend/src/agent_zero/arena/scoring.py) | Función pura de la clasificación: puntos, desempate y reconciliación al revelar. |
 | [operator_router.py](../../backend/src/agent_zero/arena/operator_router.py) | Evidencia, repetición, reversión y controles de ronda. |
 | [round_service.py](../../backend/src/agent_zero/arena/round_service.py) | Archivado, reset y recuperación de un reset interrumpido. |
 | [round_snapshot.py](../../backend/src/agent_zero/arena/round_snapshot.py) | Define tablas de la ronda y el hash del snapshot. |
@@ -25,7 +26,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 
 | Ruta | Acceso y comportamiento |
 | --- | --- |
-| `GET /api/arena/state` | Pública: modo, ronda, inicio, cupo, conteos por estado/origen y `scores`. |
+| `GET /api/arena/state` | Pública: modo, ronda, inicio, cupo, conteos por estado/origen y `scores`. Tras revelar añade `confirmed_violations` y `contained_honeypot`. |
 | `POST /api/operator/arena/pause` | Operador: cierra admisión; los intentos aceptados continúan. |
 | `POST /api/operator/arena/resume` | Operador: abre una ronda no revelada ni en reset. |
 | `POST /api/operator/arena/reveal` | Operador: exige drenaje de intentos, detiene nuevas generaciones de campañas y cierra la ronda. |
@@ -40,6 +41,9 @@ El operador usa `X-Operator-Secret`; un token Bearer de participante no concede 
 - Sólo `origin=audience` participa en la clasificación. El Prober y las repeticiones operativas se contabilizan como actividad autónoma.
 - Durante la fase provisional se incluyen los objetivos aparentemente vulnerados en el señuelo. Al revelar, se excluyen los intentos `contained_honeypot` y cuentan las violaciones protegidas confirmadas.
 - Cada participante recibe como máximo un punto por `(objective_id, policy_version)`. Reenviar o reconectar no añade puntos.
+- El empate lo gana quien consiguió antes su primer punto de la fase visible: el primer éxito aparente antes de revelar y la primera violación confirmada después.
+- Tras revelar, cada fila de `scores` reconcilia la provisional: `apparent` (puntos que parecían reales), `score` (confirmados) y `contained` (los que quedaron sólo en el señuelo). Quien sólo puntuó en el señuelo aparece con 0 puntos, para que la revelación muestre qué pasó con su éxito.
+- `confirmed_violations` y `contained_honeypot` cuentan intentos con algún objetivo vulnerado, no puntos: repetir un ataque en el señuelo suma un intento contenido pero ningún punto.
 - Una ronda revelada permanece cerrada: `resume` devuelve 409. La siguiente presentación requiere reset archivado.
 - Las respuestas públicas no contienen la ruta, los canarios ni las trazas de operación. El propietario puede conocer su resultado real tras la revelación, pero las trazas siguen reservadas.
 
@@ -68,7 +72,7 @@ uv run pytest tests/arena/test_round_reset.py tests/arena/test_core_cycle.py \
 | [test_round_reset.py](../../backend/tests/arena/test_round_reset.py) | Archiva efectos/evidencia, invalida tokens, resembra, rechaza intentos en curso y recupera una caída entre entornos/aplicación. Incluye más de tres participantes y asignadores concurrentes. |
 | [test_core_cycle.py](../../backend/tests/arena/test_core_cycle.py) | Resultado provisional, proyección privada/pública y permanencia en señuelo. |
 | [test_control_concurrency.py](../../backend/tests/arena/test_control_concurrency.py) | Admisión concurrente frente a activación/reversión y eventos recuperables. |
-| [ArenaPage.test.tsx](../../frontend/src/features/arena/ArenaPage.test.tsx) | Origen simulado visible, clasificación final y QR local. |
+| [ArenaPage.test.tsx](../../frontend/src/features/arena/ArenaPage.test.tsx) | Origen simulado visible, clasificación final con reconciliación y QR local. |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, exclusión de acciones y reset explícito con motivo. |
 
 La verificación previa aprobó el ejercicio Docker y un ensayo LIVE con reset archivado. Son registros históricos enlazados desde [evidencias](../pruebas/evidencias.md); esta revisión documental no repite llamadas al proveedor.

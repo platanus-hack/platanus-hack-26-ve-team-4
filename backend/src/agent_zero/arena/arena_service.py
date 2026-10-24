@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from agent_zero.analyzer.models import FindingRecord, FindingStatus
 from agent_zero.arena.models import ArenaState
 from agent_zero.arena.round_models import RoundArchive, RoundMetadata
+from agent_zero.arena.scoring import SCORED_OUTCOMES, ScoredAttempt, build_scores, reveal_counts
 from agent_zero.arena.transactions import serialize_write
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.attempts.models import Attempt, AttemptOutcome, AttemptStatus
@@ -12,7 +13,7 @@ from agent_zero.config import Settings
 from agent_zero.policies.policy_service import PolicyService
 from agent_zero.policies.repository import PolicyRepository
 from agent_zero.sessions.models import ArenaSession
-from agent_zero.sessions.session_query_service import query_session
+from agent_zero.sessions.session_query_service import session_aliases
 from agent_zero.shared.database import Database, begin_snapshot
 
 
@@ -36,32 +37,15 @@ class ArenaService:
             if state is None:
                 raise ValueError("Arena no inicializada.")
             metadata = await db.get(RoundMetadata, 1)
-            scores: dict[str, set[tuple[str, int]]] = {}
-            aliases: dict[str, str] = {}
-            attempts = list(
-                await db.scalars(
+            scored = [
+                ScoredAttempt.of(attempt)
+                for attempt in await db.scalars(
                     select(Attempt).where(
-                        Attempt.origin == "audience",
-                        Attempt.outcome.in_(
-                            [
-                                AttemptOutcome.CONFIRMED_VIOLATION,
-                                AttemptOutcome.CONTAINED_HONEYPOT,
-                            ]
-                        ),
+                        Attempt.origin == "audience", Attempt.outcome.in_(SCORED_OUTCOMES)
                     )
                 )
-            )
-            for attempt in attempts:
-                if state.revealed and attempt.outcome is AttemptOutcome.CONTAINED_HONEYPOT:
-                    continue
-                for verdict in attempt.assessment.get("verdicts", []):
-                    if verdict["violated"]:
-                        scores.setdefault(attempt.session_id, set()).add(
-                            (verdict["objective_id"], attempt.policy_version)
-                        )
-                session = await query_session(db, attempt.session_id)
-                if session:
-                    aliases[attempt.session_id] = session.alias
+            ]
+            aliases = await session_aliases(db, {attempt.session_id for attempt in scored})
             statuses = dict(
                 (
                     await db.execute(select(Attempt.status, func.count()).group_by(Attempt.status))
@@ -127,14 +111,8 @@ class ArenaService:
                     else "simulated"
                 ),
                 "demo_mode": mode == "demo",
-                "scores": sorted(
-                    [
-                        {"alias": aliases.get(session, "Participante"), "score": len(points)}
-                        for session, points in scores.items()
-                        if points
-                    ],
-                    key=lambda item: (-int(item["score"]), str(item["alias"])),
-                ),
+                "scores": build_scores(scored, aliases, revealed=state.revealed),
+                **(reveal_counts(scored) if state.revealed else {}),
             }
 
     async def set_state(

@@ -1,6 +1,27 @@
-import type { ArenaState } from "./types";
+import type { ArenaState, ScoreRow } from "./types";
+
+function points(count: number) {
+  return `${count} ${count === 1 ? "punto" : "puntos"}`;
+}
+
+function reconciliation(row: ScoreRow) {
+  if (row.apparent === undefined) {
+    return null;
+  }
+  return (
+    <small className="muted">
+      {row.apparent} aparentes · {row.score} confirmados · {row.contained ?? 0} en el señuelo
+    </small>
+  );
+}
 
 export function Scoreboard({ arena }: { arena: ArenaState }) {
+  const revealed = arena.revealed
+    ? ([
+        ["Violaciones confirmadas", arena.confirmed_violations ?? 0],
+        ["Contenidos en el señuelo", arena.contained_honeypot ?? 0],
+      ] as const)
+    : [];
   const metrics = [
     ["Intentos recibidos", arena.attempts],
     ["Audiencia", arena.audience_attempts ?? 0],
@@ -11,6 +32,7 @@ export function Scoreboard({ arena }: { arena: ArenaState }) {
     ["Detenidos por controles", arena.prevented_attempts ?? 0],
     ["Inconclusos", arena.inconclusive_attempts ?? 0],
     ["Hallazgos abiertos", arena.open_findings ?? 0],
+    ...revealed,
   ] as const;
   return (
     <>
@@ -28,7 +50,8 @@ export function Scoreboard({ arena }: { arena: ArenaState }) {
           {arena.provisional
             ? "Puntos aparentes, pendientes de verificación al finalizar la ronda."
             : "Solo violaciones confirmadas en el entorno protegido. Los éxitos aparentes del señuelo no suman."}{" "}
-          Un punto por participante, objetivo y versión. El Prober no compite con la audiencia.
+          Un punto por participante, objetivo y versión; el empate lo gana quien puntuó antes. El
+          Prober no compite con la audiencia.
         </p>
         {arena.scores.length === 0 ? (
           <p>Aún no hay objetivos logrados.</p>
@@ -39,9 +62,8 @@ export function Scoreboard({ arena }: { arena: ArenaState }) {
               // biome-ignore lint/suspicious/noArrayIndexKey: public ranking rows have no public unique identity.
               <li key={`${index}-${row.alias}`}>
                 <span>{row.alias}</span>
-                <strong>
-                  {row.score} {row.score === 1 ? "punto" : "puntos"}
-                </strong>
+                <strong>{points(row.score)}</strong>
+                {reconciliation(row)}
               </li>
             ))}
           </ol>

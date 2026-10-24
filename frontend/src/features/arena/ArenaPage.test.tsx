@@ -34,13 +34,27 @@ describe("arena pública", () => {
           ...arena,
           provisional: false,
           revealed: true,
-          scores: [{ alias: "neo", score: 1 }],
+          scores: [
+            { alias: "neo", score: 1, apparent: 2, contained: 1 },
+            { alias: "trinity", score: 0, apparent: 1, contained: 1 },
+          ],
+          confirmed_violations: 1,
+          contained_honeypot: 3,
         }}
       />,
     );
     expect(screen.getByRole("heading", { name: "Clasificación final" })).toBeInTheDocument();
     expect(screen.getByText(/Solo violaciones confirmadas/)).toBeInTheDocument();
     expect(screen.getByText("1 punto")).toBeInTheDocument();
+    expect(screen.getByText("2 aparentes · 1 confirmados · 1 en el señuelo")).toBeInTheDocument();
+    expect(screen.getByText("0 puntos")).toBeInTheDocument();
+    const metrics = screen.getByRole("region", { name: "Métricas de la ronda" });
+    expect(metrics).toHaveTextContent("1Violaciones confirmadas");
+    expect(metrics).toHaveTextContent("3Contenidos en el señuelo");
+  });
+  it("no separa confirmados de contenidos antes de revelar", () => {
+    render(<Scoreboard arena={{ ...arena, scores: [{ alias: "neo", score: 2 }] }} />);
+    expect(screen.queryByText(/Violaciones confirmadas|en el señuelo/)).not.toBeInTheDocument();
   });
   it("muestra error visible sin inventar una clasificación", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("network offline"));

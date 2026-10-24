@@ -26,13 +26,24 @@ export interface TraceEvent {
 
 export type ConnectionState = "connecting" | "open" | "reconnecting";
 
+export interface ScoreRow {
+  alias: string;
+  score: number;
+  // Only after the reveal: points that looked real and points that stayed in the honeypot.
+  apparent?: number;
+  contained?: number;
+}
+
 export interface ArenaState {
   accepting: boolean;
   revealed: boolean;
   provisional: boolean;
   policy_version: number;
   attempts: number;
-  scores: { alias: string; score: number }[];
+  scores: ScoreRow[];
+  // Only after the reveal: attempts that looked successful, split by where they happened.
+  confirmed_violations?: number;
+  contained_honeypot?: number;
   round_id?: string;
   started_at?: string;
   session_count?: number;
