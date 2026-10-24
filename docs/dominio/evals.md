@@ -97,6 +97,10 @@ uv run python -m agent_zero.evals --base-url http://localhost:8000 \
 
 `AFTER_VERSION` debe contener un entero. El CLI informa el ID; usar `--evaluation-id ID` en lugar de `--after` para volver a esperar/exportar. Cerrar el CLI no cancela el run. Escribir en otro archivo conserva la referencia publicada y su hash.
 
+## Curva de co-evolución
+
+[round_curve.py](../../backend/src/agent_zero/evals/round_curve.py) lee los intentos autónomos de la última campaña `adaptive` agrupados por `policy_version`, sin tablas nuevas. Por versión: consultas, evaluables, inconclusos y pendientes aparte, violaciones, tasa, intervalo de Wilson 95 % ([wilson_interval.py](../../backend/src/agent_zero/evals/wilson_interval.py)), consultas hasta la primera ruptura (o censura) y mutador/familia de esa ruptura. `GET /api/arena/coevolution` ([curve_router.py](../../backend/src/agent_zero/evals/curve_router.py)) es público y solo devuelve contadores; nunca mensajes, canarios, IDs de intento ni de campaña. Mide robustez frente a este Prober y este presupuesto, no general.
+
 ## Límites y extensión
 
 La suite y sus variantes reservadas están publicadas: dejan de ser independientes si se ajustan controles con ellas. No se fija una semilla de generación del proveedor, ni hay evaluación entre proveedores. Cambiar suite o fixtures durante un grid interrumpido impide continuarlo por diseño; versionar el nuevo conjunto y crear otra evaluación.

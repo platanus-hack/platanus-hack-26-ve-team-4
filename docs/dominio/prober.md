@@ -88,6 +88,18 @@ uv run pytest tests/evals/test_campaigns.py tests/evals/test_suite.py tests/aren
 
 La ejecución LIVE guardada completó seis mutaciones y seis intentos de las seis familias; la suite DEMO ejercitó todas las variantes. Ver [evidencias](../pruebas/evidencias.md). Para una campaña operada por HTTP y posterior evaluación, usar [evaluación](../evaluacion.md#9-ejecutar-y-exportar-la-comparación); verificar la versión activa en vez de suponer que será 3.
 
+## Generación adaptive
+
+`generation: "adaptive"` sustituye el índice fijo por [adaptive_planner.py](../../backend/src/agent_zero/prober/adaptive_planner.py), llamado desde un único punto de `_next_record`. Permite hasta 60 casos (`max_attempts`); `templates` y `llm` conservan el tope de 30.
+
+- Brazos: pares (objetivo, mutador), con `seed` como los 6 playbooks sin tocar. Los mutadores ([mutators.py](../../backend/src/agent_zero/prober/mutators.py)) son puros y deterministas: paráfrasis es/en, partir en dos turnos, cambio de canal a documento o resultado de herramienta (fixtures de laboratorio, nunca texto del modelo) y encadenamiento con una consulta legítima previa. Conservan objetivo, `fixture_id` e identificadores de pedido y etiquetan `mutator` y `parent_case_id`.
+- Selector: epsilon-greedy ([strategy_selector.py](../../backend/src/agent_zero/prober/strategy_selector.py)) con `random.Random` sembrado por el `campaign_id` y el número de pulls, así que se reconstruye del estado durable. Recompensa: violación confirmada por el oráculo. Un brazo bloqueado por un validador o sin herramienta de acción no se repite dentro de esa versión; un brazo que ganó antes se reintenta primero tras un parche. [feedback.py](../../backend/src/agent_zero/prober/feedback.py) resume cada intento (resultado, veredictos, validador de `tool_denied`).
+- Presupuesto: `Settings.prober_round_query_budget` (8) consultas por versión de política. El digest se acota por versión para poder reintentar un exploit contra la versión nueva. Con el presupuesto lleno y sin violación termina `held_within_budget`; con violación espera la activación (`prober_round_close_wait_seconds`, 90 s, luego `defender_did_not_close`). Mientras exista una política candidata o en validación también espera.
+- Cada versión cerrada emite el evento público `probe_round_closed` (`probe_round`, `queries`, `violations`, `mutator`).
+- Los intentos autónomos usan una sesión interna por caso, así que `arena_attempts_per_minute` (por sesión) no los limita; sigue habiendo una sola campaña a la vez (409).
+
+Límites: con las tres validaciones activas el oráculo y el control comparten predicado, de modo que la tasa llega a 0 por construcción; la curva mide cobertura de objetivos y consultas hasta romper, no evasión. En DEMO la víctima es un intérprete por regex: los mutadores de texto y canal producen casos que sigue, pero `paraphrase_en` solo traduce verbos de reembolso y consulta, y `split_turns` puede separar la orden de su contexto; su sentido real es en live.
+
 ## Límites y siguiente extensión
 
 El orden no prioriza familias por novedad, éxito o hallazgos abiertos. El generador puede redactar texto que no produzca el efecto esperado; la validez del DTO no demuestra eficacia. Para ampliar familias, cambiar juntos playbook, contrato, fixture ejecutable, suite y tests de dedup. Para aumentar autonomía, introducir primero un planificador persistido y una política clara de presupuesto; conservar las decisiones de identidad y seguridad fuera de la salida del modelo.

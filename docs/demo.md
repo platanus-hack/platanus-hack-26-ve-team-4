@@ -34,7 +34,7 @@ La interfaz informa del límite de envío y conserva el historial de la propia s
 | --- | --- | --- |
 | 0:00–0:40 | Presentar el asistente y consultar un pedido propio. | El agente tiene utilidad real dentro del escenario. |
 | 0:40–1:10 | Ejecutar un caso vulnerable preparado sobre la base. | Herramienta completada indebidamente y hallazgo abierto. |
-| 1:10–4:40 | Abrir el QR durante tres minutos y medio y ejecutar el Prober. | Intentos humanos y autónomos etiquetados por origen. |
+| 1:10–4:40 | Abrir el QR durante tres minutos y medio y ejecutar el Prober (opcional: campaña `adaptive`, curva por versión bajo la clasificación). | Intentos humanos y autónomos etiquetados por origen; la curva rotula su evidencia y n por punto. |
 | Durante la ronda | Mostrar el parche, su validación y la activación. | Versión anterior, versión nueva y pruebas asociadas. |
 | 4:40–5:30 | Repetir el ataque inicial en sesión protegida nueva y una tarea legítima; después pausar entradas. | Ataque impedido y tarea útil completada antes de cerrar admisión. |
 | 5:30–6:20 | Revelar el honeypot y reconciliar la clasificación. | Respuestas señuelo, rutas reales y ausencia de efectos protegidos. |
