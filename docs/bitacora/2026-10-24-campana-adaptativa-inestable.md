@@ -26,6 +26,8 @@ Solo diagnóstico; no hay cambio de código. Explica por qué dos pruebas de `ba
 - vive unos 222 s **atrasado** respecto del host;
 - cada 5 s salta **adelante** a la hora del host durante unos 150 ms y luego vuelve atrás.
 
+El que estaba mal era el reloj del host, no el del contenedor. Comparado con la cabecera `Date` de dos servidores públicos, Windows iba 222 s **adelantado**, con el servicio de hora `w32time` detenido. El contenedor tenía la hora correcta y la sincronización de la VM lo arrastraba de a ratos hacia la hora equivocada de Windows. `wsl --shutdown` y reiniciar Docker Desktop no cambiaron nada.
+
 Se midió con un contenedor `python:3.12-slim-bookworm` que lee `time.time()` cada 50 ms durante 60 s: 28 saltos, todos de +221,9 s o -221,8 s, cada 5 s aproximadamente. Al empezar, el host marcaba 19:32:27 UTC y el contenedor 19:28:46 UTC.
 
 Cuando el planificador decide durante un salto adelante, ve `waited` de unos 222 s, más que `prober_round_close_wait_seconds` (90 s), y termina con `defender_did_not_close`. Por eso las corridas que fallan terminan antes: no esperan nada.
@@ -47,7 +49,7 @@ En la misma corrida, el worker registra en bucle `RuntimeError: coroutine raised
 
 ### Clasificación
 
-- **Causa 1:** la origina el entorno (el reloj de la VM de Docker Desktop), pero el producto se expone a ella al medir un intervalo con el reloj de pared. **(b) Afecta la demo en vivo** si corre en esta misma instalación de Docker: una campaña puede cerrar con `defender_did_not_close` mientras el parche está en `validating`. Otros usos de `fleet.clock` (TTL de credenciales, limitador, `Wait(until=...)` del runtime) también pueden comportarse mal. `[SUPUESTO]` No se midieron. En CI de Linux, con el reloj estable, no debería ocurrir.
+- **Causa 1:** la origina el entorno (el reloj de Windows desincronizado, que Docker Desktop propaga a la VM), pero el producto se expone a ella al medir un intervalo con el reloj de pared. **(b) Afecta la demo en vivo** si corre en esta misma instalación de Docker: una campaña puede cerrar con `defender_did_not_close` mientras el parche está en `validating`. Otros usos de `fleet.clock` (TTL de credenciales, limitador, `Wait(until=...)` del runtime) también pueden comportarse mal. `[SUPUESTO]` No se midieron. En CI de Linux, con el reloj estable, no debería ocurrir.
 - **Causa 2:** problema de la prueba (a), que choca con el `DefenseScheduler` al activar a mano. El `StopIteration` es un defecto menor del producto.
 
 ## Archivos
@@ -62,6 +64,11 @@ Todo en contenedor `python:3.12-slim-bookworm` con SQLite, en `63e1096` más la 
 - `test_adaptive_campaign_breaks...`: 5 de 8 pasaron. 2 fallas son por la causa 1 y 1 por la causa 2.
 - Medición del reloj: 28 saltos de ±222 s en 60 s.
 
+Después de sincronizar el reloj de Windows (Configuración > Hora e idioma > Sincronizar ahora):
+
+- host y contenedor quedaron a 0 o 1 s de diferencia, sin saltos;
+- `tests/evals/test_adaptive_campaign.py` completo, 15 corridas seguidas en `63e1096` sin cambios, con otros dos contenedores de pruebas corriendo a la vez: **15 de 15 en verde** (3 pruebas por corrida, entre 77 y 133 s). La causa 2 no apareció en esas 15 corridas.
+
 No se corrió Postgres, ni `ruff`, `mypy` y `pytest` completos, porque no hay cambio de código.
 
 ## Riesgos y efectos en otros frentes
@@ -70,7 +77,7 @@ No se corrió Postgres, ni `ruff`, `mypy` y `pytest` completos, porque no hay ca
 
 ## Pendiente
 
-- Corregir el reloj de la VM de Docker Desktop, por ejemplo con `wsl --shutdown` y reiniciando Docker Desktop. Hay que coordinarlo con el usuario porque detiene la pila `agent-zero`. Después, volver a medir con el mismo contenedor y repetir las dos pruebas 15 veces.
+- Antes de la demo, comprobar en la máquina que la corra que su reloj está sincronizado (comparar `date +%s` con la cabecera `Date` de un servidor público).
 - Proteger la espera del planificador contra saltos del reloj de pared: medir la espera con un reloj monótonico inyectable desde la primera vez que el planificador ve un `since`. Adaptar `tests/prober/test_adaptive_planner.py` y agregar una prueba con un salto de +222 s.
 - Evitar la carrera en `_activate_patch_for_a_break`: que la prueba deje activar al `DefenseScheduler` y espere la v1 activa, o que el scheduler respete `arena_auto_patch`. Hay que decidir con Carlos cuál es el comportamiento esperado.
 - Dar un valor por defecto al `next(...)` de `defense_scheduler.py:87` cuando la candidata no tiene hallazgo.
