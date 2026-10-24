@@ -6,6 +6,8 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from agent_zero.telemetry.audit_files import atomic_write
+
 
 class AnchorStore(Protocol):
     def read(self) -> str | None: ...
@@ -34,10 +36,7 @@ class FileAnchor:
         return self.path.read_text(encoding="utf-8").strip() or None
 
     def write(self, value: str) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
-        temporary.write_text(value + "\n", encoding="utf-8")
-        temporary.replace(self.path)
+        atomic_write(self.path, value + "\n")
 
 
 class Anchor(BaseModel):

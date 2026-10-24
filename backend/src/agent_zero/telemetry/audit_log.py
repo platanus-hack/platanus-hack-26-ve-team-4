@@ -9,6 +9,7 @@ from opentelemetry import trace
 from agent_zero.config import Settings
 from agent_zero.telemetry.audit_anchor import AnchorStore, FileAnchor, MemoryAnchor, sign_anchor
 from agent_zero.telemetry.audit_hashing import compute_hash, derive_audit_key
+from agent_zero.telemetry.audit_journal import AuditJournal
 from agent_zero.telemetry.audit_schemas import (
     GENESIS_HASH,
     AuditEntry,
@@ -17,6 +18,7 @@ from agent_zero.telemetry.audit_schemas import (
 )
 from agent_zero.telemetry.audit_store import AuditStore, FileAuditStore, MemoryAuditStore
 from agent_zero.telemetry.audit_verifier import verify_lines
+from agent_zero.telemetry.errors import AuditIntegrityError
 
 Clock = Callable[[], datetime]
 
@@ -41,6 +43,9 @@ class AuditLog:
         self._anchor = anchor
         self._clock = clock
         self._lock = threading.Lock()
+        self._journal = (
+            AuditJournal(store, anchor, key) if isinstance(store, FileAuditStore) else None
+        )
 
     @classmethod
     def for_file(cls, path: Path, key: bytes, clock: Clock = _utc_now) -> "AuditLog":
@@ -57,8 +62,13 @@ class AuditLog:
 
     def append(self, event: AuditEvent) -> AuditEntry:
         trace_id, span_id = _active_ids()
-        with self._lock:
+        with self._lock, self._store.locked():
+            if self._journal is not None:
+                self._journal.recover()
             lines = self._store.read_lines()
+            verification = verify_lines(lines, self._key, self._anchor)
+            if not verification.ok:
+                raise AuditIntegrityError(verification.detail)
             prev_hash = GENESIS_HASH
             if lines:
                 prev_hash = AuditEntry.model_validate_json(lines[-1]).hash
@@ -77,13 +87,27 @@ class AuditLog:
                 hash="",
             )
             entry = draft.model_copy(update={"hash": compute_hash(draft, self._key)})
+            if self._journal is not None:
+                self._journal.prepare(entry.model_dump_json())
             self._store.append_line(entry.model_dump_json())
             self._anchor.write(sign_anchor(self._key, len(lines) + 1, entry.hash))
+            if self._journal is not None:
+                self._journal.clear()
             return entry
 
     def entries(self) -> list[AuditEntry]:
-        return [AuditEntry.model_validate_json(line) for line in self._store.read_lines()]
+        with self._lock, self._store.locked():
+            if self._journal is not None:
+                self._journal.recover()
+            return [AuditEntry.model_validate_json(line) for line in self._store.read_lines()]
 
     def verify(self) -> AuditVerification:
-        with self._lock:
+        with self._lock, self._store.locked():
+            if self._journal is not None:
+                try:
+                    self._journal.recover()
+                except AuditIntegrityError as error:
+                    return AuditVerification(
+                        ok=False, entries=len(self._store.read_lines()), detail=str(error)
+                    )
             return verify_lines(self._store.read_lines(), self._key, self._anchor)
