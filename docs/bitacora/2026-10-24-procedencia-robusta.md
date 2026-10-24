@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: feat/procedencia-robusta
-pr: pendiente
-estado: en revisión
+pr: 35
+estado: integrado
 dominios: [contract, guard, victim]
 requisitos: []
 ---
