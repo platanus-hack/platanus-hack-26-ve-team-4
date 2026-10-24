@@ -1,7 +1,7 @@
 import asyncio
 
-from agent_zero.analyzer.finding_service import FindingService
 from agent_zero.analyzer.enrichment import AnalyzerHandler, SemanticAnalyzerService
+from agent_zero.analyzer.finding_service import FindingService
 from agent_zero.analyzer.manifest import analyzer_manifest
 from agent_zero.arena.models import ArenaState
 from agent_zero.arena.round_service import RoundService
@@ -9,6 +9,9 @@ from agent_zero.attempts.attempt_execution_handler import AttemptExecutionHandle
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.attempts.attempt_submission_service import AttemptSubmissionService
 from agent_zero.attempts.attempt_worker import AttemptWorker
+from agent_zero.evals.handler import EvaluationHandler
+from agent_zero.evals.runner import EvaluationHarness, EvaluationRunner
+from agent_zero.evals.service import EvaluationService
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.event_store import EventStore
 from agent_zero.fleet.fleet_builder import Fleet
@@ -63,6 +66,12 @@ class ProductCore:
             fleet, self.policies, self.findings, self.attempts, self.environments
         )
         self.worker = AttemptWorker(fleet, self.events, self.findings, self.defense)
+        self.evaluation_runner = EvaluationRunner(
+            fleet,
+            EvaluationHarness(self.environments, self.executor, self.observer, self.scenario),
+            llm,
+        )
+        self.evaluations = EvaluationService(fleet, self.policies, llm)
         self._llm = llm
 
     async def initialize(self) -> None:
@@ -76,14 +85,19 @@ class ProductCore:
         await self.events.restore()
         self.scenario.register()
         self.fleet.gateway.configure_business_layer(
-            self.engine, self.observer, lambda context: self.environments.for_context(context).transaction()
+            self.engine,
+            self.observer,
+            lambda context: self.environments.for_context(context).transaction(),
         )
         self.fleet.handlers.register(
             AttemptExecutionHandler(self.fleet, self.executor, self.events, self.assessments)
         )
         self.fleet.handlers.register(
             PatchValidationHandler(
-                self.policies, self.attempts, self.events, self.validator,
+                self.policies,
+                self.attempts,
+                self.events,
+                self.validator,
                 PatchExplainer(self.fleet, self._llm),
             )
         )
@@ -91,8 +105,10 @@ class ProductCore:
         self.fleet.handlers.register(
             CampaignHandler(self.fleet, self.submissions, self.attempts, self._llm, self.scenario)
         )
-
         self.fleet.handlers.register(AnalyzerHandler(self.fleet, self._llm, self.events))
+        self.fleet.handlers.register(
+            EvaluationHandler(self.fleet, self.evaluation_runner, self._llm)
+        )
 
     async def ensure_agents(self) -> None:
         async with self._bootstrap_lock:

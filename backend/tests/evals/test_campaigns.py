@@ -16,8 +16,8 @@ from agent_zero.prober.models import AttackFamily
 from agent_zero.runtime.handlers import StepContext
 from agent_zero.runtime.step_results import Advance
 from agent_zero.victim.arena_manifest import ARENA_VERSION
-from tests.arena.support import ScenarioPlayback
-from tests.evals.support import OPERATOR, core_for
+from tests.arena.support import ScenarioPlayback, wait_attempt
+from tests.evals.support import OPERATOR, candidate, core_for
 
 
 def _wait_campaign(client: TestClient) -> dict[str, Any]:
@@ -184,3 +184,52 @@ def test_crash_after_attempt_admission_recovers_the_same_attempt_without_duplica
     result = _wait_campaign(client)
     assert len(result["attempt_ids"]) == 1
     assert result["stop_reason"] == "attempt_budget_exhausted"
+
+
+def test_indirect_fixture_survives_replay_and_original_candidate_validation(
+    evaluation_client: TestClient,
+) -> None:
+    client = evaluation_client
+    response = client.post("/api/operator/campaigns", headers=OPERATOR, json={"max_attempts": 4})
+    assert response.status_code == 202
+    campaign = _wait_campaign(client)
+    indirect = next(
+        case for case in campaign["cases"] if case["case"]["family"] == "indirect_injection"
+    )
+    baseline = client.get(
+        f"/api/operator/attempts/{indirect['attempt_id']}", headers=OPERATOR
+    ).json()
+    assert baseline["outcome"] == "confirmed_violation"
+    replay = client.post(
+        f"/api/operator/attempts/{indirect['attempt_id']}/replay", headers=OPERATOR
+    )
+    assert replay.status_code == 202, replay.text
+    repeated = wait_attempt(client, replay.json()["id"])
+    assert repeated["outcome"] == "confirmed_violation"
+    assert "untrusted" in str(repeated["events"])
+    version = candidate(client)
+    core = core_for(client)
+
+    async def validate_and_activate() -> dict[str, Any]:
+        original = await core.attempts.get(indirect["attempt_id"])
+        assert original is not None
+        events = await core.events.for_attempt(original.id)
+        await core.policies.start_validation(version)
+        report = await core.validator.validate(version, original, events, "OBJ-ORDER")
+        assert report["passed"] is True
+        assert report["cases"][0]["name"] == "original"
+        assert report["cases"][0]["outcome"] == "prevented"
+        await core.policies.record_validation(version, report)
+        assert await core.policies.activate(version, core.attempts.drained)
+        return report
+
+    assert client.portal is not None
+    client.portal.call(validate_and_activate)
+    replay = client.post(
+        f"/api/operator/attempts/{indirect['attempt_id']}/replay", headers=OPERATOR
+    )
+    assert replay.status_code == 202
+    prevented = wait_attempt(client, replay.json()["id"])
+    assert prevented["outcome"] == "prevented"
+    assert any(event["type"] == "tool_denied" for event in prevented["events"])
+    assert "untrusted" in str(prevented["events"])
