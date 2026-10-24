@@ -10,6 +10,7 @@ class ModelRole(StrEnum):
 
 
 class LlmMode(StrEnum):
+    DEMO = "demo"
     LIVE = "live"
     RECORD = "record"
     REPLAY = "replay"

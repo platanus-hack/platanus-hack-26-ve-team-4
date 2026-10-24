@@ -9,6 +9,7 @@ from agent_zero.config import Settings
 from agent_zero.llm.cassette import CassetteWriter, load_cassette
 from agent_zero.llm.cassette_model import CassetteModel
 from agent_zero.llm.catalog import model_for, profile_for
+from agent_zero.llm.demo_model import DemoModel
 from agent_zero.llm.gateway import LlmGateway
 from agent_zero.llm.instrumented_model import InstrumentedModel
 from agent_zero.llm.ledger import JsonlCallLedger
@@ -59,6 +60,8 @@ def _base_model(
     role: ModelRole, settings: Settings, playback: Mapping[ModelRole, PlaybackModel]
 ) -> Model:
     mode = settings.llm_mode
+    if mode is LlmMode.DEMO:
+        return DemoModel()
     if mode is LlmMode.OFFLINE:
         return playback.get(role) or PlaybackModel(model_id=model_for(role, settings))
     if mode is LlmMode.REPLAY:
