@@ -28,7 +28,10 @@ def test_provider_carries_role_profile_and_never_sampling_params(tmp_path: Path)
     config = provider.get_config()
     assert config["model_id"] == "claude-haiku-5-5"
     assert config["max_tokens"] == 8192
-    assert config["params"] == {"output_config": {"effort": "medium"}}
+    assert config["params"] == {
+        "output_config": {"effort": "medium"},
+        "thinking": {"type": "adaptive"},
+    }
     assert provider.client.max_retries == 0
 
 

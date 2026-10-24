@@ -16,6 +16,8 @@ def test_roles_default_to_haiku_and_accept_overrides(tmp_path: Path) -> None:
     assert model_for(ModelRole.ANALYZER, settings) == "claude-sonnet-5-5"
 
 
-def test_bulk_roles_use_low_effort() -> None:
-    assert profile_for(ModelRole.PROBER).effort == "low"
-    assert profile_for(ModelRole.VICTIM).effort == "low"
+def test_bulk_roles_use_low_effort_without_thinking() -> None:
+    for role in (ModelRole.VICTIM, ModelRole.DECOY, ModelRole.PROBER):
+        assert profile_for(role).effort == "low"
+        assert profile_for(role).thinking == "disabled"
+    assert profile_for(ModelRole.ANALYZER).thinking == "adaptive"

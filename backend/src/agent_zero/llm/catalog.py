@@ -7,19 +7,21 @@ from agent_zero.llm.models import ModelRole
 from agent_zero.llm.schemas import FrozenModel
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
+Thinking = Literal["adaptive", "disabled"]
 
 
 class RoleProfile(FrozenModel):
     effort: Effort
+    thinking: Thinking
     max_tokens: int = Field(ge=256)
 
 
 ROLE_PROFILES: dict[ModelRole, RoleProfile] = {
-    ModelRole.VICTIM: RoleProfile(effort="low", max_tokens=4096),
-    ModelRole.DECOY: RoleProfile(effort="low", max_tokens=4096),
-    ModelRole.PROBER: RoleProfile(effort="low", max_tokens=4096),
-    ModelRole.ANALYZER: RoleProfile(effort="medium", max_tokens=8192),
-    ModelRole.PATCHER: RoleProfile(effort="medium", max_tokens=8192),
+    ModelRole.VICTIM: RoleProfile(effort="low", thinking="disabled", max_tokens=2048),
+    ModelRole.DECOY: RoleProfile(effort="low", thinking="disabled", max_tokens=2048),
+    ModelRole.PROBER: RoleProfile(effort="low", thinking="disabled", max_tokens=2048),
+    ModelRole.ANALYZER: RoleProfile(effort="medium", thinking="adaptive", max_tokens=8192),
+    ModelRole.PATCHER: RoleProfile(effort="medium", thinking="adaptive", max_tokens=8192),
 }
 
 

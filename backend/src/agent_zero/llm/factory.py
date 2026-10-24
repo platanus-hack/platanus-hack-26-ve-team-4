@@ -45,7 +45,10 @@ def build_provider(role: ModelRole, settings: Settings) -> AnthropicModel:
         },
         model_id=model_for(role, settings),
         max_tokens=profile.max_tokens,
-        params={"output_config": {"effort": profile.effort}},
+        params={
+            "output_config": {"effort": profile.effort},
+            "thinking": {"type": profile.thinking},
+        },
         cache_config=CacheConfig(strategy="anthropic", system_prompt_ttl=True, tools_ttl=True),
     )
 
@@ -71,6 +74,7 @@ def build_gateway(
 ) -> LlmGateway:
     ledger = JsonlCallLedger(settings.llm_ledger_path)
     limits = ModelLimits(LimitPolicy.from_settings(settings), InMemoryCallQuota())
+    limits.charge_history(ledger.records())
     models: dict[ModelRole, Model] = {
         role: InstrumentedModel(
             _base_model(role, settings, playback or {}), role.value, ledger, limits
