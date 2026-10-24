@@ -1,7 +1,7 @@
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from agent_zero.arena.dependencies import Core
 from agent_zero.prober.campaign_service import CampaignService
@@ -12,9 +12,15 @@ router = APIRouter(prefix="/api/operator/campaigns", tags=["prober"], dependenci
 
 class CampaignCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    max_attempts: int = Field(default=9, ge=1, le=30)
-    generation: Literal["templates", "llm"] = "templates"
+    max_attempts: int = Field(default=9, ge=1, le=60)
+    generation: Literal["templates", "llm", "adaptive"] = "templates"
     max_mutations: int = Field(default=30, ge=1, le=30)
+
+    @model_validator(mode="after")
+    def non_adaptive_budget(self) -> Self:
+        if self.generation != "adaptive" and self.max_attempts > 30:
+            raise ValueError("Solo la generación adaptive admite más de treinta casos.")
+        return self
 
 
 @router.post("", status_code=202)

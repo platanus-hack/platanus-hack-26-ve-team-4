@@ -10,8 +10,10 @@ from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.attempts.attempt_submission_service import AttemptSubmissionService
 from agent_zero.attempts.models import AttemptOutcome
 from agent_zero.attempts.schemas import AttemptCreate
+from agent_zero.events.event_store import EventStore
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.llm.gateway import LlmGateway
+from agent_zero.prober.adaptive_planner import AdaptivePlanner, Finish, Hold
 from agent_zero.prober.campaign_models import Campaign, CampaignCaseRecord, CampaignPlan
 from agent_zero.prober.mutation import mutate_case
 from agent_zero.prober.playbooks import campaign_case, case_digest
@@ -40,6 +42,10 @@ class CampaignHandler:
         self._attempts = attempts
         self._llm = llm
         self._scenario = scenario
+        self._planner = AdaptivePlanner(fleet.settings, fleet.clock)
+
+    def attach_events(self, events: EventStore) -> None:
+        self._planner = AdaptivePlanner(self._fleet.settings, self._fleet.clock, events)
 
     async def step(self, context: StepContext) -> StepResult:
         campaign_id = str(context.input["campaign_id"])
@@ -84,9 +90,18 @@ class CampaignHandler:
         if len(campaign.attempt_ids) >= campaign.max_attempts:
             return await self._finish(campaign_id, "attempt_budget_exhausted")
         record = await self._next_record(campaign, plan)
-        if record is None:
-            return await self._finish(campaign_id, "unique_cases_exhausted")
-        return await self._act_on_record(context, campaign, record)
+        if isinstance(record, CampaignCaseRecord):
+            return await self._act_on_record(context, campaign, record)
+        return await self._conclude(context, campaign_id, record)
+
+    async def _conclude(
+        self, context: StepContext, campaign_id: str, planned: Hold | Finish | None
+    ) -> StepResult:
+        if isinstance(planned, Hold):
+            return self._wait(context)
+        return await self._finish(
+            campaign_id, planned.reason if planned else "unique_cases_exhausted"
+        )
 
     async def _act_on_record(
         self,
@@ -113,7 +128,7 @@ class CampaignHandler:
 
     async def _next_record(
         self, campaign: Campaign, plan: CampaignPlan
-    ) -> CampaignCaseRecord | None:
+    ) -> CampaignCaseRecord | Hold | Finish | None:
         async with self._fleet.database.sessions() as db:
             await serialize_write(db)
             rows = list(
@@ -129,6 +144,8 @@ class CampaignHandler:
             if pending is not None:
                 return pending
             index = max([row.index + 1 for row in rows] + [len(campaign.attempt_ids)])
+            if plan.generation == "adaptive":
+                return await self._planner.next(db, campaign, index)
             if index >= 30:
                 return None
             customer, case, digest = campaign_case(index, campaign.id)

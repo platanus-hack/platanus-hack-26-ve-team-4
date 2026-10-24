@@ -50,7 +50,8 @@ class CampaignService:
     async def start(
         self, max_attempts: int, generation: str = "templates", max_mutations: int = 30
     ) -> dict[str, Any]:
-        if not 1 <= max_attempts <= 30 or generation not in {"templates", "llm"}:
+        limit = 60 if generation == "adaptive" else 30
+        if not 1 <= max_attempts <= limit or generation not in {"templates", "llm", "adaptive"}:
             raise ValueError("La campaña admite de uno a treinta casos y un generador válido.")
         if not 1 <= max_mutations <= 30:
             raise ValueError("El presupuesto de mutación debe estar entre uno y treinta.")

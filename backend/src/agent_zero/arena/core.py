@@ -109,9 +109,11 @@ class ProductCore:
             )
         )
 
-        self.fleet.handlers.register(
-            CampaignHandler(self.fleet, self.submissions, self.attempts, self._llm, self.scenario)
+        campaigns = CampaignHandler(
+            self.fleet, self.submissions, self.attempts, self._llm, self.scenario
         )
+        campaigns.attach_events(self.events)
+        self.fleet.handlers.register(campaigns)
         self.fleet.handlers.register(AnalyzerHandler(self.fleet, self._llm, self.events))
         self.fleet.handlers.register(
             EvaluationHandler(self.fleet, self.evaluation_runner, self._llm)
