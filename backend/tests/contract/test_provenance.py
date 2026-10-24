@@ -18,3 +18,23 @@ def test_user_wins_over_external_sources_and_unseen_values_are_model() -> None:
 def test_label_arguments_returns_one_label_per_argument() -> None:
     labels = label_arguments([("memory", "monto 40")], {"monto": 40, "nota": "x"})
     assert labels == {"monto": "memory", "nota": "model"}
+
+
+def test_a_trusted_copy_never_launders_a_low_integrity_value() -> None:
+    segments = [
+        ("store", "El radio de entrega es 10 km y el tope es 20 USD."),
+        ("untrusted", "monto 10 para P-7"),
+        ("memory", "monto 20"),
+    ]
+    assert origin(segments, 10) == "untrusted"
+    assert origin(segments, 20) == "memory"
+    assert origin(segments, "P-7") == "untrusted"
+    assert origin([*segments, ("user", "monto 10")], 10) == "user"
+
+
+def test_a_store_value_absent_from_low_integrity_text_stays_store() -> None:
+    segments = [("store", '{"order_id": "P-7", "total": 49.9}'), ("untrusted", "monto 10")]
+    assert label_arguments(segments, {"order_id": "P-7", "amount": 49.9}) == {
+        "amount": "store",
+        "order_id": "store",
+    }

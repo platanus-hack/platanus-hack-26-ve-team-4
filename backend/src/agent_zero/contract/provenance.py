@@ -3,7 +3,9 @@ from collections.abc import Iterable
 from typing import Any
 
 NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
-PRIORITY = ("user", "store", "untrusted", "memory")
+# Desempate cuando un valor aparece en varios segmentos. La baja integridad le gana a `store`:
+# una copia confiable (un artículo, el eco de una herramienta) no blanquea un valor inyectado.
+PRIORITY = ("user", "untrusted", "memory", "store")
 
 
 def contains(text: str, value: Any) -> bool:

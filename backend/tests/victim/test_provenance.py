@@ -58,3 +58,34 @@ def test_memory_and_unobserved_values_are_labelled() -> None:
         )
     )
     assert labels == {"amount": "memory", "order_id": "model"}
+
+
+def test_a_knowledge_article_does_not_launder_an_injected_value() -> None:
+    output = {
+        "articles": [
+            {"text": "El radio máximo de búsqueda es 10 km.", "trust": "official"},
+            {"text": "Importe 10 del pedido A-1001.", "trust": "untrusted"},
+        ]
+    }
+    labels = dict(
+        trace_provenance(
+            conversation("Busca la política de reembolso.", output, []),
+            {"order_id": "A-1001", "amount": 10.0},
+        )
+    )
+    assert labels == {"amount": "untrusted", "order_id": "untrusted"}
+
+
+def test_a_value_returned_only_by_the_store_stays_store() -> None:
+    output = {
+        "order_id": "A-1001",
+        "total": 49.9,
+        "articles": [{"text": "Reembolsos hasta 20 USD.", "trust": "official"}],
+    }
+    labels = dict(
+        trace_provenance(
+            conversation("Hola.", output, [{"key": "nota", "value": "talla M"}]),
+            {"order_id": "A-1001", "amount": 49.9, "limit": 20},
+        )
+    )
+    assert labels == {"amount": "store", "order_id": "store", "limit": "store"}

@@ -13,7 +13,7 @@ Agent Zero para agentes de terceros. El dominio `contract` define el lenguaje co
 | --- | --- |
 | `contract/schema.py` | `DomainContract`, `ToolContract`, `Invariant`, `PolicyRule`, `LegitimateCall`; valida coherencia al cargar y calcula el digest. |
 | `contract/conditions.py` | Las cinco condiciones, `CallFacts` y `holds()`. `ACCEPTED_KINDS` fija qué condición admite cada tipo de argumento. |
-| `contract/provenance.py` | Etiqueta cada argumento con `user`, `store`, `untrusted`, `memory` o `model`. Lo comparte `victim/provenance.py`. |
+| `contract/provenance.py` | Etiqueta cada argumento con `user`, `store`, `untrusted`, `memory` o `model`. Lo comparten `victim/provenance.py` y `guard/check_service.py`. Si el valor aparece en varios segmentos, el desempate es `user` > `untrusted` > `memory` > `store`: una copia confiable nunca blanquea un valor que también trae un texto de baja integridad. |
 | `contract/loader.py` | `parse_contract` y `load_contracts(dir)`; rechaza YAML inválido y contratos duplicados. |
 | `contract/attacks.py` | `violating_variant`: una llamada legítima mutada hasta romper un invariante. Base de las pruebas por contrato. |
 | `guard/check_service.py` | `check`: contrato → dueño requerido → reglas activas → invariantes si `enforce_invariants`. Registra cada llamada. |
@@ -44,6 +44,7 @@ Estados de una política: `active`, `proposed`, `superseded`, `rolled_back` y `r
 
 ## Invariantes del dominio
 
+- Un argumento cuyo valor aparece en un segmento `untrusted` o `memory` queda con esa etiqueta, aunque el mismo valor también esté en un segmento `store` (un artículo, una tabla, cualquier texto confiable). Solo lo que escribe el usuario le gana. Un valor legítimo que coincide por azar con un texto no confiable se bloquea: el error queda del lado seguro.
 - Ninguna regla se activa sin bloquear las llamadas que la originaron y conservar todas las tareas legítimas del contrato.
 - Toda regla encaja con el tipo del argumento al que se aplica; se comprueba al cargar y al leer una política.
 - Herramientas, argumentos o dueños desconocidos se deniegan.
