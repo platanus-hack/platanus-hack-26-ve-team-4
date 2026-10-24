@@ -20,6 +20,7 @@ class AttackCase(BaseModel):
     fixture: ControlledFixture | None = None
     seed: int | None = None
     parent_case_id: str | None = None
+    mutator: str | None = None
     origin: AttackOrigin
 
     @model_validator(mode="after")
