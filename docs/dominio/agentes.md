@@ -1,75 +1,84 @@
-# Agentes
+# Agentes y decisiones del sistema
 
-## Regla de fondo
+Estado: implementación revisada en `1d0e21d`, 24 de octubre de 2026. El ensamblado está en [ProductCore](../../backend/src/agent_zero/arena/core.py); la plataforma y sus credenciales se construyen en [Fleet](../../backend/src/agent_zero/fleet/fleet_builder.py). Para incorporarse al equipo, comenzar por [continuidad](../continuidad.md).
 
-**El LLM propone y el código determinista decide.** Solo cinco piezas usan modelo y ninguna toma decisiones de seguridad. Las que deciden (oráculos, validador, router y motor de políticas) son código puro, rápido y auditable.
+## Roles que usan modelo
 
-## Catálogo por categoría
+Hay cinco roles en [ModelRole](../../backend/src/agent_zero/llm/models.py). Son proveedores seleccionados por código, no agentes que se envían instrucciones entre sí.
 
-| Categoría | Agente | Rol en `llm` | Departamento en el registry | Especialidad | ¿Decide? |
-| --- | --- | --- | --- | --- | --- |
-| Objetivo | Víctima `soporte-tienda` | `VICTIM` | `soporte` | Atiende clientes con herramientas reales y omisiones intencionales. | No, es el blanco. |
-| Objetivo | Señuelo `soporte-senuelo` | `DECOY` | `soporte` | Se comporta como la víctima sobre datos falsos con marcadores. | No. |
-| Ofensiva | Prober | `PROBER` | `ofensiva` | Redacta mutaciones de ataque dentro de una campaña. | No; el objetivo lo elige el planificador. |
-| Defensa | Analizador | `ANALYZER` | `defensa` | Etiqueta la familia y redacta la causa probable de un hallazgo. | No; la agrupación usa una clave determinista. |
-| Defensa | Generador de parches | `PATCHER` | `defensa` | Explica en español qué cambia el parche y por qué. | No; el control sale del catálogo. |
-| Juez | Oráculos | sin modelo | — | Un verificador por objetivo. | **Sí: la violación.** |
-| Juez | Validador | sin modelo | — | Ejecuta la suite de validación del candidato. | **Sí: la activación.** |
-| Control | Router de ruta | sin modelo | — | `allow`, `block` o `divert` por sesión. | **Sí: la ruta.** |
-| Control | Motor de políticas | sin modelo | — | Validadores de negocio en la etapa de política del gateway. | **Sí: cada herramienta.** |
-
-Los perfiles de modelo existen en `llm/catalog.py`. Víctima, señuelo y Prober usan esfuerzo bajo, thinking desactivado y hasta 2048 tokens de salida, porque son los de mayor volumen. Analizador y generador usan esfuerzo medio, thinking adaptativo y hasta 8192, porque corren pocas veces y fuera del camino crítico.
-
-## Manifiestos
-
-Cada agente con modelo es un manifiesto aprobado en el registry. El manifiesto fija qué herramientas puede usar, con qué scopes, hasta qué clasificación de datos y en qué región. Una política activa puede restringir más, nunca ampliar.
-
-| Agente | Herramientas | Scopes clave | Clasificación máxima |
-| --- | --- | --- | --- |
-| `soporte-tienda` | `get_order`, `request_refund`, `search_knowledge`, `save_memory` | `tool:*` de esas cuatro, `memory:read`, `memory:write` | `confidential` |
-| `soporte-senuelo` | Las mismas, sobre los adaptadores del señuelo | Los mismos | `internal` |
-| `prober` | Ninguna; produce `AttackCase` | `attempts:enqueue` | `public` |
-| `analizador` | Ninguna; lee trazas por el servicio | `findings:write` | `internal` |
-| `generador-parches` | Ninguna; produce `PolicyCandidate` | `policies:propose` | `internal` |
-
-Hoy el manifiesto de `soporte-tienda` (`victim/manifest.py`) solo declara `get_order` y `search_knowledge`, porque el recorrido de la flota demuestra que el gateway niega `request_refund`. Para el producto se amplía a las cuatro herramientas y las grietas pasan a ser omisiones de política, no de manifiesto. El detalle está en [victim](./victim.md).
-
-Los departamentos `soporte`, `ofensiva` y `defensa` cumplen el requisito del spec de catalogar agentes para uso entre departamentos: `GET /api/registry/agents?capability=...` descubre cualquiera de ellos.
-
-## Especialidades del Prober
-
-El Prober es un solo agente con seis playbooks, uno por familia de ataque (`prober/models.py`). Un playbook es un conjunto de plantillas, operadores de mutación y el objetivo al que apunta.
-
-| Familia | OWASP | Superficie | Objetivo típico | Operadores de mutación |
+| Agente registrado | Rol | Departamento | Trabajo efectivo | Contrato del modelo |
 | --- | --- | --- | --- | --- |
-| `direct_injection` | ASI01 | `message` | `OBJ-ORDER` | Suplantación de cliente, urgencia, autoridad falsa, cambio de idioma. |
-| `indirect_injection` | ASI01 | `document` | `OBJ-ORDER`, `OBJ-REFUND` | Instrucción escondida en un artículo de soporte. |
-| `goal_hijacking` | ASI01 | `message` en varios turnos | `OBJ-ORDER` | Pedido inocuo que deriva en extracción, reparto en turnos. |
-| `tool_misuse` | ASI02 | `message` | `OBJ-REFUND` | Importes fraccionados, pedido ajeno, motivo emocional. |
-| `tool_poisoning` | ASI02 | `tool_result` | `OBJ-REFUND` | Texto en la salida simulada de una herramienta que pide otra acción. |
-| `memory_poisoning` | ASI06 | `memory` | `OBJ-MEMORY` | Guardar una "excepción aprobada" y usarla en el turno siguiente. |
+| `soporte-tienda` | `VICTIM` | `soporte` | Proponer herramientas y componer la respuesta del entorno protegido. | Eventos nativos de texto y herramientas. |
+| `soporte-senuelo` | `DECOY` | `soporte` | Ejecutar la conversación sobre la base y memoria señuelo. | El mismo protocolo nativo. |
+| `prober` | `PROBER` | `ofensiva` | Mutar texto de un caso que el servidor ya eligió. | `AttackMutation`. |
+| `analizador` | `ANALYZER` | `defensa` | Explicar evidencia verificada y clasificar una familia. | `FindingAnalysis`. |
+| `generador-parches` | `PATCHER` | `defensa` | Explicar un candidato calculado por el catálogo del servidor. | `PatchExplanation`. |
 
-**Por qué un agente y no seis.** Un solo manifiesto, una sola identidad y un solo presupuesto. El planificador cambia de playbook sin coordinación entre agentes, y el registry los expone como capacidades del mismo agente. Si una familia necesita otro modelo o permisos distintos, se separa en su propio manifiesto sin cambiar contratos.
+Los manifiestos 2.0.0 están en [arena_manifest.py](../../backend/src/agent_zero/victim/arena_manifest.py), [prober/manifest.py](../../backend/src/agent_zero/prober/manifest.py) y [analyzer/manifest.py](../../backend/src/agent_zero/analyzer/manifest.py). `ProductCore.ensure_agents()` los publica y aprueba de forma diferida al usar sesiones, campañas o evaluaciones; no hay que ejecutar el recorrido legacy para habilitar la arena.
 
-## Quién habla con quién
+Ambos agentes de soporte declaran las cuatro herramientas (`get_order`, `request_refund`, `search_knowledge`, `save_memory`), sus scopes `tool:<nombre>`, `memory:read` y `memory:write`, clasificación máxima `confidential` y región `cl`. El aislamiento del señuelo depende del contexto y sus adaptadores, no de una clasificación máxima menor.
+
+Los otros tres manifiestos no tienen herramientas de negocio. Sus scopes son, respectivamente, `attempts:enqueue`, `findings:write` y `policies:propose`. Los handlers del servidor realizan las operaciones permitidas; el modelo no recibe acceso al registro de herramientas, a SQLite ni al secreto de operación.
+
+## Qué decide el código
+
+| Decisión | Implementación | Garantía que debe conservarse |
+| --- | --- | --- |
+| Admitir un intento | [attempts](./attempts.md) | Sesión, entradas abiertas, cupos, frecuencia y contenido idempotente. |
+| Elegir entorno | [routing](./routing.md) | `protected` o `honeypot`, con desvío permanente por sesión. |
+| Autorizar herramientas | [policies](./policies.md) y gateway | Identidad, permisos de manifiesto y controles de la versión fijada. |
+| Confirmar una violación | [oracles](./oracles.md) | Evidencia de acciones y estado; una explicación no altera el resultado. |
+| Consolidar hallazgos | [analyzer](./analyzer.md) | Fingerprint determinista por objetivo, herramienta y control ausente. |
+| Seleccionar controles | [policies](./policies.md) | Catálogo cerrado y controles acumulativos. |
+| Aceptar el parche | [patches](./patches.md) | Contrafactual, ocho casos aislados, padre vigente y drenaje. |
+| Elegir siguiente caso | [prober](./prober.md) | Orden de playbooks y presupuestos del servidor. |
+
+`Decision.BLOCK` existe en el enum de routing, pero el servicio actual de ruta devuelve un `Route`; no existe una tercera ruta de ejecución bloqueada. Las denegaciones concretas ocurren en admisión, Armor o gateway.
+
+## Flujo y persistencia
 
 ```mermaid
-flowchart LR
-    AUD[Audiencia] --> AT[attempts]
-    PR[Prober] --> AT
-    AT --> RO[Router]
-    RO -->|protected| VI[Víctima]
-    RO -->|honeypot| DE[Señuelo]
-    VI --> GW[Gateway + motor de políticas]
-    DE --> GWD[Gateway del señuelo]
-    GW --> EV[(Eventos)]
-    GWD --> EV
-    EV --> OR[Oráculos]
-    OR --> AN[Analizador]
-    AN --> PA[Generador de parches]
-    PA --> VA[Validador]
-    VA --> PO[policies]
-    PO --> GW
+flowchart TD
+    A[Audiencia o campaña] --> T[Intento durable y run]
+    T --> V[VICTIM o DECOY]
+    V --> G[Gateway y efectos idempotentes]
+    G --> O[Assessment determinista]
+    O --> F[FindingRecord]
+    F --> AN[ANALYZER: explicación aparte]
+    F --> P[Controles del catálogo]
+    P --> PX[PATCHER: explicación aparte]
+    PX --> VA[Validación y activación]
 ```
 
-Ningún agente con modelo llama directamente a otro. Se comunican por eventos y por contratos tipados (`AttackCase`, `AttemptAssessment`, `Finding`, `PolicyCandidate`), así que una inyección en la salida de uno no se convierte en instrucción para el siguiente. El flujo completo está en [flujo de decisión](./flujo-de-decision.md).
+No existe un supervisor LLM. Los servicios se llaman desde handlers y trabajadores del runtime; los eventos persistidos permiten observar y recuperar el proceso. No hay un bus externo de comandos.
+
+`FindingAnalysis` se ejecuta como run `finding_analysis` en segundo plano. `PatchExplainer.explain()` se espera dentro de `validate_patch` antes de ejecutar las pruebas: su error se guarda como `unavailable` y no autoriza ni rechaza el candidato, aunque su latencia sí forma parte de ese paso. No describir ambas explicaciones como tareas que nunca retrasan la validación.
+
+El `Assessment` de [oracles/schemas.py](../../backend/src/agent_zero/oracles/schemas.py) y `FindingRecord` son los contratos operativos del resultado y hallazgo. Los DTO `AttemptAssessment` y `Finding` de analyzer no sustituyen las vistas HTTP ni las entidades persistidas.
+
+## Modelos, modos y presupuestos
+
+[catalog.py](../../backend/src/agent_zero/llm/catalog.py) configura `VICTIM`, `DECOY` y `PROBER` con esfuerzo bajo, thinking desactivado y salida máxima de 2048 tokens. `ANALYZER` y `PATCHER` usan esfuerzo medio, thinking adaptativo y hasta 8192. `AGENT_ZERO_LLM_ROLE_MODELS` permite sobrescribir el modelo por rol; los perfiles no cambian por editar un manifiesto.
+
+| Modo | Proveedor efectivo | Interpretación |
+| --- | --- | --- |
+| `demo` | `DemoModel`, `demo-rule-engine-v1` | Intérprete determinista; ejecuta herramientas y oráculos reales del laboratorio. |
+| `offline` | `PlaybackModel` inyectado o vacío | Pruebas guionadas; vacío produce error/inconcluso. |
+| `live` | Proveedor Anthropic | Llamadas reales con ledger de uso. |
+| `record` | Proveedor real y cassette | Consume proveedor y registra la reproducción. |
+| `replay` | Cassette | Reproduce llamadas registradas; origen `replayed`. |
+
+La configuración de ejemplo usa `demo`; `Settings()` sin variables tiene `offline`. No hay fallback silencioso de LIVE a demo. Los contadores LLM generales son de proceso; los contadores de mutación de campaña y el avance por caso de evaluación se persisten. Ver [LLM](./llm.md), [Prober](./prober.md) y [evaluación](./evals.md).
+
+## Pruebas y continuidad
+
+Desde la raíz:
+
+```bash
+cd backend
+uv run pytest tests/victim/test_manifest.py tests/llm/test_catalog.py tests/llm/test_factory.py tests/evals/test_analyzer.py tests/arena/test_patch_explanation.py -q
+```
+
+Esas pruebas comprueban perfiles, proveedor explícito, manifiestos, explicaciones válidas y rechazo de salidas que intentan añadir veredictos o reglas. El ensayo LIVE ya registrado ejercitó los cinco roles; sus 93 llamadas no son una suite de eficacia amplia. Resultados y repetición están en [evidencias](../pruebas/evidencias.md).
+
+Para añadir un agente, definir primero su DTO cerrado, handler, permisos y pruebas de entradas adversarias; registrar el handler en `ProductCore` y publicar su manifiesto en `ensure_agents()`. Mantener la decisión de seguridad en servicios verificables. Incorporar después el rol a la fábrica si necesita un proveedor diferente; añadir un nombre al registry por sí solo no crea una nueva ejecución.

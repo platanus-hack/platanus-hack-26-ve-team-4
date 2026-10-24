@@ -1,143 +1,136 @@
-# Prueba de la flota en un ambiente real
+# Prueba HTTP de la flota
 
-Esta guía levanta la aplicación real y recorre los siete componentes de la flota con llamadas HTTP. Un mismo comando ejercita Agent Registry, Agent Runtime, Memory Bank, Agent Identity, Agent Gateway, Model Armor y Agent Observability, y además el agente de soporte que responde con Haiku 5.5.
+Este recorrido ejecuta la aplicación y sus siete componentes de plataforma: Registry, Runtime, Memory Bank, Identity, Gateway, Armor y Observability. Es distinto del ciclo de parches de la arena: utiliza `support_conversation` y el manifiesto `soporte-tienda` **1.0.0**, cuyos permisos niegan reembolsos. La arena usa manifiestos **2.0.0** y otro handler.
 
-El recorrido vive en `backend/src/agent_zero/walkthrough/` y se ejecuta con `python -m agent_zero.walkthrough`. Solo usa la API pública del servidor, igual que lo haría un cliente externo. El mismo código corre en la suite como test (`tests/walkthrough/test_walkthrough.py`, requisito `DEMO-01`), con el modelo guionado.
+El punto de entrada es [walkthrough/__main__.py](../backend/src/agent_zero/walkthrough/__main__.py). [test_walkthrough.py](../backend/tests/walkthrough/test_walkthrough.py) ejecuta el mismo recorrido con modelo guionado; [evidencias](./pruebas/evidencias.md) conserva el ensayo DEMO aprobado de **22/22 comprobaciones**. Esta guía no requiere llamadas reales por defecto.
 
-## Requisitos
+## Preparación
 
-- `uv` y las dependencias del backend (`make install`).
-- `.env` en la raíz del repo, copiado desde `.env.example`, con `AGENT_ZERO_LLM_API_KEY` y un `AGENT_ZERO_OPERATOR_SECRET` propio. El archivo está en `.gitignore` y nunca se commitea.
-
-## Correr la prueba
-
-En una terminal, el servidor:
+Desde la raíz, instalar dependencias y conservar cualquier configuración existente:
 
 ```bash
-make fleet-server
+test -f .env || cp .env.example .env
+make install
 ```
 
-En otra terminal, el recorrido:
+El modo DEMO funciona sin clave de IA. El servidor y el cliente deben usar el mismo `AGENT_ZERO_OPERATOR_SECRET` de `.env`; los targets Make lo cargan. `fleet-server` fuerza `AGENT_ZERO_OTEL_EXPORTER=memory`, necesario para consultar trazas por HTTP.
+
+Usar **un directorio de datos nuevo por ensayo**. El recorrido publica IDs/versiones conocidos, usa el cliente `cust-ana`, acumula memoria y crea y revoca un agente temporal. Que algunas publicaciones acepten 409 no equivale a empezar de cero. El reset de arena conserva registro, revocaciones, memoria de plataforma y runs ajenos a la ronda; no limpia este recorrido.
+
+## Ensayo DEMO en dos terminales
+
+En la primera terminal, desde la raíz:
 
 ```bash
-make fleet-walkthrough
+export FLEET_DATA="$(mktemp -d "${TMPDIR:-/tmp}/agent-zero-fleet-demo.XXXXXX")"
+printf 'Copiar en la segunda terminal: export FLEET_DATA=%q\n' "$FLEET_DATA"
+make fleet-server FLEET_MODE=demo FLEET_PORT=8000 FLEET_DATA="$FLEET_DATA"
 ```
 
-Ambos objetivos leen `.env`. El servidor corre en modo `live`, con las trazas en memoria (`AGENT_ZERO_OTEL_EXPORTER=memory`) y los datos en `backend/data/fleet/`. El recorrido guarda los runs completos en `backend/data/fleet/recorrido.json`. Se puede repetir sobre la misma base: lo que ya está publicado responde 409 y la memoria se acumula.
+La ruta impresa es absoluta y el directorio ya existe. En la segunda terminal, también desde la raíz, copiar primero la línea `export FLEET_DATA=...` que imprimió el servidor y ejecutar:
 
-Variables para cambiar el comportamiento:
+```bash
+make fleet-walkthrough FLEET_PORT=8000 FLEET_DATA="$FLEET_DATA"
+```
 
-| Variable | Valor por defecto | Uso |
+El CLI espera hasta completar los cuatro runs, imprime los 22 checks y guarda `$FLEET_DATA/recorrido.json`. Código de salida 0 significa que `Report.ok` es verdadero; 1 indica un check fallido. Un fallo de conexión o timeout también termina el proceso con error.
+
+No lanzar el recorrido mientras otro servicio ocupe el puerto. Para cambiarlo, pasar el mismo `FLEET_PORT` a ambos targets. Al terminar, detener el servidor con Ctrl-C y conservar el directorio como evidencia. Para repetir, crear otro directorio; no borrar ni reutilizar el del ensayo anterior como supuesto reset.
+
+| Variable Make | Valor por defecto | Precaución |
 | --- | --- | --- |
-| `FLEET_PORT` | `8000` | Puerto del servidor y del recorrido. |
-| `FLEET_MODE` | `live` | `live`, `record` o `replay`. |
-| `FLEET_DATA` | `./data/fleet` | Base, ledger, cassette y auditoría, relativo a `backend/`. |
+| `FLEET_MODE` | `live` | Especificar `demo` para el ensayo sin proveedor. |
+| `FLEET_PORT` | `8000` | Debe coincidir entre servidor y CLI. |
+| `FLEET_DATA` | `./data/fleet` | Make cambia a `backend/`: las rutas relativas se interpretan desde allí. |
 
-### Costo
-
-Un recorrido hace dos llamadas a Haiku 5.5 y cuesta unos US$ 0,0002. El tope diario es `AGENT_ZERO_LLM_DAILY_USD_LIMIT`, US$ 2 por defecto. `GET /api/fleet/status` muestra lo gastado en el día. El gasto se reconstruye desde el ledger de la carpeta de datos (`FLEET_DATA`), así que cada carpeta lleva su propia cuenta: para un tope global, usa siempre la misma.
-
-Para repetirlo sin costo, se graba una vez y después se reproduce:
+Para ajustar espera y archivo, el CLI acepta `--follow-up-seconds`, `--timeout`, `--base-url` y `--save`. Si se usa directamente, cargar `.env` desde la raíz antes de cambiar de carpeta. `--save` no crea la carpeta padre: debe existir; la receta con `mktemp -d` cumple ese requisito.
 
 ```bash
-make fleet-server FLEET_MODE=record     # llama a Haiku y graba backend/data/fleet/llm/cassette.jsonl
-make fleet-walkthrough
-# detener el servidor
-make fleet-server FLEET_MODE=replay     # no usa la red
-make fleet-walkthrough
+set -a
+. ./.env
+set +a
+cd backend
+uv run python -m agent_zero.walkthrough --base-url http://localhost:8000 \
+  --follow-up-seconds 1 --timeout 90 --save "$FLEET_DATA/recorrido.json"
 ```
 
-En `replay` cada servidor reproduce la cassette una sola vez: para otro recorrido, reinícialo. Sin clave ni red, `make test` corre el mismo recorrido con el modelo guionado.
+## Qué verifica
 
-## Qué comprueba
-
-| Componente | Comprobación | Llamada |
-| --- | --- | --- |
-| Plataforma | El servicio responde y tiene registrada la víctima con `get_order`, `search_knowledge` y `request_refund`. | `GET /health`, `GET /api/fleet/status` |
-| Agent Registry | Publica y aprueba `soporte-tienda` 1.0.0, lo descubre por capacidad y verifica el sha256 del manifiesto. | `POST /api/registry/agents`, `POST .../approve`, `GET /api/registry/agents?capability=pedidos`, `GET .../integrity` |
-| Model Armor | Rechaza un manifiesto con una herramienta envenenada (422). | `POST /api/registry/agents` |
-| Agent Runtime | Encola un run (202) que responde, espera unos segundos y se reanuda hasta `succeeded`. | `POST /api/runtime/runs`, `GET /api/runtime/runs/{id}` |
-| Modelo | La víctima responde con Haiku usando el pedido y la base de conocimiento. | dentro del run |
-| Model Armor | El correo del cliente sale como `[EMAIL]` en la salida de `get_order`. | dentro del run |
-| Memory Bank | Un segundo run del mismo cliente recuerda el contacto anterior. | dentro del run |
-| Agent Gateway | Niega `request_refund` porque no está en el manifiesto ni en los scopes del agente. | dentro del run |
-| Model Armor | Bloquea en el gateway un mensaje con prompt injection (`input_blocked`). | dentro del run |
-| Agent Identity | Revoca un agente temporal y su run termina `failed` sin ejecutar pasos. | `POST /api/fleet/agents/{id}/revoke` |
-| Observability | Los spans del run, sus pasos, el gateway y el modelo comparten un `trace_id` y no contienen el correo. | `GET /api/fleet/runs/{id}/trace` |
-| Observability | La cadena de auditoría firmada verifica y contiene las negaciones del gateway. | `GET /api/fleet/audit` |
-
-Resultado de una corrida real en modo `live` (24 de octubre de 2026):
-
-```text
-OK  [Plataforma] salud del servicio -> {'status': 'ok'}
-OK  [Plataforma] víctima y herramientas registradas -> modo LLM live, exportador memory
-OK  [Registry] publicar soporte-tienda 1.0.0 -> HTTP 201
-OK  [Registry] aprobar soporte-tienda -> HTTP 200
-OK  [Model Armor] rechazar un manifiesto con herramienta envenenada -> Manifiesto rechazado por Model Armor: herramienta get_order: anulación de las reglas propias del agente; ...
-OK  [Registry] descubrir por capacidad entre departamentos -> ['soporte-tienda@1.0.0']
-OK  [Registry] integridad sha256 del manifiesto -> e3acda2fa005926c
-OK  [Runtime] run asíncrono que espera y se reanuda -> estados vistos ['queued', 'running', 'succeeded', 'waiting'], falla: None
-OK  [Modelo] respuesta de la víctima -> ¡Hola! Tu pedido A-1001 (audífonos inalámbricos) está en camino y, según nuestra información, los envíos nacionales tardan de 2 a 5 días hábiles desde el despacho. ...
-OK  [Model Armor] PII redactada en la salida de get_order -> [EMAIL]
-OK  [Memory Bank] recordar el contacto anterior en otro run -> 1 recuerdos
-OK  [Agent Gateway] negar request_refund fuera del manifiesto -> {'denied': 'identity_missing_scope', 'stage': 'identity'}
-OK  [Model Armor] bloquear prompt injection en el gateway -> {'outcome': 'bloqueado', 'reason': 'input_blocked'}
-OK  [Registry] publicar soporte-temporal-8acbc3 1.0.0 -> HTTP 201
-OK  [Registry] aprobar soporte-temporal-8acbc3 -> HTTP 200
-OK  [Agent Identity] revocar soporte-temporal-8acbc3
-OK  [Agent Identity] un agente revocado no ejecuta pasos -> admisión denegada: el agente soporte-temporal-8acbc3 1.0.0 tiene la identidad revocada.
-OK  [Observability] una sola traza con run, gateway y modelo -> 19 spans: [... 'agent_zero.model.call', 'agent_zero.runtime.run', 'agent_zero.runtime.step']
-OK  [Observability] sin PII en atributos de los spans
-OK  [Observability] cadena de auditoría firmada e íntegra -> 7 entradas
-OK  [Observability] las negaciones del gateway quedan auditadas -> ['identity_missing_scope', 'input_blocked']
-OK  [Plataforma] gasto del día dentro del tope -> US$ 0.000206 de 2.0
-
-22/22 comprobaciones pasaron
-```
-
-El proceso termina con código 0 si todo pasa y con 1 si alguna comprobación falla, así que sirve en un script o en CI.
-
-## Llamadas a mano
-
-Con el servidor arriba y las variables de `.env` cargadas (`set -a && . ./.env && set +a`):
-
-```bash
-API=http://localhost:8000
-OP="x-operator-secret: $AGENT_ZERO_OPERATOR_SECRET"
-
-curl -s -H "$OP" $API/api/fleet/status
-
-cd backend && uv run python -c "from agent_zero.victim.manifest import support_manifest; print(support_manifest().model_dump_json())" > /tmp/manifest.json && cd ..
-curl -s -H "$OP" -H "content-type: application/json" -d @/tmp/manifest.json $API/api/registry/agents
-curl -s -H "$OP" -H "content-type: application/json" -d '{"approved_by":"operador"}' \
-  $API/api/registry/agents/soporte-tienda/versions/1.0.0/approve
-curl -s "$API/api/registry/agents?capability=pedidos"
-
-RUN=$(curl -s -H "$OP" -H "content-type: application/json" -d '{
-  "agent_id": "soporte-tienda", "agent_version": "1.0.0", "handler": "support_conversation",
-  "input": {"customer_id": "cust-ana", "order_id": "A-1001",
-            "message": "Hola, ¿dónde viene mi pedido?", "follow_up_seconds": 5}
-}' $API/api/runtime/runs | python3 -c "import json,sys; print(json.load(sys.stdin)['run_id'])")
-
-curl -s -H "$OP" $API/api/runtime/runs/$RUN
-curl -s -H "$OP" $API/api/fleet/runs/$RUN/trace
-curl -s -H "$OP" "$API/api/fleet/audit?limit=20"
-```
-
-Datos de prueba: los clientes `cust-ana`, `cust-bruno` y `cust-carla` tienen dos pedidos cada uno (`A-1001`, `A-1002`, `B-2001`, `B-2002`, `C-3001`, `C-3002`) en `backend/src/agent_zero/victim/fixtures.py`. El campo `input` del run acepta `customer_id`, `order_id`, `message`, `refund_amount` y `follow_up_seconds`.
-
-## Qué revisar fuera de HTTP
-
-- Memoria cifrada en reposo: `sqlite3 backend/data/fleet/app.db "select subject_id, substr(ciphertext,1,40) from memory_records"` devuelve tokens Fernet (`gAAAAA...`), nunca texto plano.
-- Ledger de llamadas al modelo: `backend/data/fleet/llm/calls.jsonl`, con tokens, costo, latencia, origen (`live`, `replayed`) y versión de prompt.
-- Auditoría: `backend/data/fleet/audit/audit.jsonl` y su ancla firmada `audit.jsonl.anchor`. Editar una línea hace fallar `GET /api/fleet/audit`.
-
-## Errores frecuentes
-
-| Síntoma | Causa |
+| Área | Evidencia esperada |
 | --- | --- |
-| 401 `Secreto de operador inválido` | El recorrido y el servidor no usan el mismo `AGENT_ZERO_OPERATOR_SECRET`. |
-| 409 al pedir la traza | El servidor no corre con `AGENT_ZERO_OTEL_EXPORTER=memory`; con `otlp`, la traza está en el colector. |
-| El servidor no arranca en `live` | Falta `AGENT_ZERO_LLM_API_KEY`, o el entorno no es `local`/`test` y los secretos siguen con su valor de ejemplo. |
-| Run `failed` con `daily_budget` | Se alcanzó `AGENT_ZERO_LLM_DAILY_USD_LIMIT` en el día. |
-| Run `failed` con cassette agotada | En `replay` la cassette ya se reprodujo; reinicia el servidor. |
+| Plataforma | `/health` responde y `/api/fleet/status` enumera handler y herramientas. |
+| Registry | Publicar/aprobar `soporte-tienda@1.0.0`, descubrir por capacidad y verificar el hash del manifiesto. |
+| Armor de publicación | Un manifiesto con herramienta envenenada recibe 422. |
+| Runtime | Un run responde, pasa por `waiting` y reanuda hasta `succeeded`, conservando checkpoint. |
+| Modelo | La respuesta del primer contacto no está vacía; en DEMO es simulada. |
+| PII | El pedido visto por el agente contiene `[EMAIL]` en lugar del correo sintético. |
+| Memoria | El segundo contacto recuerda al menos una interacción anterior del cliente. |
+| Gateway | La solicitud de reembolso queda denegada; no pertenece a los permisos de este manifiesto. |
+| Armor de entrada | La inyección termina bloqueada con `input_blocked`. |
+| Identity | El agente temporal revocado no ejecuta pasos y su run termina `failed`. |
+| Observability | Run, pasos, gateway y modelo comparten traza; atributos sin el correo sintético. |
+| Auditoría y límite | La cadena verifica, contiene denegaciones y el gasto registrado no supera el tope configurado. |
+
+El resultado anterior se conserva en [fleet-demo-checks.json](../artifacts/core-evaluation/fleet-demo-checks.json), con `cli_exit_code=0`, `report_ok=true` y 22 checks; [fleet-demo.json](../artifacts/core-evaluation/fleet-demo.json) contiene los cuatro runs. Sus hashes están junto a los archivos. La evidencia DEMO prueba integración de plataforma, no eficacia de un LLM real.
+
+## Variantes LIVE, record y replay
+
+Para LIVE, configurar `AGENT_ZERO_LLM_API_KEY`, modelo y presupuestos en el `.env` propio. Repetir la preparación con otro directorio y `FLEET_MODE=live`. Primer y segundo contacto normalmente realizan dos llamadas de respuesta, pero errores/reintentos o actividad concurrente pueden incrementar el consumo. Consultar el ledger; no asumir un coste fijo por recorrido.
+
+`record` llama al proveedor real y escribe una cassette, por defecto en `$FLEET_DATA/llm/cassette.jsonl`. Iniciar el servidor como en la receta anterior cambiando sólo `FLEET_MODE=record`; ejecutar el CLI una vez y detenerlo. Si `.env` define `AGENT_ZERO_LLM_CASSETTE_PATH`, revisar esa ruta antes de usar la receta por defecto siguiente.
+
+Para reproducir, en la primera terminal del ensayo grabado, conservar la cassette y preparar **otra base de plataforma**:
+
+```bash
+export RECORDED_CASSETTE="$FLEET_DATA/llm/cassette.jsonl"
+export FLEET_DATA="$(mktemp -d "${TMPDIR:-/tmp}/agent-zero-fleet-replay.XXXXXX")"
+mkdir -p "$FLEET_DATA/llm"
+cp "$RECORDED_CASSETTE" "$FLEET_DATA/llm/cassette.jsonl"
+printf 'Copiar en la segunda terminal: export FLEET_DATA=%q\n' "$FLEET_DATA"
+make fleet-server FLEET_MODE=replay FLEET_PORT=8000 FLEET_DATA="$FLEET_DATA"
+```
+
+Copiar la nueva línea de `FLEET_DATA` en la segunda terminal y ejecutar `make fleet-walkthrough` con ese directorio. El proveedor no recibe llamadas nuevas y el origen es `replayed`. La cassette consume entradas por rol/tipo/DTO en orden; no verifica que el prompt sea idéntico. No reutilizarla para atribuir resultados a entradas distintas. Reiniciar recarga sus colas, pero para otro ensayo limpio también se necesita nueva base.
+
+El coste LIVE estimado se reconstruye desde el ledger de esa carpeta. Cada directorio tiene su propio ledger; cambiarlo no conserva un presupuesto monetario global. Los contadores generales de llamadas/tokens son de proceso. Detalles en [LLM](./dominio/llm.md).
+
+## Inspección HTTP
+
+Con el servidor activo y `.env` cargado en una terminal desde la raíz:
+
+```bash
+set -a
+. ./.env
+set +a
+export FLEET_API=http://localhost:8000
+curl --fail --silent --show-error -H "X-Operator-Secret: $AGENT_ZERO_OPERATOR_SECRET" \
+  "$FLEET_API/api/fleet/status"
+curl --fail --silent --show-error -H "X-Operator-Secret: $AGENT_ZERO_OPERATOR_SECRET" \
+  "$FLEET_API/api/fleet/audit?limit=20"
+```
+
+Para consultar un run, tomar su `run_id` de `recorrido.json` y usar `GET /api/runtime/runs/{id}` y `GET /api/fleet/runs/{id}/trace`, con el mismo encabezado. El JSON incluye `statuses_seen`; no almacena las credenciales del cliente.
+
+## Pruebas automatizadas y diagnóstico
+
+Desde la raíz, en una terminal de pruebas que no exporte configuración LIVE:
+
+```bash
+cd backend
+uv run pytest tests/walkthrough tests/fleet -q
+```
+
+La suite prueba el cliente HTTP, el cálculo de `Report.ok`, el recorrido completo guionado, registro de componentes, admisión, identidad, memoria y trazas. Para el detalle por dominio y la suite global previa de 860 pruebas, ver [pruebas](./pruebas/README.md) y [matriz](./pruebas/por-dominio.md).
+
+| Síntoma | Comprobación |
+| --- | --- |
+| 401 | Servidor y CLI deben cargar el mismo secreto; un token de audiencia no autoriza flota. |
+| 409 al pedir traza | Usar exportador `memory`; con `otlp` consultar el colector. |
+| 404 de traza tras reiniciar | Los spans `memory` son del proceso; ejecutar y exportar antes de detenerlo. |
+| `FileNotFoundError` al guardar | Crear el padre de `--save`; revisar la ruta relativa a `backend/`. |
+| Check de memoria o manifiesto inesperado | Confirmar directorio nuevo y que el CLI apunta a ese servidor, no a otra arena. |
+| Run `failed` por límite/proveedor | Inspeccionar `failure_reason`, status y ledger; no contarlo como éxito de seguridad. |
+| Cassette agotada | Usar una grabación completa compatible; sus colas se consumen durante el proceso. |
+| `offline` sin respuesta | No instala DEMO automáticamente; requiere un guion inyectado. Usar `demo` para este recorrido. |
+
+Para continuar la implementación, ver [continuidad](./continuidad.md); para el ciclo de ataque/parche usar [núcleo](./nucleo.md), no confundir sus manifiestos ni su reset con este recorrido de plataforma.

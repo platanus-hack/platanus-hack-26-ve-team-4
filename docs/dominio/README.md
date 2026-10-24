@@ -1,77 +1,76 @@
-# Dominio de Agent Zero
+# Dominios de Agent Zero
 
-Estado: diseño del 24 de octubre de 2026 con el ciclo P0 implementado sobre la flota. La guía de [núcleo implementado](../nucleo.md) es la referencia del estado actual, API y límites; los documentos de diseño conservan también ampliaciones pendientes.
+Documentación de la implementación vigente al 24 de octubre de 2026. Cada dominio describe responsabilidad, puntos de entrada, contratos, persistencia/recuperación, pruebas y extensión. Para incorporarse, empezar por [continuidad](../continuidad.md); para verificar cambios, usar [pruebas por dominio](../pruebas/por-dominio.md).
 
-Esta carpeta reúne qué es el producto, cómo se organizan sus agentes, cómo se toma cada decisión y qué hace cada dominio. Complementa a [arquitectura](../arquitectura.md), [evaluación](../evaluacion.md) y [demo](../demo.md), que siguen siendo la referencia del escenario y del protocolo de medición.
+## Producto y control
+
+| Dominio | Responsabilidad actual |
+| --- | --- |
+| [sessions](./sessions.md) | Consentimiento, alias, cliente sintético único por participante, token, vencimiento y cupo de ronda. |
+| [attempts](./attempts.md) | Conversaciones de uno a cuatro mensajes, admisión transaccional, idempotencia por sesión, run y proyección propia. |
+| [victim](./victim.md) | Bucle de herramientas, efectos idempotentes, canarios, fixtures controlados y entornos separados. |
+| [routing](./routing.md) | Decisión de entorno del servidor y desvío permanente al señuelo. |
+| [oracles](./oracles.md) | Veredictos deterministas de pedidos, reembolsos y memoria. |
+| [policies](./policies.md) | Catálogo, controles acumulativos, hashes, ciclo de vida, activación y reversión. |
+| [patches](./patches.md) | Scheduler de defensa, explicación de asesoría y validación contrafactual/conversacional. |
+| [arena](./arena.md) | Estado, clasificación, revelación, operación y reset archivado recuperable. |
+| [events](./events.md) | Eventos, outbox, proyección pública y SSE con cursor e historia durable. |
+
+## Autonomía y evaluación
+
+| Dominio | Responsabilidad actual |
+| --- | --- |
+| [prober](./prober.md) | Treinta casos de seis familias, mutación estructurada, deduplicación y plan durable con presupuesto. |
+| [analyzer](./analyzer.md) | Consolidación de hallazgos y enriquecimiento semántico separado del veredicto. |
+| [evals](./evals.md) | Comparación aislada de dos versiones, recuperación por caso, métricas y exportación. |
+| [llm](./llm.md) | Cinco roles, modos demo/offline/live/record/replay, instrumentación, límites, errores y ledger. |
+
+## Plataforma y composición
+
+| Dominio | Responsabilidad actual |
+| --- | --- |
+| [registry](./registry.md) | Manifiestos versionados, aprobación, descubrimiento e integridad. |
+| [identity](./identity.md) | Credenciales firmadas, scopes, expiración, revocación y bóveda de tokens. |
+| [agent_gateway](./agent-gateway.md) | Identidad, permisos de herramienta, política de negocio, Armor y auditoría. |
+| [armor](./armor.md) | Detección heurística por superficie, normalización y redacción de PII. |
+| [memory_bank](./memory-bank.md) | Memoria cifrada por agente/sujeto, TTL, procedencia, cuarentena y borrado. |
+| [runtime](./runtime.md) | Runs, checkpoints, reintentos, espera/cancelación, leases, heartbeat y fencing. |
+| [telemetry](./telemetry.md) | OpenTelemetry y auditoría HMAC con ancla, lock y journal recuperable. |
+| [fleet](./fleet.md) | Composición de la plataforma, admisión y acceso verificado para handlers. |
+| [shared/configuración](./shared.md) | Base de datos, sesiones, reloj, IDs, clasificación y arranque. |
+
+La composición real está en `main.py`, `fleet/fleet_builder.py` y `arena/core.py`; [arquitectura](../arquitectura.md) explica las fronteras. El runtime conoce guards de ronda de arena: no asumir que todos los imports apuntan en una sola dirección. El recorrido `walkthrough` de la flota tiene su [guía específica](../prueba-flota.md).
+
+## Interfaz y despliegue
+
+| Área | Responsabilidad actual |
+| --- | --- |
+| [frontend](./frontend.md) | Participante, arena y operación, recuperación, polling, SSE, QR y pruebas DOM. |
+| [infraestructura](./infraestructura.md) | Docker, volumen, nginx, salud/readiness, CSP, smoke y configuración de CI. |
 
 ## Documentos transversales
 
-| Documento | Responde a |
+| Documento | Uso |
 | --- | --- |
-| [Visión](./vision.md) | De qué va el proyecto y por qué es un *purple team* autónomo y no solo un red team. |
-| [Agentes](./agentes.md) | Qué agentes hay, por categoría y departamento, con su rol de modelo y sus especialidades. |
-| [Flujo de decisión](./flujo-de-decision.md) | La máquina de estados por eventos, quién decide cada cosa y por qué no hay un agente supervisor. |
-| [Rendimiento](./rendimiento.md) | Cómo hacerlo rápido, preciso y eficiente, con las métricas que lo demuestran. |
-| [Casos de uso](./casos-de-uso.md) | Actores, objetivos adversarios, los 16 casos de uso, flujos de usuario y orden de construcción. |
+| [Visión](./vision.md) | Alcance y propósito del bucle de seguridad. |
+| [Agentes](./agentes.md) | Roles LLM, handlers y servicios deterministas. |
+| [Flujo de decisión](./flujo-de-decision.md) | Qué servicio decide cada transición y cómo se recupera. |
+| [Casos de uso](./casos-de-uso.md) | UC-01 a UC-16 enlazados a implementación. |
+| [Rendimiento](./rendimiento.md) | Medido, configurado y pendiente de comprobar. |
 
-## Dominios del núcleo
+## Principios y vocabulario
 
-Cada dominio vive en `backend/src/agent_zero/<dominio>/` con la estructura de [desarrollo](../desarrollo.md): `models.py`, `schemas.py`, `repository.py`, servicios separados por operación y `router.py`. El responsable sale de [equipo](../equipo.md).
+El modelo propone acciones o redacta explicaciones; el servidor conserva la autoridad sobre identidad, ruta, controles y veredicto. La seguridad se evalúa por efecto observado y utilidad conservada. Los eventos y las respuestas del modelo cumplen funciones distintas.
 
-| Dominio | Documento | Categoría | Responsable | Estado hoy |
-| --- | --- | --- | --- | --- |
-| `victim` | [victim](./victim.md) | Objetivo | Carlos | Bucle nativo de herramientas, efectos idempotentes, canarios y entornos aislados; conserva el recorrido de la flota. |
-| `sessions` | [sessions](./sessions.md) | Arena | Francisco | Consentimiento, tokens firmados, tres clientes sin repetir y aislamiento por propietario. |
-| `attempts` | [attempts](./attempts.md) | Arena | Francisco | API, cupos, idempotencia, runs y checkpoints durables. |
-| `routing` | [routing](./routing.md) | Control | Carlos | Desvío permanente por violación, Armor o negaciones repetidas. |
-| `policies` | [policies](./policies.md) | Control | Carlos | Catálogo, versiones persistidas, activación atómica con drenaje y reversión. |
-| `oracles` | [oracles](./oracles.md) | Juez | Fernando | Tres verificadores deterministas sobre traza y efectos persistidos. |
-| `analyzer` | [Estado actual](../nucleo.md) | Defensa | Fernando | Hallazgos consolidados y persistidos; enriquecimiento LLM pendiente. |
-| `patches` | [Estado actual](../nucleo.md) | Defensa | Fernando | Validación contrafactual y ocho casos aislados por candidato. |
-| `prober` | [Estado actual](../nucleo.md) | Ofensiva | Fernando | Campañas con presupuesto y plantillas de tres familias. |
-| `events` | [Estado actual](../nucleo.md) | Arena | Francisco | Persistencia, proyección pública y SSE con reanudación. |
-| `arena` | [Estado actual](../nucleo.md) | Arena | Francisco | Chat, clasificación y panel autorizado; reinicio archivado pendiente. |
-| `evals` | [Evaluación](../evaluacion.md) | Juez | Fernando | Suite amplia e informe pendientes. |
-
-## Relación con la flota
-
-El núcleo importa la capa de IA (`llm`) y la flota (`registry`, `runtime`, `memory_bank`, `identity`, `agent_gateway`, `armor`, `telemetry`); nunca al revés. La flota sabe ejecutar agentes de forma segura y trazable. El núcleo decide qué agentes hay, qué reglas existen y cómo se aprende de cada ataque. La guía para probar la flota está en [prueba de la flota](../prueba-flota.md) y sus requisitos en [trazabilidad](../trazabilidad.md).
-
-```mermaid
-flowchart LR
-    subgraph Nucleo[Núcleo]
-        OBJ[victim]
-        ARE[sessions · attempts · events · arena]
-        CTL[routing · policies]
-        JUE[oracles · evals]
-        DEF[analyzer · patches]
-        OFE[prober]
-    end
-    subgraph Flota[Flota]
-        LLM[llm]
-        PLAT[registry · runtime · memory_bank · identity · agent_gateway · armor · telemetry]
-    end
-    Nucleo --> Flota
-```
-
-## Principios
-
-1. **El LLM propone y el código decide.** Ninguna decisión de seguridad (violación, ruta, activación, permiso de herramienta) depende de la opinión de un modelo.
-2. **Coreografía por eventos, sin supervisor.** Cada evento dispara un trabajador; no hay un agente que coordine a los demás y al que se pueda convencer.
-3. **Evidencia antes que relato.** Un hallazgo se sostiene en eventos de la traza y en cambios de estado, no en lo que respondió el agente.
-4. **Utilidad protegida.** Un parche que rompe tareas legítimas se rechaza aunque detenga el ataque.
-5. **Aislamiento por entorno.** Protegido, señuelo y validación usan datos separados; la ruta la decide el servidor.
-
-## Glosario
-
-| Término | Significado |
+| Término | Significado concreto |
 | --- | --- |
-| Intento | Un mensaje o secuencia de hasta cuatro mensajes ejecutada contra la víctima o el señuelo. |
-| Objetivo | Una regla del escenario que el atacante intenta romper (`OBJ-ORDER`, `OBJ-REFUND`, `OBJ-MEMORY`). |
-| Oráculo | Comprobación determinista que decide si un intento violó un objetivo. |
-| Hallazgo | Una vulnerabilidad reproducible que agrupa varios intentos con la misma causa. |
-| Control | Un validador del catálogo cerrado que el gateway ejecuta antes de una herramienta. |
-| Política | Una versión numerada del conjunto de controles activos. |
-| Omisión intencional | Un control ausente en la versión base para que exista algo que descubrir. |
-| Canario | Un marcador único en los datos protegidos que prueba una filtración si aparece en una salida. |
-| Tiempo hasta el parche | Segundos desde la primera violación confirmada hasta la política activa que la bloquea. |
+| Intento | Conversación de hasta cuatro mensajes con ruta y política fijadas al admitirla. |
+| Objetivo | `OBJ-ORDER`, `OBJ-REFUND` o `OBJ-MEMORY`. |
+| Hallazgo | Agrupación determinista de evidencia por objetivo, herramienta y control ausente. |
+| Control | Identificador cerrado que habilita una comprobación de negocio; no código generado. |
+| Política | Versión persistida del conjunto de controles con padre, hash, estado y validación. |
+| Canario | Marcador sintético del entorno/recurso para comprobar una divulgación. |
+| Omisión de laboratorio | Control de negocio ausente en la base; identidad y aislamiento siguen activos. |
+| Inconcluso | Ejecución sin evidencia suficiente o con fallo de infraestructura; no cuenta como defensa exitosa. |
+
+No inferir nuevas capacidades sólo porque exista un DTO o enum del diseño original. Los archivos de servicio, routers y pruebas enlazados por dominio describen el camino ejecutado hoy.

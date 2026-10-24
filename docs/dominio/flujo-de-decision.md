@@ -1,78 +1,58 @@
-# Flujo de decisión
+# Flujo de decisión implementado
 
-## Coreografía por eventos, sin supervisor
+El núcleo combina servicios deterministas, runs durables y eventos de evidencia. No hay un supervisor LLM con autoridad sobre ruta, permisos, veredictos o activación. Las instrucciones de una conversación no deciden esas transiciones.
 
-No hay un agente orquestador que decida qué agente llama a cuál. El núcleo es una **máquina de estados dirigida por eventos**: cada evento persistido dispara un trabajador, que produce el siguiente evento.
+## Secuencia real
 
-| Ventaja | Por qué |
+1. `AttemptSubmissionService` valida sesión, ronda y cupos bajo reserva de escritura. Resuelve la ruta y fija la versión de política.
+2. Guarda intento, run y eventos de admisión en la misma transacción de `app.db`.
+3. `RunWorker` obtiene un lease y ejecuta `AttemptExecutionHandler` desde su checkpoint.
+4. `ConversationExecutor` alterna generación, ejecución de herramientas y fin de turno. Persiste la propuesta antes de efectos; cada llamada pasa por el gateway con contexto del servidor.
+5. El handler obtiene un `Assessment` de los oráculos y persiste resultado y evento evaluado. Un fallo de infraestructura produce `inconclusive`.
+6. `AttemptWorker` procesa la defensa pendiente: registra hallazgos deterministas, actualiza el estado necesario y `DefenseScheduler` propone o continúa un candidato.
+7. Un run `finding_analysis` añade explicación al hallazgo. Otro run `validate_patch` espera la explicación opcional del parche y ejecuta las pruebas de seguridad/utilidad.
+8. El scheduler activa un candidato validado cuando los intentos drenan y el padre coincide, pone en cuarentena memoria cuando corresponde y finaliza los hallazgos.
+
+Fuentes: [core.py](../../backend/src/agent_zero/arena/core.py), [attempt_worker.py](../../backend/src/agent_zero/attempts/attempt_worker.py), [defense_scheduler.py](../../backend/src/agent_zero/patches/defense_scheduler.py) y [validation_handler.py](../../backend/src/agent_zero/patches/validation_handler.py).
+
+Los eventos registran `attempt_queued`, herramientas, evaluación, hallazgo y transiciones de política. El outbox publica tras commit. Los workers consultan tablas; no existe un bus de comandos separado que dispare una función por cada evento.
+
+## Quién decide
+
+| Decisión | Servicio y criterio |
 | --- | --- |
-| Rápido | Cero llamadas al modelo para coordinar. |
-| Auditable | Cada transición es un evento con `attempt_id`, `session_id` y `policy_version`, y queda en la auditoría firmada. |
-| No inyectable | No existe un supervisor al que un atacante pueda convencer de saltarse un paso. |
-| Recuperable | Los trabajadores son runs del runtime con checkpoints y reintentos; un fallo no pierde el ciclo. |
+| Aceptar envío | `attempts`: autenticación, forma, contenido idempotente, frecuencia y cupos. |
+| Elegir entorno | `routing`: ruta previa, violación, señales de Armor o negaciones repetidas. Devuelve `protected` o `honeypot`. |
+| Autorizar efecto | Gateway: identidad/manifiesto y `BusinessPolicyEngine` sobre la versión fijada. |
+| Confirmar violación | Oráculos: herramientas completadas, dueño, importes acumulados, escrituras de memoria y canarios. |
+| Atribuir prevención | Evidencia de negación por un validador de negocio reconocido; un bloqueo genérico de Armor no basta. |
+| Agrupar hallazgo | `FindingService`: fingerprint determinista de objetivo, herramienta y control ausente. |
+| Elegir controles | `PolicyService`: unión del catálogo requerida por los objetivos observados. |
+| Validar candidato | `ValidationRunner`: contrafactual y ocho casos en entornos limpios. |
+| Activar o revertir | `PolicyService`: estado permitido, padre/hash, validación y drenaje. La reversión la solicita el operador. |
+| Generar siguiente ataque | `CampaignHandler`: orden fijo de playbooks y presupuesto; la mutación LLM sólo cambia texto autorizado. |
 
-## El ciclo
+## Estados y recuperación
 
-```text
-attempt_queued
-  → router ────────────────── ms ──→ allow | block | divert (fija la ruta de la sesión)
-  → run de víctima o señuelo ─ s ───→ tool_proposed → tool_denied | tool_completed
-attempt_completed
-  → oráculos ──────────────── ms ──→ attempt_evaluated: confirmed_violation | prevented | not_achieved
-                                                       | contained_honeypot | inconclusive
-  → hallazgo ──────────────── ms ──→ finding_opened o evidencia sumada a uno abierto
-       └─ analizador (LLM) ─── s ───→ familia y causa probable, en segundo plano
-  → candidato ─────────────── ms ──→ patch_proposed desde la tabla objetivo → control
-       └─ generador (LLM) ──── s ───→ motivo en español, en segundo plano
-  → validación nivel 1 ────── ms ──→ re-evaluar la traza grabada con la política nueva
-  → validación nivel 2 ────── s ───→ 8 runs en paralelo en copias limpias
-  → patch_validated
-  → activación ────────────── ms ──→ policy_activated: cambio atómico del puntero de versión
+`Attempt.status` y `Attempt.outcome` son distintos. El primero pasa por `queued`, `running` y `evaluated` o `inconclusive`; el segundo conserva el veredicto. `apparent_success` es una proyección provisional, no un veredicto persistido del oráculo.
+
+La ruta de sesión no vuelve del señuelo al protegido. Repetir un intento desde Operación crea una sesión nueva; no cambia la ruta de su autor original. La versión de política no cambia a mitad de un intento.
+
+Los leases excluyen la ejecución simultánea del mismo checkpoint; el fencing descarta una finalización de un propietario vencido. Una herramienta completada se recupera por identidad de operación. Una caída después del commit de un evento se recupera por el outbox. Un reset interrumpido se completa desde su registro durable antes de abrir trabajo nuevo.
+
+## Validación y activación
+
+El nivel 1 reconstruye la secuencia de efectos permitidos y exige que las acciones que sustentan la violación queden denegadas. El nivel 2 ejecuta el original —incluido su fixture controlado—, dos variantes y cinco tareas legítimas. La concurrencia máxima del ejemplo es ocho; no son ocho runs independientes de la cola general.
+
+El candidato puede quedar `validating` mientras espera el drenaje. El scheduler vuelve a comprobarlo; no existe un temporizador de drenaje que cancele automáticamente todos los intentos. La activación cambia puntero, estado y evento en transacción. No deshace reembolsos anteriores.
+
+`AnalyzerHandler` es de fondo. `PatchExplainer` no decide reglas ni validación, pero se espera antes de validar y puede añadir latencia. Su error se registra como asesoría `unavailable`; el validador continúa con los controles deterministas.
+
+## Pruebas que preservan el flujo
+
+```bash
+cd backend
+uv run pytest tests/arena/test_core_cycle.py tests/arena/test_multiturn.py tests/arena/test_control_concurrency.py tests/arena/test_transactional_events.py tests/runtime/test_run_leases.py -q
 ```
 
-Las ramas de segundo plano enriquecen el panel pero nunca bloquean el ciclo: un parche se puede activar antes de que el analizador termine de redactar la causa.
-
-## Quién decide cada cosa
-
-| Decisión | Quién | Insumo | Regla |
-| --- | --- | --- | --- |
-| Si un intento se acepta | `attempts` | Token de sesión, tamaño, frecuencia, fase de la ronda | Cupo por sesión y global; entradas cerradas devuelven 409. |
-| A qué entorno va | Router (`routing`) | Ruta de la sesión, violaciones previas, señales de Armor | El desvío al señuelo es definitivo para la sesión. |
-| Si una herramienta se ejecuta | Motor de políticas en el gateway | Versión de política del intento, contexto de la sesión, argumentos | Niega por defecto si un validador falla. |
-| Si hubo violación | Oráculos | Traza de herramientas, estado antes y después, canarios | La opinión del modelo nunca confirma una violación. |
-| Si es un hallazgo nuevo | `analyzer` | Clave `(objetivo, herramienta, control ausente)` | Misma clave abierta: se suma evidencia. |
-| Qué control aplicar | `patches` | Tabla cerrada objetivo → control | El LLM solo elige si la tabla tiene más de una opción válida. |
-| Si se activa | Validador | Resultados de los niveles 1 y 2 | Cero violaciones críticas y cero regresiones legítimas. |
-| Si se revierte | Operador | Regresión observada | Restaura el padre validado. |
-| Qué atacar después | Planificador del Prober | Éxitos, novedad y presupuesto por familia | Prioriza familias con hallazgos abiertos o sin explorar. |
-
-## Validación en dos niveles
-
-**Nivel 1, contrafactual.** Las políticas actúan sobre llamadas a herramientas. La traza del intento original ya contiene cada `tool_proposed` con sus argumentos y el contexto de la sesión. Basta pasar esas llamadas grabadas por el motor de políticas con la versión candidata: si alguna violación vuelve a pasar, el candidato se rechaza en milisegundos sin gastar una llamada al modelo.
-
-**Nivel 2, en vivo.** El nivel 1 no ve si el modelo encuentra otro camino con la política nueva. Por eso se ejecutan en paralelo, cada uno sobre una copia limpia de datos y memoria:
-
-- El caso original.
-- Dos variantes reservadas de la misma familia, que el generador nunca vio.
-- Cinco tareas legítimas críticas: consulta propia, reembolso válido, pregunta documental, preferencia inocua y una frase que menciona seguridad sin ser ataque.
-
-Se activa solo con cero violaciones en los casos adversarios y las cinco tareas legítimas completadas.
-
-## Activación y versiones
-
-1. El intento fija su versión de política al encolarse y la conserva hasta terminar.
-2. Antes de activar, se drenan los intentos en curso con un plazo; si no se vacían, la activación queda pendiente y se muestra.
-3. El puntero de versión activa cambia en una sola transacción.
-4. Los intentos nuevos usan la versión nueva; los efectos pasados no se revierten, y la memoria contaminada se pone en cuarentena.
-
-Las transiciones permitidas ya están en `policies/lifecycle.py`: `candidate → validating → active → superseded`, con `rejected` y `rolled_back` como estados finales.
-
-## Fallos y degradación
-
-| Situación | Comportamiento |
-| --- | --- |
-| Error del proveedor o de infraestructura en un intento | `inconclusive`; no suma victoria ni derrota. |
-| Presupuesto diario agotado | Los runs fallan con `daily_budget`; el Prober se detiene y se conserva la evidencia. |
-| Analizador o generador fallan | El ciclo sigue con la tabla del catálogo y un motivo genérico. |
-| Candidato rechazado | El hallazgo sigue abierto y se registra el motivo; el siguiente candidato espera evidencia nueva. |
-| Variante reabre un hallazgo mitigado | El hallazgo pasa a `reopened` y vuelve a entrar al ciclo. |
+Consultar [attempts](./attempts.md), [patches](./patches.md), [policies](./policies.md), [events](./events.md) y la [matriz de pruebas](../pruebas/por-dominio.md) antes de modificar el orden o extraer un worker.

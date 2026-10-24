@@ -1,68 +1,49 @@
-# Rendimiento: rápido, preciso y eficiente
+# Rendimiento y capacidad: datos y límites
 
-Los números de este documento son hipótesis de diseño salvo que se indique que fueron medidos. Se confirman con el primer ciclo real y se reportan en [evaluación](../evaluacion.md).
+Este documento separa mediciones del laboratorio, configuración y objetivos pendientes. La fuente de resultados es la [evidencia exportada](../pruebas/evidencias.md), no una estimación de rendimiento de producción.
 
-## Rápido
+## Lo medido
 
-| Palanca | Cómo | Efecto esperado |
+| Ensayo guardado | Resultado | Qué permite concluir |
 | --- | --- | --- |
-| LLM fuera del camino crítico | Router, oráculos, agrupación, elección de control y activación son código. | Cada paso de decisión en milisegundos. |
-| Validación contrafactual | Re-evaluar la traza grabada con la política candidata antes de gastar llamadas. | Rechazo inmediato de candidatos que no bloquean. |
-| Validación en paralelo | Los 8 runs del nivel 2 corren a la vez sobre copias limpias en memoria. | El tiempo de validación es el de un run, no el de ocho. |
-| Pool de validación propio | El runtime tiene hoy `runtime_worker_concurrency=2`; la validación usa su propio pool para no competir con la arena. | La ronda pública no frena la activación. |
-| Haiku en modo veloz | Esfuerzo bajo, thinking desactivado y salida corta en los roles de volumen (ya configurado en `llm/catalog.py`). | Menor latencia por turno. |
-| Caché de prompt | Llevar el system prompt y las herramientas de la víctima por encima del mínimo cacheable de Haiku 5.5 (286 tokens). | Menos tokens de entrada facturados y menor latencia en turnos repetidos. |
-| Enriquecimiento en segundo plano | Analizador y generador redactan mientras el ciclo avanza. | La activación no espera texto. |
+| Comparación DEMO | 270 ejecuciones, 732 llamadas simuladas, cero inconclusos. | Consistencia del flujo y de los controles en los casos publicados. |
+| Utilidad DEMO | 45/45 tareas correctas por versión. | La suite legítima publicada se conserva; no cubre cualquier tarea de soporte. |
+| Ciclo LIVE | 93 llamadas de los cinco roles, once comprobaciones aprobadas. | El circuito funciona con el proveedor real configurado. |
+| Coste LIVE | US$0.0101596 estimados desde tokens y tarifas del ledger. | Coste estimado de ese ensayo concreto; no una factura ni presupuesto por usuario. |
+| Ensayo inicial LIVE | Timeout de 60 segundos del verificador de campaña, preservado con error. | Un límite global corto no cubría seis casos más sus validaciones; el comando final espera por caso. |
 
-**Presupuesto de latencia, hipótesis:**
+El informe DEMO contiene medianas y p95 por versión, con tamaño de muestra. Esas latencias pertenecen al intérprete determinista y al almacenamiento local. No extrapolarlas a una conversación LIVE, una red móvil o un despliegue con carga.
 
-| Tramo | Estimación |
+## Configuración actual
+
+Valores base de [Settings](../../backend/src/agent_zero/config.py), salvo que se indique el ejemplo:
+
+| Control | Valor y alcance |
 | --- | --- |
-| Intento de la víctima | 1 a 3 s por run con Haiku. |
-| Oráculos, hallazgo y candidato | menos de 50 ms. |
-| Validación nivel 1 | menos de 50 ms. |
-| Validación nivel 2 | 2 a 5 s en paralelo. |
-| Drenaje y activación | menos de 1 s si no hay intentos largos en curso. |
-| **Tiempo hasta el parche** | **10 a 20 s** desde la violación confirmada. |
+| Worker de runs | Concurrencia 2, polling 0,5 segundos; configurable. |
+| Validación de candidato | Semáforo de hasta 8 casos; comparten un run de validación. |
+| Participantes | 100 identidades por ronda, máximo configurable 500. Sesiones vencidas conservan plaza hasta reset. |
+| Cola de intentos | Límite 40, límite por sesión 1 y 12 envíos por minuto; ver separación de orígenes en `attempts`. |
+| Herramientas | 60 llamadas por minuto por agente en el limiter del proceso. |
+| LLM del ejemplo | 5000 llamadas por día y 1200 por campaña en `.env.example`; los valores base de Settings son 2000 y 300. |
+| Tokens y dinero | Ejemplo: 1.500.000 tokens por campaña y US$2 diarios estimados. No es un límite duro de facturación del proveedor. |
 
-La única medición real hasta ahora es el recorrido de la flota: dos llamadas de la víctima con Haiku 5.5 en modo `live` costaron US$ 0,000206 (24 de octubre de 2026).
+Tener 100 identidades no demuestra que el sistema sostenga 100 llamadas simultáneas. Las pruebas de asignación concurrente y varios workers verifican integridad, no capacidad ni tiempos bajo carga real.
 
-## Preciso
+## Costes que deben tenerse en cuenta
 
-**Precisión del ataque detectado:**
+Una conversación puede requerir varios turnos de modelo: propuesta, resultado de herramientas y respuesta final. Ocho casos de validación no equivalen a ocho llamadas. La suite amplia de tres repeticiones exige al menos 672 llamadas por sus turnos y puede consumir más; el ensayo publicado utilizó 732.
 
-- **Canarios.** Los pedidos de cada cliente llevan marcadores únicos. Si el marcador de otro cliente aparece en una salida o en una herramienta completada, la violación es inequívoca.
-- **Dos niveles de evidencia.** Una lectura indebida completada viola el control aunque la respuesta final la oculte; la filtración en la respuesta se registra como efecto adicional.
-- **Oráculos deterministas.** Comparan identidad de sesión, dueño del recurso, importes y escrituras. El clasificador de familia puede equivocarse sin cambiar el veredicto.
-- **`inconclusive` honesto.** Faltan trazas o hubo un error: no se cuenta como victoria defensiva.
+`AnalyzerHandler` puede ejecutarse en paralelo al ciclo. La explicación de `PatchExplainer` se espera dentro del run de validación y añade latencia. El cliente del modelo agrupa un stream completo antes de entregarlo al loop cuando usa reintentos; la UI recibe estado por polling/SSE, no tokens incrementales del proveedor.
 
-**Precisión de la defensa:**
+SQLite serializa escrituras; auditoría y ledger releen sus registros para ciertas operaciones. Los límites generales LLM y de herramientas son locales al proceso. Añadir réplicas sin rediseñar cuotas, almacenamiento y operación no multiplica la capacidad de forma garantizada.
 
-- **Tareas legítimas en cada validación** para medir sobrebloqueo. Un parche que bloquea todo se rechaza.
-- **Variantes reservadas** que el generador no ve, para que el parche no quede ajustado a una frase.
-- **Varianza del modelo.** El nivel 1 es determinista; el nivel 2 corre en vivo una vez en la demo, y la evaluación amplia repite cada caso tres veces.
+## Próxima medición reproducible
 
-## Eficiente
+1. Fijar commit, hardware/despliegue, modo/proveedor, modelo y configuración; usar datos de ensayo nuevos.
+2. Separar consultas propias, ataques, validación y tráfico de observación SSE.
+3. Medir llegadas, concurrencia real, profundidad de cola, errores, inconclusos y consumo del proveedor.
+4. Registrar latencia de intento, duración de validación y tiempo desde hallazgo hasta activación, con `n`, mediana y p95.
+5. Repetir con la misma carga y las dos versiones; conservar ejecuciones fallidas y pendientes.
 
-| Concepto | Estimación |
-| --- | --- |
-| Llamadas por ciclo completo | Unas 9 a Haiku: el intento y los 8 runs de validación. |
-| Costo por ciclo | Menos de US$ 0,001, con unos US$ 0,0001 por llamada de la víctima. |
-| Tope diario | US$ 2 (`AGENT_ZERO_LLM_DAILY_USD_LIMIT`), suficiente para miles de ciclos. |
-
-- **Mutaciones deterministas primero.** El Prober aplica operadores sin modelo (cambio de idioma, reparto en turnos, codificación, juego de roles) y usa el LLM solo para variantes nuevas.
-- **Deduplicación antes de gastar.** Hash normalizado del caso; un duplicado no se ejecuta.
-- **Cassettes** para ensayar la demo a costo cero.
-- **Batch API** de Anthropic para la evaluación amplia, que no necesita respuesta inmediata.
-- **Topes por campaña** en llamadas y tokens; al agotarse se detiene la generación y se conserva la evidencia.
-
-## Métricas que se muestran
-
-| Métrica | Definición |
-| --- | --- |
-| Tiempo hasta el parche | Segundos desde la primera violación confirmada hasta `policy_activated`. |
-| Tasa de bloqueo | Intentos adversarios `prevented` sobre intentos evaluados de la misma familia, antes y después. |
-| Utilidad conservada | Tareas legítimas completadas sobre el total, antes y después. |
-| Contención | Intentos `contained_honeypot` sin efectos protegidos. |
-| Inconclusos | Intentos `inconclusive`, reportados aparte. |
-| Costo | US$ por ciclo y por campaña, desde el ledger. |
+La meta de diez sesiones conectadas y un parche en 30 segundos sigue pendiente de medición bajo carga real. No publicar esa meta como un SLA. Antes de optimizar, revisar las garantías de [runtime](./runtime.md), [gateway](./agent-gateway.md) y [telemetry](./telemetry.md), y conservar la [regresión de concurrencia](../pruebas/por-dominio.md#runtime-eventos-y-auditoría).

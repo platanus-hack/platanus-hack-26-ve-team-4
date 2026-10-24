@@ -1,66 +1,70 @@
-# Equipo y forma de trabajo
+# Equipo y continuidad del trabajo
 
-Propuesta de organización para las 36 horas. La asignación parte de la experiencia visible de cada persona y se puede intercambiar si el equipo lo decide; al cambiarla se actualizan esta tabla, `.github/CODEOWNERS` y las etiquetas de los issues.
+Este documento distingue la organización sugerida durante el hackathon de la propiedad declarada actualmente en [CODEOWNERS](../.github/CODEOWNERS). Para retomar el proyecto, seguir [continuidad](./continuidad.md), el [índice de dominios](./dominio/README.md) y la [matriz de pruebas](./pruebas/por-dominio.md).
 
-## Frentes
+## Fuentes de responsabilidad
 
-| Frente | Responsable | Alcance | Entrega a los demás |
-| --- | --- | --- | --- |
-| Agente y controles | Carlos ([@CarSanoja](https://github.com/CarSanoja)) | Fixtures, agente víctima, adaptador LLM, motor de políticas, activación y reversión, honeypot, infraestructura y despliegue. | Ejecución trazable con ruta y versión de política estables. |
-| Red team y evaluación | Fernando ([@FernandoSiavato](https://github.com/FernandoSiavato)) | Prober, mutaciones, oráculos, analizador, generador de parches y suites de evaluación. | Casos reproducibles, hallazgos con evidencia y políticas candidatas. |
-| Arena y entrega | Francisco ([@franbastardo](https://github.com/franbastardo)) | Sesiones, intentos, eventos, clasificación, vistas de participante, arena y operación. | Flujo público usable y panel de operación protegido. |
+`CODEOWNERS` es la referencia versionada para solicitar revisión de rutas. La distribución siguiente describe sus patrones actuales; no crea permisos nuevos ni garantiza una regla de aprobación obligatoria en GitHub.
 
-Carlos coordina la integración: custodia los contratos compartidos y decide cuándo un hito está integrado.
-
-## Propiedad del código
-
-| Ruta | Responsable |
+| Patrones actuales | Revisores declarados |
 | --- | --- |
-| `backend/src/agent_zero/shared/`, `config.py`, `main.py` | Carlos |
-| `backend/src/agent_zero/victim/`, `routing/`, `policies/` | Carlos |
-| `backend/src/agent_zero/prober/`, `analyzer/`, `patches/`, `evals/` | Fernando |
-| `backend/src/agent_zero/sessions/`, `attempts/`, `events/`, `arena/`, `operator/` | Francisco |
-| `frontend/` | Francisco |
-| `infra/`, `.github/` | Carlos |
-| `docs/` | Todo el equipo |
+| Patrón general `*`, incluidos documentación y dominios sin override | `@CarSanoja`, `@FernandoSiavato`, `@franbastardo`. |
+| `shared/`, `config.py`, `main.py`, `victim/`, `routing/`, `policies/` bajo `backend/src/agent_zero/` | `@CarSanoja`. |
+| `prober/`, `analyzer/`, `patches/`, `evals/` bajo `backend/src/agent_zero/` | `@FernandoSiavato`. |
+| `sessions/`, `attempts/`, `events/`, `arena/` bajo `backend/src/agent_zero/`, y `frontend/` | `@franbastardo`. |
+| `infra/` y `.github/` | `@CarSanoja`. |
 
-El responsable revisa los cambios en su ruta, pero cualquiera puede proponerlos. `.github/CODEOWNERS` pide su revisión automáticamente.
+La operación HTTP del backend está en `arena/operator_router.py` y `arena/reset_router.py`; no existe un dominio backend `operator/`. `CODEOWNERS` conserva un patrón histórico para esa ruta inexistente: no debe interpretarse como un módulo implementado. Si el equipo reorganiza rutas, actualizar los patrones de revisión junto con el movimiento, mediante un acuerdo explícito.
 
-## Contratos compartidos
+## Frentes heredados del plan
 
-Los esquemas de `schemas.py` y los enums de `models.py` son la frontera entre frentes: `AttackCase`, `AttemptAssessment`, `Finding`, `PolicyCandidate`, `TraceEvent` y los tipos de evento. Un cambio de contrato:
+La propuesta original de las 36 horas sigue siendo una forma de dividir conversaciones y revisiones; no sustituye las asignaciones que el equipo confirme para el siguiente cambio.
 
-1. Se avisa en el canal del equipo antes de empezar.
-2. Va en su propio commit o PR, separado de la implementación que lo usa.
-3. Actualiza el tipo espejo del frontend (`frontend/src/features/*/types.ts`) en el mismo cambio.
+| Frente propuesto | Referencia original | Coordinación técnica |
+| --- | --- | --- |
+| Agente y controles | Carlos / `@CarSanoja`. | Escenario, herramientas, LLM, políticas, aislamiento y configuración de entrega. |
+| Red team y evaluación | Fernando / `@FernandoSiavato`. | Prober, oráculos, hallazgos, validación y comparación. |
+| Arena y entrega | Francisco / `@franbastardo`. | Sesiones, intentos, eventos, ronda y vistas de participante/operación. |
 
-## Flujo de trabajo
+No se declara un nuevo responsable de integración ni un privilegio de push directo. El equipo acuerda quién revisa e integra cada cambio, especialmente cuando cruza frentes. Todos pueden proponer cambios en cualquier ruta y solicitar el contexto del revisor correspondiente.
 
-- **Ramas.** `<frente>/<tema>`, por ejemplo `redteam/oraculo-reembolso` o `arena/vista-participante`. Ramas cortas, integradas varias veces al día.
-- **Integración.** Carlos hace push directo a `main` como admin; el resto entra por pull request sin aprobación obligatoria. Un PR que cruza un límite de confianza (identidad, herramientas, honeypot, operación) espera la revisión de su responsable.
-- **Listo para integrar.** `make check` pasa, el código nuevo tiene pruebas y, si toca contenedores, `make up && make smoke` pasa.
-- **Seguimiento.** Cada tarea es un issue con etiqueta de frente y prioridad, asignado a una persona y dentro del milestone de su hito.
+## Contratos que requieren coordinación
 
-## Puntos de sincronización
+La referencia es el servicio que consume el contrato y sus pruebas, no solamente el nombre de un DTO histórico:
 
-Al cierre de cada ventana del [plan de 36 horas](./plan-36-horas.md) el equipo integra en `main`, ejecuta la pila completa y comprueba la condición de salida del hito. Si no se cumple, se recorta alcance antes de abrir trabajo nuevo.
-
-| Hito | Condición de salida |
+| Cambio | Consumidores que revisar |
 | --- | --- |
-| H0–3 | Fixtures y contratos acordados; responsables confirmados. |
-| H3–8 | Una tarea útil y un ataque preparado producen estados verificables. |
-| H8–13 | Un caso autónomo abre un hallazgo con evidencia real. |
-| H13–18 | El mismo ataque falla con el parche y una consulta útil sigue pasando. |
-| H18–23 | Tres turnos desviados al señuelo sin acciones protegidas. |
-| H23–28 | Participación desde otro dispositivo con datos públicos sanitizados. |
-| H28–32 | Informe de evaluación y capacidad medida. |
-| H32–36 | Demo ensayada, grabación de respaldo y entrega lista. |
+| `AttemptCreate`, sesión, resultado público | Routers/backend, admisión, `frontend/src/features/participant/`, historial y pruebas de recuperación. |
+| `CallContext`, herramientas o validadores | Flota, gateway, víctima, política, oráculos y validación aislada. |
+| `AttackCase` o fixture controlado | Prober, evaluación, replay y validación del original. |
+| Hallazgo o explicación | `FindingService`, analizador, `PatchExplainer` y vistas de evidencia; las explicaciones conservan su carácter de asesoría. |
+| Evento público o nueva transición | Store/outbox, proyección, cursor SSE, tipos/suscripción frontend y reset de ronda. |
+| Estado persistido | Transacciones, recuperación, leases, snapshot, archivo de ronda y estrategia de migración. |
 
-## Etiquetas
+Al proponer un contrato, describir el trigger, el payload anterior/nuevo y el efecto esperado en el issue o PR. Actualizar consumidores y tipos espejo del frontend en el mismo cambio funcional. Evitar commits que importan archivos añadidos posteriormente o que prometen controles todavía sin implementación.
 
-| Etiqueta | Uso |
-| --- | --- |
-| `frente:agente`, `frente:redteam`, `frente:arena` | Frente responsable. |
-| `P0`, `P1`, `P2` | Prioridad según el plan: ciclo completo, demo de arena y ampliaciones. |
-| `contrato` | Cambia un esquema compartido entre frentes. |
-| `bloqueado` | Espera una dependencia externa o de otro frente. |
+## Secuencia para continuar
+
+1. Leer [continuidad](./continuidad.md) y localizar el dominio afectado.
+2. Confirmar rama y remoto. La base funcional se publicó en `core/complete-autonomous-loop` de `origin` y `org`; comprobar si ya fue integrada antes de elegir otra base.
+3. Acordar alcance y revisar contratos compartidos antes de editar varias áreas simultáneamente.
+4. Implementar en commits atómicos, con pruebas de negocio/recuperación apropiadas y documentación del dominio actualizada.
+5. Ejecutar la regresión indicada en [pruebas](./pruebas/README.md); para un cambio transversal, `make check` más build de frontend y el smoke que corresponda.
+6. Presentar el cambio para revisión con problema, comportamiento resultante, validación, límites y pendientes. Usar los revisores declarados en `CODEOWNERS`.
+7. Confirmar los checks remotos y las reglas reales del repositorio antes de integrar. No asumir que publicar una rama equivale a desplegar o modificar `main`.
+
+Los prefijos de rama por frente (`agente/`, `redteam/`, `arena/`) son una convención sugerida, no un control automático. Los nombres de etiquetas `frente:agente`, `frente:redteam`, `frente:arena`, `P0/P1/P2`, `contrato` y `bloqueado` proceden del plan; comprobar su disponibilidad y uso actual en los issues antes de depender de ellos.
+
+## Evidencia y revisión
+
+La referencia previa aprobó 860 pruebas de backend, con dos LIVE opcionales omitidas y sin warnings, más 47 de frontend. Los artefactos DEMO y LIVE prueban alcances distintos; [evidencias](./pruebas/evidencias.md) explica denominadores, costes estimados y procedencia.
+
+Conservar los JSON originales con sus SHA-256, incluidos ensayos fallidos. Para otra ejecución, usar un nombre nuevo y registrar commit, árbol modificado, modo, configuración relevante y errores. No incorporar tokens, secretos, cassettes con datos reales ni archivos locales ajenos al cambio.
+
+La historia de implementación tiene un [mapa de referencias](../artifacts/core-evaluation/commit-map.json) porque se corrigieron dependencias antes del primer push. Los commits originales registrados por los ensayos se relacionan con árboles equivalentes; no editar una evidencia antigua para atribuirle otro código.
+
+## Próximos hitos del equipo
+
+Los pendientes verificables están en [continuidad](./continuidad.md), con sus condiciones de aceptación. Entre ellos siguen la comparación amplia con proveedor real, revisión visual/móvil, despliegue público comprobado, capacidad bajo carga y procedimientos de respaldo/migración. La existencia de QR, cupos de identidad y Docker no completa esos hitos por sí sola.
+
+El [plan de 36 horas](./plan-36-horas.md) conserva el contexto de prioridades del evento. Para la siguiente iteración, elegir un pendiente concreto, asignarlo de común acuerdo y actualizar su evidencia al cerrarlo; no reabrir todo el plan como si el núcleo estuviera por construir.

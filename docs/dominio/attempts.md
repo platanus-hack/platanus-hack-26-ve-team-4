@@ -1,66 +1,85 @@
-# `attempts`: intentos y cola
+# `attempts`: admisión, ejecución y resultado de un intento
 
-Categoría: arena · Responsable: Francisco · Issues: #6
+Estado: implementado. Es el puente entre la API de participación, el runtime, la víctima, los oráculos y el ciclo de defensa. Un intento conserva la identidad, la ruta y la versión que el servidor fijó al admitirlo.
 
-## Propósito
-
-Recibe cada intento, sea de una persona o del Prober, lo encola contra la víctima o el señuelo con la versión de política vigente y guarda su estado y su resultado.
-
-## Estado inicial del diseño
-
-La implementación actual, sus contratos y pruebas están en [núcleo implementado](../nucleo.md). El inventario siguiente conserva el punto de partida de esta especificación.
-
-| Archivo | Contenido |
-| --- | --- |
-| `models.py` | `AttemptStatus`: `queued`, `running`, `evaluated`, `inconclusive`. `AttemptOutcome`: `confirmed_violation`, `prevented`, `not_achieved`, `contained_honeypot`, `inconclusive`. |
-
-## Responsabilidades
-
-1. `POST /api/attempts` con token de sesión, mensaje, objetivo opcional y clave de idempotencia.
-2. Validar tamaño, frecuencia por sesión, cupo global y fase de la ronda.
-3. Pedir la ruta a `routing` y fijar la versión de política activa.
-4. Encolar un run del runtime con el handler de la víctima o del señuelo y el contexto de la sesión.
-5. Pasar a `evaluated` o `inconclusive` cuando los oráculos devuelven su veredicto.
-6. Exponer `GET /api/attempts/{id}` con la proyección permitida para cada vista.
-
-## Contratos
-
-| Contrato | Campos |
-| --- | --- |
-| `AttemptCreate` | `message` o `messages` (hasta 4), `objective_id` opcional, `idempotency_key`. |
-| `Attempt` | `id`, `session_id`, `origin` (`audience` o `autonomous`), `case_id` opcional, `policy_version`, `route`, `run_id`, `status`, `outcome`, fechas. |
-| `AttemptPublicView` | Estado y resultado provisional; nunca ruta, canarios ni eventos de operación. |
-
-## Eventos
-
-- **Produce:** `attempt_queued`, `attempt_started`.
-- **Consume:** `attempt_evaluated` de `oracles` para cerrar el intento.
-
-## Reglas
-
-- La misma clave de idempotencia devuelve el mismo intento y no encola otro run.
-- Un intento conserva su `policy_version` de principio a fin.
-- Con entradas cerradas, el intento se rechaza con 409.
-- El Prober tiene cupo propio para no desplazar a la audiencia.
-
-## Uso de la flota
-
-- `runtime` ejecuta el intento como run, con reintentos y estado durable.
-- `telemetry` agrupa todo el intento en una sola traza.
-
-## Estructura prevista
+## Entradas al código
 
 | Archivo | Responsabilidad |
 | --- | --- |
-| `models.py` | Tabla `attempts` además de los enums. |
-| `repository.py` | Persistencia e idempotencia. |
-| `attempt_submission_service.py` | Validación, ruta, versión y encolado. |
-| `attempt_query_service.py` | Proyecciones por vista. |
-| `rate_limits.py` | Cupos por sesión y global. |
-| `router.py` | `POST` y `GET`. |
+| [schemas.py](../../backend/src/agent_zero/attempts/schemas.py) | `AttemptCreate` cerrado y sus formas de mensaje. |
+| [models.py](../../backend/src/agent_zero/attempts/models.py) | Tabla `attempts`, estados y resultados separados. |
+| [attempt_submission_service.py](../../backend/src/agent_zero/attempts/attempt_submission_service.py) | Autorización de campaña, límites, ruta, versión, run y outbox transaccional. |
+| [attempt_execution_handler.py](../../backend/src/agent_zero/attempts/attempt_execution_handler.py) | Handler durable `arena_attempt`: checkpoints, conversación y evaluación. |
+| [attempt_worker.py](../../backend/src/agent_zero/attempts/attempt_worker.py) | Recupera fallos, procesa violaciones y ejecuta el planificador de defensa. |
+| [attempt_query_service.py](../../backend/src/agent_zero/attempts/attempt_query_service.py) | `CallContext`, historial, drenaje y proyección pública/de operación. |
+| [router.py](../../backend/src/agent_zero/attempts/router.py) | Envío y lectura con `CurrentSession`. |
 
-## Pruebas de éxito
+El [runtime](runtime.md) ejecuta los pasos; [events](events.md) publica la evidencia; [oracles](oracles.md) determina el resultado. No hay un consumidor independiente de comandos que decida el veredicto con un LLM.
 
-- Dos envíos con la misma clave crean un solo intento y un solo run.
-- Un intento encolado antes de una activación conserva la versión anterior.
-- La vista pública de un intento desviado no revela la ruta.
+## Contratos y datos
+
+`POST /api/attempts` requiere Bearer del participante y devuelve 202. Ejemplos alternativos:
+
+```json
+{"message":"Consulta el pedido A-1001.","idempotency_key":"consulta-1"}
+```
+
+```json
+{"messages":["Consulta A-1001.","¿Y su estado?"],"objective_id":"OBJ-ORDER","idempotency_key":"consulta-2"}
+```
+
+Debe enviarse exactamente `message` o `messages`: de uno a cuatro turnos, cada uno de 1–4000 caracteres y no sólo espacios. El objetivo es opcional y debe ser uno de los tres conocidos. No se aceptan cliente, ruta, versión, origen ni fixtures desde esta API.
+
+`GET /api/attempts` devuelve el historial propio; `GET /api/attempts/{id}` devuelve 404 para un intento ajeno o inexistente. Operación usa sus rutas separadas en [arena/operator_router.py](../../backend/src/agent_zero/arena/operator_router.py).
+
+La fila guarda `session_id`, `origin`, `campaign_id`, `customer_id`, `policy_version`, `route`, `run_id`, clave, mensajes, estado, resultado, respuesta, `assessment`, fechas y `defense_processed`. Tiene unicidad por `(session_id, idempotency_key)` y por `run_id`; no tiene una columna `case_id`.
+
+| Campo | Valores |
+| --- | --- |
+| `status` | `queued`, `running`, `evaluated`, `inconclusive`. |
+| `outcome` | Nulo hasta terminar; después `confirmed_violation`, `prevented`, `not_achieved`, `contained_honeypot` o `inconclusive`. |
+| `origin` | `audience` o `autonomous`, fijado por el servidor. |
+
+## Admisión e idempotencia
+
+1. Reservar el escritor SQLite con `BEGIN IMMEDIATE`, además del lock local.
+2. Resolver primero la clave idempotente. Si mensajes, objetivo, origen y campaña coinciden, devolver la fila existente; si difieren, 409.
+3. Para campaña, exigir que siga `running` y que el origen sea autónomo. Resolver la sesión y exigir entradas abiertas.
+4. Aplicar límite de cola por origen, cola por sesión y frecuencia. Los excesos devuelven 429.
+5. Pedir la ruta, leer la versión activa y crear intento, run y eventos en una sola transacción.
+6. Después de commit, despachar el outbox. Un fallo de publicación no convierte la admisión en una segunda operación.
+
+Defaults de [Settings](../../backend/src/agent_zero/config.py): cola 40 por origen, una ejecución pendiente por sesión y 12 intentos/minuto/sesión. Audiencia y autonomía tienen contadores de cola separados; no son prioridades de CPU independientes.
+
+## Ejecución y recuperación
+
+El handler fija `running` y `attempt_started`, prepara la conversación y avanza un checkpoint por paso. El checkpoint guarda las herramientas propuestas antes de ejecutarlas. [Victim](victim.md) identifica cada operación y persiste su resultado para que una recuperación no duplique reembolsos o memoria.
+
+Al terminar, guarda respuesta, `Assessment` y `attempt_evaluated` juntos. El trabajador transforma runs `failed`/`cancelled` en intentos inconclusos, conserva la razón y emite el evento. Procesa las violaciones pendientes con `FindingService` y sólo después marca `defense_processed`; esa marca permite a campañas esperar a que se procese su último hallazgo.
+
+Los mensajes se guardan en JSON tal como fueron admitidos; esa columna no usa el cifrado del Memory Bank. Por ello la redacción de eventos no equivale a redacción integral del historial.
+
+La respuesta pública sustituye canarios por `[referencia]` y omite identidad interna, ruta, run y evaluación. Antes de revelar, una violación protegida y una contención se muestran como `apparent_success`. Tras revelar, el dueño puede leer el resultado real; las trazas siguen reservadas a Operación.
+
+## Pruebas y comandos
+
+```bash
+cd backend
+uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_control_concurrency.py tests/arena/test_transactional_events.py tests/arena/test_tool_retries.py -q
+```
+
+| Cobertura | Archivo de prueba |
+| --- | --- |
+| Ciclo útil → violación → parche → repetición y proyección pública | [test_core_cycle.py](../../backend/tests/arena/test_core_cycle.py). |
+| Frecuencia/cupo, pausa y versión fijada al admitir | [test_admission_and_campaign.py](../../backend/tests/arena/test_admission_and_campaign.py). |
+| Solicitudes simultáneas con una clave; conflicto de payload; carreras con activación/reversión | [test_control_concurrency.py](../../backend/tests/arena/test_control_concurrency.py). |
+| Fallo antes de commit, caída después de commit y recuperación del evento | [test_transactional_events.py](../../backend/tests/arena/test_transactional_events.py). |
+| App recreada y resultado de herramienta reutilizado | [test_recovery.py](../../backend/tests/arena/test_recovery.py), [test_tool_retries.py](../../backend/tests/arena/test_tool_retries.py). |
+
+Son pruebas automatizadas de la suite backend verificada, con proveedor simulado. El [protocolo central](../pruebas/README.md) describe la ejecución completa y la comprobación LIVE independiente.
+
+## Continuar este dominio
+
+Para añadir un estado o resultado, actualizar modelos, proyecciones públicas, arena, frontend, métricas y recuperación en la misma entrega. No inferir que `evaluated` significa éxito defensivo.
+
+Para cambiar la cola, mantener la reserva SQLite y la fijación de política dentro de la transacción. La clave del runtime por sí sola no compara payloads: el contrato 409 pertenece a esta admisión. Una cancelación o error después de un efecto no lo deshace; conservar `operation_id` y el registro persistido de la herramienta.

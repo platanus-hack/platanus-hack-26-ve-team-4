@@ -4,9 +4,7 @@
 
 Las empresas ya ponen agentes de IA a operar con herramientas reales: consultan pedidos, emiten reembolsos, recuerdan preferencias. Cada herramienta es una superficie de ataque nueva. Un mensaje bien escrito, un documento recuperado o una memoria contaminada pueden llevar al agente a leer datos ajenos o a ejecutar acciones fuera de su mandato.
 
-Los ataques nuevos aparecen más rápido de lo que un equipo humano escribe defensas. Hoy el ciclo típico es: alguien descubre el fallo, abre un ticket, un ingeniero escribe una regla, se prueba a mano y se despliega. Tarda días.
-
-**Agent Zero reduce ese ciclo a segundos.** Encuentra la grieta con evidencia determinista, genera un control declarativo, verifica que bloquea el ataque sin romper el uso legítimo, lo activa en caliente y lo revierte si causa regresiones.
+El proyecto automatiza el recorrido entre descubrir un fallo y probar su defensa: encuentra una violación con evidencia determinista, deriva un control declarativo, verifica seguridad y utilidad y lo activa sin reiniciar el servicio. Permite revertir si se observa una regresión. La duración depende del proveedor, la cola y la validación; las mediciones y metas se distinguen en [rendimiento](./rendimiento.md).
 
 ## Red team, blue team y purple team
 
@@ -39,7 +37,7 @@ En la demo se ve en vivo:
 - **Parches declarativos.** El generador elige controles de un catálogo cerrado; no escribe código ni prompts que reemplacen la autorización.
 - **Validación con utilidad.** Cada parche se prueba contra variantes reservadas y tareas legítimas antes de activarse.
 - **Engaño medible.** El señuelo contiene sesiones sospechosas con datos marcados, y la clasificación final distingue compromisos reales de aparentes.
-- **Plataforma empresarial debajo.** Registro, identidad, gateway, memoria cifrada, runtime durable y auditoría firmada ya están construidos y probados.
+- **Plataforma modular debajo.** Registro, identidad, gateway, memoria cifrada, runtime durable y auditoría firmada están construidos y probados. La adopción con datos reales requiere completar los límites de [continuidad](../continuidad.md).
 
 ## Qué no es
 

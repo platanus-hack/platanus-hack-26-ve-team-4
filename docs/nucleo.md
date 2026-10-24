@@ -1,6 +1,6 @@
 # Núcleo implementado
 
-Estado del 24 de octubre de 2026. El ciclo del laboratorio está conectado de extremo a extremo: sesión firmada → intento durable → herramientas → oráculos → hallazgo → candidato → validación → activación → repetición y reversión. Esta guía describe lo que existe; los documentos de dominio conservan parte del diseño inicial.
+Estado del 24 de octubre de 2026. El ciclo del laboratorio está conectado de extremo a extremo: sesión firmada → intento durable → herramientas → oráculos → hallazgo → candidato → validación → activación → repetición y reversión. Esta guía presenta el recorrido operativo; [dominios](./dominio/README.md), [pruebas](./pruebas/README.md) y [continuidad](./continuidad.md) detallan implementación, garantías y próximos trabajos del equipo.
 
 ## Qué funciona
 
@@ -14,10 +14,10 @@ Estado del 24 de octubre de 2026. El ciclo del laboratorio está conectado de ex
 | Oráculos | Lecturas de pedidos ajenos, reembolsos indebidos —incluido el fraccionamiento por encima de 20 USD por pedido— y memoria que concede permisos. Una lectura indebida cuenta aunque la respuesta la oculte. |
 | Hallazgos | Agrupación determinista, evidencia acumulada y reapertura. `ANALYZER` añade una explicación de asesoría; su opinión no cambia el veredicto. |
 | Parches | Catálogo cerrado, controles acumulativos y hash de reglas y padre. `PATCHER` explica la propuesta en una tabla aparte; no puede modificar controles, oráculos ni resultados. |
-| Validación | Nivel 1 sobre la traza original, reconstruyendo efectos permitidos anteriores. Nivel 2 con el original, dos variantes y cinco tareas legítimas en entornos aislados. El informe guardado no se sobrescribe al reintentar. |
+| Validación | Nivel 1 sobre la traza original, reconstruyendo efectos permitidos anteriores. Nivel 2 con el original, dos variantes y cinco tareas legítimas en entornos aislados. El informe queda asociado a la versión; un paso interrumpido puede repetir la validación mientras siga `validating`. |
 | Activación | Exige validación aprobada, padre vigente y drenaje. El cambio de puntero y su evento son atómicos; se pone en cuarentena la memoria contaminada antes de abrir la nueva versión. Revertir restaura el padre verificado y reabre hallazgos afectados. |
 | Señuelo | Desvío permanente tras violación, señal de Armor o tres negaciones consecutivas. Los oráculos verifican que no haya canarios ni efectos protegidos. |
-| Prober | Hasta 30 intentos por campaña; seis familias y superficies de mensaje, documento, resultado de herramienta y memoria. Admite plantillas y mutación estructurada con `PROBER`, deduplicación y presupuesto durable. |
+| Prober | Hasta 30 intentos por campaña; seis familias y superficies de mensaje, documento, resultado de herramienta y memoria. Admite plantillas, mutación estructurada con `PROBER`, deduplicación y límites durables de intentos y mutaciones. Las cuotas LLM generales son de proceso. |
 | Evaluación | 30 casos adversarios y 15 legítimos, hasta tres repeticiones en dos versiones: 270 ejecuciones. Guarda trazas, estado, hashes, origen, llamadas, errores y utilidad; permite detener, reanudar la consulta y exportar JSON con SHA-256. |
 | Eventos y auditoría | Outbox transaccional, publicación recuperable, SSE con cursor y lectura del log entre procesos. La auditoría usa firma, bloqueo de archivo, fsync y journal firmado para recuperar una escritura interrumpida. |
 | Arena | Chat con recuperación de sesión e historial, clasificación provisional/final, cronómetro transcurrido y QR configurable. Operación exige el secreto del servidor. El reinicio archiva la ronda y recupera un reset interrumpido al arrancar. |
@@ -53,7 +53,7 @@ Este ejercicio requiere una ronda abierta con política base y deja evidencia y 
 ./infra/scripts/smoke.sh http://localhost:8080 --exercise --reset-round
 ```
 
-El reset invalida tokens anteriores. Si hay intentos, campañas, análisis o validaciones pendientes devuelve 409; detener nuevas generaciones y dejar drenar antes de repetirlo. También se puede reiniciar y descargar los archivos desde Operación.
+El reset invalida tokens anteriores. Si hay intentos, campañas, análisis o validaciones pendientes devuelve 409; detener nuevas generaciones y dejar drenar antes de repetirlo. Operación permite reiniciar y muestra el `archive_id`; el listado y la descarga del snapshot de ronda están disponibles por API mediante `GET /api/operator/rounds` y `GET /api/operator/rounds/{archive_id}/archive`, con secreto de operador. El panel todavía no ofrece navegación y descarga de esos archivos de ronda.
 
 ## Desarrollo y proveedor real
 
@@ -137,6 +137,8 @@ uv run python scripts/verify_live.py --budget-usd 0.50
 ```
 
 El comando limita llamadas y gasto, conserva resultados y devuelve error si alguna comprobación falla. `--diagnostic-doh` es opcional para entornos sin DNS operativo: sólo resuelve `api.anthropic.com` en ese proceso mediante HTTPS, mantiene la verificación TLS del nombre y no cambia DNS del sistema ni la aplicación.
+
+La [guía de evidencias](./pruebas/evidencias.md) separa estos ensayos previos de las pruebas automatizadas y explica cómo verificar hashes o repetirlos en archivos nuevos sin sobrescribir las referencias publicadas.
 
 ```bash
 make check
