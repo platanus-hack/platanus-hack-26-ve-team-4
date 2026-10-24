@@ -166,10 +166,11 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage();
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-24T12:00:00Z"));
     await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
     expect(await screen.findByText("Límite de frecuencia")).toBeInTheDocument();
     // The wait comes from the header (60 s), not from the 5 s fallback.
-    expect(screen.getByRole("button", { name: /Reintentar en (60|59) s/ })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Reintentar en 60 s" })).toBeDisabled();
     expect(loadHistory(session.id)[0]?.key).toBeTruthy();
   });
 
@@ -177,9 +178,11 @@ describe("AttemptChat", () => {
     mockApi(async () => Response.json({ detail: "Cola llena" }, { status: 429 }));
     render(<AttemptChat session={session} />);
     await enterMessage();
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-24T12:00:00Z"));
     await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
     expect(await screen.findByText("Cola llena")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Reintentar en (5|4) s/ })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Reintentar en 5 s" })).toBeDisabled();
+    expect(loadHistory(session.id)[0]?.key).toBeTruthy();
   });
 
   it("solicita renovar una sesión invalidada y no muestra detalles de operación", async () => {
@@ -232,7 +235,8 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     expect(await screen.findByText(/Las entradas están cerradas/)).toBeInTheDocument();
-    expect(screen.getByText("Solicitud rechazada.")).toBeInTheDocument();
+    expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Enviar intento" })).toBeDisabled();
+    expect(screen.getByLabelText("Mensaje al asistente")).toBeDisabled();
   });
 });
