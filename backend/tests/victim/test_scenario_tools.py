@@ -44,6 +44,7 @@ async def _search(core: ProductCore, context: CallContext, query: str) -> str:
     return await core.scenario.call("search_knowledge", {"query": query}, context, principal)
 
 
+@pytest.mark.requirement("CORE-08")
 def test_a_repeated_operation_returns_the_saved_result_even_if_the_corpus_changed(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -65,6 +66,7 @@ def test_a_repeated_operation_returns_the_saved_result_even_if_the_corpus_change
     assert json.loads(other)["articles"][0]["text"] == "Segunda versión del fragmento."
 
 
+@pytest.mark.requirement("CORE-08")
 def test_documents_of_a_controlled_fixture_still_arrive_untrusted(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -7,6 +7,8 @@ from agent_zero.victim.knowledge_search import (
     knowledge_output,
 )
 
+pytestmark = pytest.mark.requirement("CORE-08")
+
 
 class StubIndex:
     def __init__(self, ready: bool = True) -> None:
