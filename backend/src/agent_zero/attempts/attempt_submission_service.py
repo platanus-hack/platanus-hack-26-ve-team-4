@@ -1,5 +1,6 @@
 import asyncio
-from datetime import timedelta
+import math
+from datetime import datetime, timedelta
 from typing import Literal
 
 from fastapi import HTTPException
@@ -22,6 +23,16 @@ from agent_zero.runtime.schemas import RunCreate
 from agent_zero.sessions.session_query_service import query_session
 from agent_zero.shared.ids import new_id
 from agent_zero.victim.arena_manifest import ARENA_HANDLER, ARENA_VERSION
+
+RATE_WINDOW = timedelta(minutes=1)
+# A full queue has no known release time: it frees when a pending attempt finishes, which
+# usually takes a few seconds. Five seconds matches the participant UI fallback.
+QUEUE_RETRY_SECONDS = 5
+
+
+def retry_after_seconds(release: datetime, now: datetime) -> int:
+    """Whole seconds until `release`, at least 1 so a client never retries immediately."""
+    return max(1, math.ceil((release - now).total_seconds()))
 
 
 class AttemptSubmissionService:
@@ -76,13 +87,22 @@ class AttemptSubmissionService:
                 await repository.in_flight(origin=origin) >= settings.arena_queue_limit
                 or await repository.in_flight(session_id) >= settings.arena_session_queue_limit
             ):
-                raise HTTPException(429, "La cola está llena; espera el resultado anterior.")
+                raise HTTPException(
+                    429,
+                    "La cola está llena; espera el resultado anterior.",
+                    headers={"Retry-After": str(QUEUE_RETRY_SECONDS)},
+                )
             now = self._fleet.clock()
-            if (
-                await repository.recent_count(session_id, now - timedelta(minutes=1))
-                >= settings.arena_attempts_per_minute
-            ):
-                raise HTTPException(429, "Alcanzaste el límite de intentos por minuto.")
+            recent = await repository.created_since(session_id, now - RATE_WINDOW)
+            limit = settings.arena_attempts_per_minute
+            if len(recent) >= limit:
+                # Admission reopens once enough attempts leave the window to drop below the limit.
+                release = recent[len(recent) - limit] + RATE_WINDOW
+                raise HTTPException(
+                    429,
+                    "Alcanzaste el límite de intentos por minuto.",
+                    headers={"Retry-After": str(retry_after_seconds(release, now))},
+                )
             route = await self._routing.decide(session, payload.turns, db)
             version = (await PolicyRepository(db).active()).version
             attempt_id = new_id("attempt")

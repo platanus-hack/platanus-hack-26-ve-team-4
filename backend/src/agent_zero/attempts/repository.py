@@ -28,14 +28,14 @@ class AttemptRepository:
             query = query.where(Attempt.origin == origin)
         return int(await self.db.scalar(query) or 0)
 
-    async def recent_count(self, session_id: str, since: datetime) -> int:
-        return int(
-            await self.db.scalar(
-                select(func.count())
-                .select_from(Attempt)
+    async def created_since(self, session_id: str, since: datetime) -> list[datetime]:
+        """Creation times of the session's attempts inside the window, oldest first."""
+        return list(
+            await self.db.scalars(
+                select(Attempt.created_at)
                 .where(Attempt.session_id == session_id, Attempt.created_at >= since)
+                .order_by(Attempt.created_at)
             )
-            or 0
         )
 
     async def pending_runs(self) -> list[Attempt]:
