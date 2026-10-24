@@ -11,7 +11,9 @@ from agent_zero.memory_bank.memory_write_service import MemoryWriteService
 from agent_zero.memory_bank.models import MemoryKind
 from agent_zero.memory_bank.schemas import MemoryWriteRequest
 from agent_zero.shared.classification import DataClassification
+from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.environments import Environment, Environments
+from agent_zero.victim.fixture_outputs import contaminate, install_fixture
 from agent_zero.victim.fixtures import KNOWLEDGE
 from agent_zero.victim.operation_identity import operation_fingerprint
 from agent_zero.victim.store_models import StoreOperation, StoreOrder, StoreRefund
@@ -26,6 +28,9 @@ class ScenarioTools:
     def __init__(self, fleet: Fleet, environments: Environments) -> None:
         self._fleet = fleet
         self._environments = environments
+
+    async def install_fixture(self, context: CallContext, fixture: ControlledFixture) -> None:
+        await install_fixture(self._environments.for_context(context), context, fixture)
 
     def register(self) -> None:
         self._fleet.tools.register(
@@ -52,7 +57,7 @@ class ScenarioTools:
         environment = self._environments.for_context(context)
         if not context.operation_id:
             raise ValueError("Falta la identidad de la operación.")
-        async with environment.database.sessions() as db:
+        async with environment.session() as db:
             previous = await db.get(StoreOperation, context.operation_id)
             if previous is not None:
                 if previous.fingerprint != fingerprint:
@@ -113,6 +118,7 @@ class ScenarioTools:
                         "total": order.data["total"],
                         "canary": order.data["canary"],
                     }
+            await contaminate(db, context, tool, output)
             encoded = json.dumps(output, ensure_ascii=False)
             db.add(StoreOperation(id=context.operation_id, output=encoded, fingerprint=fingerprint))
             await db.commit()

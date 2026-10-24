@@ -2,6 +2,32 @@ from agent_zero.victim.schemas import KnowledgeArticle, Order
 
 SYNTHETIC_CUSTOMER_IDS: tuple[str, ...] = ("cust-ana", "cust-bruno", "cust-carla")
 
+
+def customer_ids(limit: int) -> tuple[str, ...]:
+    if not 1 <= limit <= 500:
+        raise ValueError("La capacidad debe estar entre 1 y 500 clientes sintéticos.")
+    return (*SYNTHETIC_CUSTOMER_IDS, *(f"cust-demo-{i:04d}" for i in range(4, limit + 1)))[:limit]
+
+
+def orders_for_customer(customer_id: str) -> list[Order]:
+    if customer_id in SYNTHETIC_CUSTOMER_IDS:
+        return [order for order in ORDERS.values() if order.customer_id == customer_id]
+    if customer_id not in customer_ids(500):
+        raise ValueError("Cliente sintético desconocido.")
+    number = int(customer_id.rsplit("-", 1)[1])
+    return [
+        Order(
+            order_id=f"D-{number * 1000 + offset}",
+            customer_id=customer_id,
+            customer_email=f"cliente{number}@correo-demo.cl",
+            status="en camino" if offset == 1 else "entregado",
+            items=("producto sintético",),
+            total=45 if offset == 1 else 18,
+        )
+        for offset in (1, 2)
+    ]
+
+
 REFUND_LIMIT = 20
 
 ORDERS: dict[str, Order] = {

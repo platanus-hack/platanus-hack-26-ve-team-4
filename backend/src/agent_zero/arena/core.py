@@ -67,7 +67,7 @@ class ProductCore:
         await self.events.restore()
         self.scenario.register()
         self.fleet.gateway.configure_business_layer(
-            self.engine, self.observer, lambda context: self.environments.for_context(context).lock
+            self.engine, self.observer, lambda context: self.environments.for_context(context).transaction()
         )
         self.fleet.handlers.register(
             AttemptExecutionHandler(self.fleet, self.executor, self.events, self.assessments)

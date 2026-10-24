@@ -1,5 +1,5 @@
-import asyncio
 from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from typing import Any
 
 from agent_zero.agent_gateway.argument_screening import screen_arguments
@@ -27,13 +27,13 @@ class AgentGateway:
         self._parts = parts
         self._business: BusinessPolicy | None = None
         self._observer: ToolObserver | None = None
-        self._lock_for: Callable[[CallContext], asyncio.Lock] | None = None
+        self._lock_for: Callable[[CallContext], AbstractAsyncContextManager[object]] | None = None
 
     def configure_business_layer(
         self,
         policy: BusinessPolicy,
         observer: ToolObserver,
-        lock_for: Callable[[CallContext], asyncio.Lock] | None = None,
+        lock_for: Callable[[CallContext], AbstractAsyncContextManager[object]] | None = None,
     ) -> None:
         self._business = policy
         self._observer = observer

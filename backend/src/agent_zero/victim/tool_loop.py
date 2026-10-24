@@ -44,6 +44,7 @@ class ConversationExecutor:
     async def start(
         self, context: CallContext, principal: AgentPrincipal, messages: list[str]
     ) -> dict[str, Any]:
+        await self._environments.for_context(context).ensure_customer(context.session_customer_id)
         memories = await self._scenario.recall(
             self._environments.for_context(context), principal, context.session_id
         )
