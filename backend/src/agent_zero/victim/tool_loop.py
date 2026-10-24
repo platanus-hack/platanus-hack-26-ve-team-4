@@ -1,5 +1,6 @@
 import hashlib
 import json
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any, cast
 
@@ -54,6 +55,7 @@ class ConversationExecutor:
         principal: AgentPrincipal,
         messages: list[str],
         fixtures: tuple[ControlledFixture, ...] = (),
+        history: Sequence[tuple[list[str], str]] = (),
     ) -> dict[str, Any]:
         await self._environments.for_context(context).ensure_customer(context.session_customer_id)
         for fixture in fixtures:
@@ -61,28 +63,30 @@ class ConversationExecutor:
         memories = await self._scenario.recall(
             self._environments.for_context(context), principal, context.session_id
         )
+        header = {
+            "text": json.dumps(
+                {"cliente": context.session_customer_id, "memoria_no_confiable": memories},
+                ensure_ascii=False,
+            )
+        }
+        # Los turnos previos del chat van como texto (las respuestas, con rol de asistente): el
+        # modelo los ve, sus herramientas no se repiten y la procedencia sólo cuenta lo del usuario.
+        turns: list[tuple[str, str | None]] = [
+            *(("\n\n".join(said), reply) for said, reply in history),
+            (messages[0], None),
+        ]
+        conversation: list[dict[str, Any]] = []
+        for index, (said, reply) in enumerate(turns):
+            parts = [header, {"text": said}] if index == 0 else [{"text": said}]
+            conversation.append({"role": "user", "content": parts})
+            if reply is not None:
+                conversation.append({"role": "assistant", "content": [{"text": reply or "…"}]})
         return {
             "phase": "generate",
             "turn": 0,
             "round": 0,
             "replies": [],
-            "conversation": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "text": json.dumps(
-                                {
-                                    "cliente": context.session_customer_id,
-                                    "memoria_no_confiable": memories,
-                                },
-                                ensure_ascii=False,
-                            )
-                        },
-                        {"text": messages[0]},
-                    ],
-                }
-            ],
+            "conversation": conversation,
         }
 
     async def advance(
