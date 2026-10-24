@@ -43,4 +43,3 @@ Ninguno en producción. Solo cambian las pruebas.
 ## Pendiente
 
 - Revisar si otras pruebas que combinan `useArenaState` con otro poll (ArenaPage, RevealCard, GuardPanel) usan `getBy` síncrono después de un `findBy` de la otra fuente.
-- Los cambios de la sección «Qué cambió» todavía no están en esta rama: `AttemptChat.test.tsx` conserva la regex `(60|59)` y `(5|4)`. Esta entrada se debe actualizar cuando esos cambios entren al PR.
