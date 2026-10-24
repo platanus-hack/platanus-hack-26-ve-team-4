@@ -16,6 +16,7 @@ dependencies = [
   "opentelemetry-exporter-otlp-proto-http>=1.30",
   "cryptography>=44",
   "asyncpg>=0.30",
+  "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
@@ -25,6 +26,7 @@ dev = [
   "pytest>=8.3",
   "pytest-asyncio>=0.24",
   "ruff>=0.8",
+  "types-pyyaml>=6.0.12.20260906",
 ]
 
 [build-system]
