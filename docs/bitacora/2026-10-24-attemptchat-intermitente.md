@@ -1,7 +1,7 @@
 ---
 fecha: 2026-10-24
 autor: "@franbastardo"
-rama: fix/attemptchat-tests-estables
+rama: horda/attemptchat-tests-estables-integracion
 pr: pendiente
 estado: en revisión
 dominios: [frontend, attempts]
@@ -32,9 +32,12 @@ No se usaron temporizadores falsos. Interfieren con `userEvent` y con el `setTim
 
 ## Cómo se verificó
 
-- Bucle de 15 corridas de `pnpm exec vitest run src/features/participant/AttemptChat.test.tsx`: completar con la salida real.
-- 6 corridas en paralelo del mismo archivo: completar con la salida real.
-- `pnpm lint && pnpm typecheck && pnpm test` desde `frontend/`: completar con la salida real (archivos y pruebas pasadas).
+Desde `frontend/`, el 2026-10-24, en la rama integrada (commits `ff4c7b9`, `f88dd85` y `1a975eb`):
+
+- Bucle de 15 corridas de `pnpm exec vitest run src/features/participant/AttemptChat.test.tsx`: 15 de 15 en verde, 12 pruebas pasadas en cada una.
+- 6 corridas en paralelo del mismo archivo: 6 de 6 en verde, 12 pruebas pasadas en cada una.
+- `pnpm lint`: Biome revisó 86 archivos sin errores. `pnpm typecheck`: sin errores. `pnpm test`: 21 archivos y 96 pruebas pasadas.
+- `git diff --stat -- src/features/participant/AttemptChat.tsx`: vacío. El componente no cambia.
 
 ## Riesgos y efectos en otros frentes
 
