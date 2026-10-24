@@ -1,6 +1,6 @@
 # Pruebas: ejecución y resultados
 
-Esta carpeta es la guía de verificación para continuar el proyecto. Los comandos parten de la raíz del repositorio salvo que el bloque cambie de directorio. [Por dominio](./por-dominio.md) indica qué ejecutar según el cambio; [evidencias](./evidencias.md) explica los artefactos guardados y su reproducción.
+Esta carpeta es la guía de verificación para continuar el proyecto. Los comandos parten de la raíz del repositorio salvo que el bloque cambie de directorio. [Por dominio](./por-dominio.md) indica qué ejecutar según el cambio; [evidencias](./evidencias.md) explica los artefactos guardados y su reproducción. La [verificación documental](./verificacion-documental.md) registra las comprobaciones ejecutadas al preparar este traspaso.
 
 ## Resultado de referencia
 
