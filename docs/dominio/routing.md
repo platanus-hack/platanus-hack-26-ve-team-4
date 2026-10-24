@@ -37,7 +37,7 @@ Si se cumplen varias señales, el motivo registrado sigue esa prioridad. No se u
 - Desviar no mitiga un hallazgo ni demuestra que una política lo haya corregido. La repetición de Operación crea otra sesión protegida para comprobar el parche.
 - El reset archivado elimina las sesiones de la ronda. Es el modo de comenzar con rutas nuevas; no existe una acción pública que revierta una sesión individual.
 
-La independencia de archivos y adaptadores se comprueba en [victim](victim.md). Los [oráculos](oracles.md) verifican ausencia de efectos y canarios protegidos al evaluar una contención.
+La independencia de archivos y adaptadores se comprueba en [victim](victim.md); lo que ocurre dentro del señuelo se mide en [decoy](decoy.md). Los [oráculos](oracles.md) verifican ausencia de efectos y canarios protegidos al evaluar una contención.
 
 ## Pruebas que sostienen el comportamiento
 

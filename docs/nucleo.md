@@ -22,7 +22,7 @@ Estado del 24 de octubre de 2026. El ciclo del laboratorio está conectado de ex
 | Eventos y auditoría | Outbox transaccional, publicación recuperable, SSE con cursor y lectura del log entre procesos. La auditoría usa firma, bloqueo de archivo, fsync y journal firmado para recuperar una escritura interrumpida. |
 | Arena | Chat con recuperación de sesión e historial, clasificación provisional/final, cronómetro transcurrido y QR configurable. Operación exige el secreto del servidor. El reinicio archiva la ronda y recupera un reset interrumpido al arrancar. |
 
-El recorrido original de la flota conserva `support_conversation` y el manifiesto 1.0.0 con sus controles internos. La arena publica sus manifiestos 2.0.0 y usa `arena_attempt`: las omisiones vulnerables pertenecen exclusivamente al laboratorio.
+El recorrido original de la flota conserva `support_conversation` y el manifiesto 1.0.0 con sus controles internos. La arena publica sus manifiestos 2.1.0 y usa `arena_attempt`: las omisiones vulnerables pertenecen exclusivamente al laboratorio.
 
 ## Arranque reproducible con Docker
 

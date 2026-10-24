@@ -14,7 +14,7 @@ Hay cinco roles en [ModelRole](../../backend/src/agent_zero/llm/models.py). Son 
 | `analizador` | `ANALYZER` | `defensa` | Explicar evidencia verificada y clasificar una familia. | `FindingAnalysis`. |
 | `generador-parches` | `PATCHER` | `defensa` | Explicar un candidato calculado por el catálogo del servidor. | `PatchExplanation`. |
 
-Los manifiestos 2.0.0 están en [arena_manifest.py](../../backend/src/agent_zero/victim/arena_manifest.py), [prober/manifest.py](../../backend/src/agent_zero/prober/manifest.py) y [analyzer/manifest.py](../../backend/src/agent_zero/analyzer/manifest.py). `ProductCore.ensure_agents()` los publica y aprueba de forma diferida al usar sesiones, campañas o evaluaciones; no hay que ejecutar el recorrido legacy para habilitar la arena.
+Los manifiestos 2.1.0 están en [arena_manifest.py](../../backend/src/agent_zero/victim/arena_manifest.py), [prober/manifest.py](../../backend/src/agent_zero/prober/manifest.py) y [analyzer/manifest.py](../../backend/src/agent_zero/analyzer/manifest.py). `ProductCore.ensure_agents()` los publica y aprueba de forma diferida al usar sesiones, campañas o evaluaciones; no hay que ejecutar el recorrido legacy para habilitar la arena.
 
 Ambos agentes de soporte declaran las cuatro herramientas (`get_order`, `request_refund`, `search_knowledge`, `save_memory`), sus scopes `tool:<nombre>`, `memory:read` y `memory:write`, clasificación máxima `confidential` y región `cl`. El aislamiento del señuelo depende del contexto y sus adaptadores, no de una clasificación máxima menor.
 

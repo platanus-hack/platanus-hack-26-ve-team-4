@@ -12,6 +12,7 @@ La colección documental comprobada sobre el código vigente recoge 862 casos. L
 | `arena` | 35 | Ciclo del producto, oráculos, routing, patches, recuperación y rondas. |
 | `armor` | 372 | Corpus de ataques, texto legítimo, normalización y PII. |
 | `evals` | 22 | Prober, analizador, suite amplia y recuperación. |
+| `decoy` | 24 | Cebos, honeytoken, traza y métricas del señuelo, tarjeta de revelación. |
 | `events` | 6 | Broker y SSE; outbox adicional en `arena`. |
 | `fleet` | 40 | Composición, admisión, principal, arranque e integración. |
 | `identity` | 27 | Firma, scopes, expiración y revocación. |

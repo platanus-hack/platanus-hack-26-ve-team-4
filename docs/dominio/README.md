@@ -10,6 +10,7 @@ Documentación de la implementación vigente al 24 de octubre de 2026. Cada domi
 | [attempts](./attempts.md) | Conversaciones de uno a cuatro mensajes, admisión transaccional, idempotencia por sesión, run y proyección propia. |
 | [victim](./victim.md) | Bucle de herramientas, efectos idempotentes, canarios, fixtures controlados y entornos separados. |
 | [routing](./routing.md) | Decisión de entorno del servidor y desvío permanente al señuelo. |
+| [decoy](./decoy.md) | Señuelo medido: herramientas cebo, honeytoken por sesión, retención y tarjeta de revelación. |
 | [oracles](./oracles.md) | Veredictos deterministas de pedidos, reembolsos y memoria. |
 | [policies](./policies.md) | Catálogo, controles acumulativos, hashes, ciclo de vida, activación y reversión. |
 | [patches](./patches.md) | Scheduler de defensa, explicación de asesoría y validación contrafactual/conversacional. |

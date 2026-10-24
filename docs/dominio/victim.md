@@ -6,7 +6,7 @@ Estado: implementado. El escenario es el asistente de soporte de Yummy, superapp
 
 | Camino | Entrada y comportamiento |
 | --- | --- |
-| Arena, manifiestos 2.0.0 | `arena_attempt` usa `ConversationExecutor`; roles `VICTIM`/`DECOY`, cuatro herramientas y contexto fijado por el servidor. La política 0 omite titularidad, límite acumulado y lista de memoria para permitir descubrir fallos. |
+| Arena, manifiestos 2.1.0 | `arena_attempt` usa `ConversationExecutor`; roles `VICTIM`/`DECOY`, cuatro herramientas (seis en el señuelo, ver [decoy](decoy.md)) y contexto fijado por el servidor. La política 0 omite titularidad, límite acumulado y lista de memoria para permitir descubrir fallos. |
 | Flota, manifiesto 1.0.0 | `support_conversation` usa `SupportConversationHandler` y `ReplyComposer`; sus herramientas originales comprueban cliente y límite internamente. Se prueba con el [recorrido de flota](../prueba-flota.md). |
 
 No trasladar una omisión vulnerable de arena a las herramientas originales ni concluir que `tests/victim/test_store_tools.py` prueba las omisiones de arena: ese archivo comprueba el adaptador original.
