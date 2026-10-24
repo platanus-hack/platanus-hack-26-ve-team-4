@@ -7,6 +7,7 @@ class Order(BaseModel):
     order_id: str
     customer_id: str
     customer_email: str
+    merchant: str
     status: str
     items: tuple[str, ...]
     total: int = Field(ge=0)

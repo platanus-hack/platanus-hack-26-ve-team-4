@@ -23,7 +23,7 @@ async def test_get_order_only_returns_the_customers_own_order() -> None:
 async def test_knowledge_search_matches_keywords() -> None:
     result = json.loads(await search_knowledge({"query": "¿Dónde viene mi pedido?"}))
 
-    assert any("días hábiles" in answer for answer in result["articles"])
+    assert any("entre 30 y 60 minutos" in answer for answer in result["articles"])
 
 
 async def test_refund_respects_the_limit() -> None:

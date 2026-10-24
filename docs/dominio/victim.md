@@ -1,6 +1,6 @@
-# `victim`: tienda sintética, conversación y entornos aislados
+# `victim`: soporte de Yummy, conversación y entornos aislados
 
-Estado: implementado. La arena ejecuta un bucle nativo de herramientas elegidas por el modelo; el recorrido original de la flota conserva su handler con pasos fijos. Sus contratos y garantías son distintos.
+Estado: implementado. El escenario es el asistente de soporte de Yummy, superapp venezolana de delivery de restaurantes, supermercados y farmacias, simulado sólo para el laboratorio y con datos ficticios. La arena ejecuta un bucle nativo de herramientas elegidas por el modelo; el recorrido original de la flota conserva su handler con pasos fijos. Sus contratos y garantías son distintos.
 
 ## Dos caminos que se conservan
 
@@ -21,7 +21,7 @@ No trasladar una omisión vulnerable de arena a las herramientas originales ni c
 | [scenario_tools.py](../../backend/src/agent_zero/victim/scenario_tools.py) | Adaptadores contextuales, memoria y resultados idempotentes de arena. |
 | [environments.py](../../backend/src/agent_zero/victim/environments.py), [environment_state.py](../../backend/src/agent_zero/victim/environment_state.py) | Conexiones, transacciones, siembra, snapshot, reset y validación desechable. |
 | [store_models.py](../../backend/src/agent_zero/victim/store_models.py) | Tablas `orders`, `refunds`, `operations`, `controlled_fixtures`. |
-| [fixtures.py](../../backend/src/agent_zero/victim/fixtures.py) | Tres clientes semilla/seis pedidos, identidades ampliables, artículos y límite de 20 USD. |
+| [fixtures.py](../../backend/src/agent_zero/victim/fixtures.py) | Tres clientes semilla/seis pedidos de comercios Yummy, identidades ampliables, base de conocimiento de delivery y límite de 20 USD. Los IDs (`A-1001`…), estados y totales son los del laboratorio original porque el Prober, la evaluación, el modelo demo y las pruebas dependen de ellos. |
 | [controlled_fixtures.py](../../backend/src/agent_zero/victim/controlled_fixtures.py), [fixture_outputs.py](../../backend/src/agent_zero/victim/fixture_outputs.py) | Superficies no confiables instaladas por campaña/evaluación. |
 | [arena_manifest.py](../../backend/src/agent_zero/victim/arena_manifest.py) | Manifiestos y nombres de handlers de arena. |
 
@@ -41,7 +41,7 @@ Toda propuesta se ejecuta mediante `ToolAccess` del gateway: identidad y manifie
 ## Persistencia y aislamiento
 
 - `protected.db` y `honeypot.db` son archivos separados. Cada validación/evaluación crea otra base en memoria, con registro temporal distinto y eliminación al salir.
-- Cada pedido lleva canario aleatorio `AZP_*` o `AZH_*`; el señuelo cambia los artículos por un producto de demostración. No prometer que el agente señuelo sea indistinguible semánticamente: la garantía comprobada es el aislamiento de efectos/datos.
+- Cada pedido lleva canario aleatorio `AZP_*` o `AZH_*`; el señuelo cambia comercio y artículos por un pedido fabricado pero coherente (`HONEYPOT_ORDERS`), estable por pedido y nunca del mismo comercio real. No prometer que el agente señuelo sea indistinguible semánticamente: la garantía comprobada es el aislamiento de efectos/datos.
 - Los clientes `cust-demo-*` se provisionan idempotentemente con pedidos `D-*`; no asumir que sólo existen pedidos `A/B/C` al extender una prueba.
 - Los reembolsos se guardan en centavos y acumulan `refunded_cents`. `operations` guarda el resultado JSON y el fingerprint de herramienta, argumentos y versión.
 - El gateway abre una transacción de entorno con `BEGIN IMMEDIATE`; la política y el efecto comparten la sesión SQL mediante `ContextVar`. Ese límite serializa la autorización sobre un saldo actualizado entre pools/procesos.

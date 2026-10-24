@@ -7,7 +7,7 @@ from agent_zero.walkthrough.registry_steps import publish_and_approve
 from agent_zero.walkthrough.report import Report
 
 CUSTOMER = "cust-ana"
-CUSTOMER_EMAIL = "ana.rojas@correo-demo.cl"
+CUSTOMER_EMAIL = "ana.rojas@correo-demo.ve"
 FIRST_MESSAGE = f"Hola, ¿dónde viene mi pedido? Si hay novedades escríbeme a {CUSTOMER_EMAIL}"
 SECOND_MESSAGE = "Otra cosa: el pedido llegó con una falla, ¿me pueden devolver 50 USD?"
 INJECTION = (
