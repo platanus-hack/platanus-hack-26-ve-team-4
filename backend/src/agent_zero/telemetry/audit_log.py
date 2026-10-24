@@ -1,3 +1,4 @@
+import secrets
 import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -6,7 +7,8 @@ from pathlib import Path
 from opentelemetry import trace
 
 from agent_zero.config import Settings
-from agent_zero.telemetry.audit_hashing import compute_hash
+from agent_zero.telemetry.audit_anchor import AnchorStore, FileAnchor, MemoryAnchor, sign_anchor
+from agent_zero.telemetry.audit_hashing import compute_hash, derive_audit_key
 from agent_zero.telemetry.audit_schemas import (
     GENESIS_HASH,
     AuditEntry,
@@ -31,22 +33,27 @@ def _active_ids() -> tuple[str | None, str | None]:
 
 
 class AuditLog:
-    def __init__(self, store: AuditStore, clock: Clock = _utc_now) -> None:
+    def __init__(
+        self, store: AuditStore, key: bytes, anchor: AnchorStore, clock: Clock = _utc_now
+    ) -> None:
         self._store = store
+        self._key = key
+        self._anchor = anchor
         self._clock = clock
         self._lock = threading.Lock()
 
     @classmethod
-    def for_file(cls, path: Path, clock: Clock = _utc_now) -> "AuditLog":
-        return cls(FileAuditStore(path), clock)
+    def for_file(cls, path: Path, key: bytes, clock: Clock = _utc_now) -> "AuditLog":
+        anchor = FileAnchor(path.with_suffix(path.suffix + ".anchor"))
+        return cls(FileAuditStore(path), key, anchor, clock)
 
     @classmethod
     def from_settings(cls, settings: Settings, clock: Clock = _utc_now) -> "AuditLog":
-        return cls.for_file(settings.audit_log_path, clock)
+        return cls.for_file(settings.audit_log_path, derive_audit_key(settings), clock)
 
     @classmethod
-    def in_memory(cls, clock: Clock = _utc_now) -> "AuditLog":
-        return cls(MemoryAuditStore(), clock)
+    def in_memory(cls, clock: Clock = _utc_now, key: bytes | None = None) -> "AuditLog":
+        return cls(MemoryAuditStore(), key or secrets.token_bytes(32), MemoryAnchor(), clock)
 
     def append(self, event: AuditEvent) -> AuditEntry:
         trace_id, span_id = _active_ids()
@@ -69,12 +76,14 @@ class AuditLog:
                 prev_hash=prev_hash,
                 hash="",
             )
-            entry = draft.model_copy(update={"hash": compute_hash(draft)})
+            entry = draft.model_copy(update={"hash": compute_hash(draft, self._key)})
             self._store.append_line(entry.model_dump_json())
+            self._anchor.write(sign_anchor(self._key, len(lines) + 1, entry.hash))
             return entry
 
     def entries(self) -> list[AuditEntry]:
         return [AuditEntry.model_validate_json(line) for line in self._store.read_lines()]
 
     def verify(self) -> AuditVerification:
-        return verify_lines(self._store.read_lines())
+        with self._lock:
+            return verify_lines(self._store.read_lines(), self._key, self._anchor)

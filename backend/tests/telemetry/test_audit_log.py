@@ -6,11 +6,14 @@ from pathlib import Path
 import pytest
 
 from agent_zero.config import Settings
+from agent_zero.telemetry.audit_anchor import MemoryAnchor
 from agent_zero.telemetry.audit_log import AuditLog
 from agent_zero.telemetry.audit_schemas import GENESIS_HASH, AuditDecision, AuditEvent
 from agent_zero.telemetry.audit_store import MemoryAuditStore
 from agent_zero.telemetry.otel_setup import build_telemetry
 from agent_zero.telemetry.spans import traced_span
+
+KEY = b"clave-de-auditoria-de-prueba"
 
 
 def _clock() -> datetime:
@@ -40,7 +43,7 @@ def _fill(log: AuditLog, count: int = 3) -> None:
 
 @pytest.mark.requirement("OBS-02")
 def test_valid_chain_verifies(tmp_path: Path) -> None:
-    log = AuditLog.for_file(tmp_path / "a.jsonl", _clock)
+    log = AuditLog.for_file(tmp_path / "a.jsonl", KEY, _clock)
     _fill(log)
     result = log.verify()
     assert result.ok
@@ -54,7 +57,7 @@ def test_valid_chain_verifies(tmp_path: Path) -> None:
 @pytest.mark.requirement("OBS-02")
 def test_editing_a_line_breaks_at_that_line(tmp_path: Path) -> None:
     path = tmp_path / "a.jsonl"
-    log = AuditLog.for_file(path, _clock)
+    log = AuditLog.for_file(path, KEY, _clock)
     _fill(log, 4)
     lines = path.read_text().splitlines()
     record = json.loads(lines[2])
@@ -69,7 +72,7 @@ def test_editing_a_line_breaks_at_that_line(tmp_path: Path) -> None:
 @pytest.mark.requirement("OBS-02")
 def test_rehashed_edit_breaks_next_link(tmp_path: Path) -> None:
     store = MemoryAuditStore()
-    log = AuditLog(store, _clock)
+    log = AuditLog(store, KEY, MemoryAnchor(), _clock)
     _fill(log, 3)
     record = json.loads(store.lines[0])
     record["reason"] = "cambiado"
@@ -80,7 +83,7 @@ def test_rehashed_edit_breaks_next_link(tmp_path: Path) -> None:
 @pytest.mark.requirement("OBS-02")
 def test_garbage_line_is_reported(tmp_path: Path) -> None:
     path = tmp_path / "a.jsonl"
-    log = AuditLog.for_file(path, _clock)
+    log = AuditLog.for_file(path, KEY, _clock)
     _fill(log, 2)
     with path.open("a") as handle:
         handle.write("no es json\n")
@@ -89,7 +92,7 @@ def test_garbage_line_is_reported(tmp_path: Path) -> None:
 
 @pytest.mark.requirement("OBS-02")
 def test_empty_log_is_valid(tmp_path: Path) -> None:
-    assert AuditLog.for_file(tmp_path / "x.jsonl").verify().ok
+    assert AuditLog.for_file(tmp_path / "x.jsonl", KEY).verify().ok
 
 
 @pytest.mark.requirement("OBS-02")
@@ -120,7 +123,7 @@ def test_trace_and_span_ids_come_from_active_span(tmp_path: Path) -> None:
 
 @pytest.mark.requirement("OBS-02")
 def test_concurrent_writes_keep_chain_valid(tmp_path: Path) -> None:
-    log = AuditLog.for_file(tmp_path / "a.jsonl", _clock)
+    log = AuditLog.for_file(tmp_path / "a.jsonl", KEY, _clock)
     threads = [threading.Thread(target=_fill, args=(log, 10)) for _ in range(6)]
     for t in threads:
         t.start()
