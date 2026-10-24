@@ -45,7 +45,7 @@ Desde la raíz:
 
 ```bash
 cd backend
-uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_round_reset.py -q
+uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_round_reset.py tests/arena/test_sticky_honeypot_route.py -q
 ```
 
 | Escenario | Prueba |
@@ -55,8 +55,10 @@ uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_camp
 | Una sesión limpia conserva su identidad y la pausa impide nuevas admisiones | [test_admission_and_campaign.py](../../backend/tests/arena/test_admission_and_campaign.py). |
 | Reanudar después de recrear la app no pierde historial y sólo publica campos permitidos | [test_recovery.py](../../backend/tests/arena/test_recovery.py). |
 | Reiniciar archiva el entorno y crea una ronda sin las sesiones anteriores | [test_round_reset.py](../../backend/tests/arena/test_round_reset.py). |
+| Una sesión desviada por Armor, o por una violación confirmada, sigue en el señuelo cuando pide volver al soporte real: herramientas en `honeypot` y sin canarios `AZP_` | [test_sticky_honeypot_route.py](../../backend/tests/arena/test_sticky_honeypot_route.py). |
+| Un `POST /api/attempts` con `route` o `environment` da 422 (`extra_forbidden`), no crea intento y la sesión sigue desviada | [test_sticky_honeypot_route.py](../../backend/tests/arena/test_sticky_honeypot_route.py). |
 
-El [ensayo LIVE](../../artifacts/core-evaluation/live-p0.json) también verificó tres turnos en señuelo, incluido un pedido explícito de volver al soporte real. Los tests anteriores usan proveedor simulado; la [guía de pruebas](../pruebas/README.md) separa ambos tipos de evidencia.
+El [ensayo LIVE](../../artifacts/core-evaluation/live-p0.json) también verificó tres turnos en señuelo, incluido un pedido explícito de volver al soporte real. El mismo pedido queda fijado ahora en un test con proveedor simulado. Los tests anteriores usan proveedor simulado; la [guía de pruebas](../pruebas/README.md) separa ambos tipos de evidencia.
 
 ## Límites y próxima extensión
 

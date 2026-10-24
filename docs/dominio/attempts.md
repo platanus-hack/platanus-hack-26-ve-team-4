@@ -76,7 +76,7 @@ La respuesta pública sustituye canarios por `[referencia]` y omite identidad in
 
 ```bash
 cd backend
-uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_control_concurrency.py tests/arena/test_transactional_events.py tests/arena/test_tool_retries.py tests/arena/test_attempt_limits.py tests/arena/test_pause_in_flight.py tests/arena/test_operator_authorization.py -q
+uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_campaign.py tests/arena/test_recovery.py tests/arena/test_control_concurrency.py tests/arena/test_transactional_events.py tests/arena/test_tool_retries.py tests/arena/test_attempt_limits.py tests/arena/test_pause_in_flight.py tests/arena/test_operator_authorization.py tests/arena/test_sticky_honeypot_route.py -q
 ```
 
 | Cobertura | Archivo de prueba |
@@ -89,6 +89,7 @@ uv run pytest tests/arena/test_core_cycle.py tests/arena/test_admission_and_camp
 | Solicitudes simultáneas con una clave; conflicto de payload; carreras con activación/reversión | [test_control_concurrency.py](../../backend/tests/arena/test_control_concurrency.py). |
 | Fallo antes de commit, caída después de commit y recuperación del evento | [test_transactional_events.py](../../backend/tests/arena/test_transactional_events.py). |
 | App recreada y resultado de herramienta reutilizado | [test_recovery.py](../../backend/tests/arena/test_recovery.py), [test_tool_retries.py](../../backend/tests/arena/test_tool_retries.py). |
+| Campos extra `route` o `environment` en el envío: 422 sin crear intento ni consumir la clave de idempotencia | [test_sticky_honeypot_route.py](../../backend/tests/arena/test_sticky_honeypot_route.py). |
 
 Son pruebas automatizadas de la suite backend verificada, con proveedor simulado. El [protocolo central](../pruebas/README.md) describe la ejecución completa y la comprobación LIVE independiente.
 
