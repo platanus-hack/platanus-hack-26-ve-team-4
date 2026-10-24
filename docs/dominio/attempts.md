@@ -30,6 +30,17 @@ El [runtime](runtime.md) ejecuta los pasos; [events](events.md) publica la evide
 
 Debe enviarse exactamente `message` o `messages`: de uno a cuatro turnos, cada uno de 1–4000 caracteres y no sólo espacios. El objetivo es opcional y debe ser uno de los tres conocidos. No se aceptan cliente, ruta, versión, origen ni fixtures desde esta API.
 
+### Conversación del chat (`continues`)
+
+`continues` es opcional: el id de un intento anterior de la misma sesión cuya conversación continúa este. Lo usa el chat del participante. Reglas ([conversation.py](../../backend/src/agent_zero/attempts/conversation.py)):
+
+- **Validación:** el intento anterior debe existir en la misma sesión (si no, 404) y estar terminado (si no, 409). Una conversación admite como máximo `MAX_PREVIOUS` = 6 intentos; el siguiente devuelve 409 y el cliente abre otra.
+- **Historial armado por el servidor:** sale de sus filas; el cliente sólo dice a qué intento responde, así que no puede inventar respuestas del asistente. Las respuestas previas van con los canarios redactados (`[referencia]`), igual que las vio el participante.
+- **Ejecución:** `ConversationExecutor.start` antepone los turnos previos como texto: los mensajes del participante con rol `user` y las respuestas con rol `assistant`. Las herramientas de esos turnos no se repiten. La procedencia sólo cuenta lo que escribió el participante, nunca la respuesta previa del asistente.
+- **Almacenamiento:** el enlace se guarda en la tabla `attempt_links` (`attempt_id`, `previous_attempt_id`). Es una tabla nueva, así que `create_all` la crea sin migración; forma parte de `ROUND_TABLES`.
+- **Idempotencia:** la comparación incluye `continues`. Repetir la clave con otro `continues` devuelve 409.
+- **Vistas:** el historial y el detalle devuelven `continues`.
+
 `GET /api/attempts` devuelve el historial propio; `GET /api/attempts/{id}` devuelve 404 para un intento ajeno o inexistente. Operación usa sus rutas separadas en [arena/operator_router.py](../../backend/src/agent_zero/arena/operator_router.py).
 
 La fila guarda `session_id`, `origin`, `campaign_id`, `customer_id`, `policy_version`, `route`, `run_id`, clave, mensajes, estado, resultado, respuesta, `assessment`, fechas y `defense_processed`. Tiene unicidad por `(session_id, idempotency_key)` y por `run_id`; no tiene una columna `case_id`.

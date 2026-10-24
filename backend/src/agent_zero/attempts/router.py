@@ -13,15 +13,18 @@ router = APIRouter(prefix="/api/attempts", tags=["attempts"])
 @router.post("", status_code=202)
 async def submit(payload: AttemptCreate, session: CurrentSession, core: Core) -> dict[str, Any]:
     await core.ensure_agents()
-    return attempt_view(await core.submissions.submit(session.id, payload))
+    attempt = await core.submissions.submit(session.id, payload)
+    return attempt_view(attempt) | {"continues": payload.continues}
 
 
 @router.get("")
 async def history(session: CurrentSession, core: Core) -> list[dict[str, Any]]:
     revealed = await core.attempts.revealed()
+    attempts = await core.attempts.for_session(session.id)
+    links = await core.attempts.links([attempt.id for attempt in attempts])
     return [
-        attempt_view(attempt, revealed=revealed)
-        for attempt in await core.attempts.for_session(session.id)
+        attempt_view(attempt, revealed=revealed) | {"continues": links.get(attempt.id)}
+        for attempt in attempts
     ]
 
 
@@ -30,4 +33,7 @@ async def get_attempt(attempt_id: str, session: CurrentSession, core: Core) -> d
     attempt = await core.attempts.get(attempt_id)
     if attempt is None or attempt.session_id != session.id:
         raise HTTPException(404, "Intento no encontrado.")
-    return attempt_view(attempt, revealed=await core.attempts.revealed())
+    links = await core.attempts.links([attempt.id])
+    return attempt_view(attempt, revealed=await core.attempts.revealed()) | {
+        "continues": links.get(attempt.id)
+    }

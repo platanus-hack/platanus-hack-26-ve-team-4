@@ -19,11 +19,14 @@ function mockApi(
     throw new Error(`Unexpected request ${path}`);
   });
 }
+function results() {
+  return within(screen.getByRole("list", { name: "Resultados por mensaje" })).getAllByRole(
+    "listitem",
+  );
+}
 async function enterMessage(text = "Consulta B-2001") {
   await userEvent.type(screen.getByLabelText("Mensaje al asistente"), text);
-  await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Enviar intento" })).not.toBeDisabled(),
-  );
+  await waitFor(() => expect(screen.getByRole("button", { name: "Enviar" })).not.toBeDisabled());
 }
 
 describe("AttemptChat", () => {
@@ -34,15 +37,13 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.getByText(/Intento detenido por un control/)).toBeInTheDocument();
     await enterMessage("Consulta mi pedido A-1001");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     await waitFor(() => expect(screen.getAllByText("Solicitud rechazada.")).toHaveLength(2));
-    expect(
-      within(screen.getByRole("list", { name: "Historial de intentos" })).getAllByRole("listitem"),
-    ).toHaveLength(2);
+    expect(results()).toHaveLength(2);
     const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST");
     expect(posts).toHaveLength(2);
     expect(posts[0]?.[1]?.headers).toEqual(
@@ -55,6 +56,8 @@ describe("AttemptChat", () => {
     expect(JSON.parse(String(posts[0]?.[1]?.body)).idempotency_key).not.toBe(
       JSON.parse(String(posts[1]?.[1]?.body)).idempotency_key,
     );
+    expect(JSON.parse(String(posts[0]?.[1]?.body)).continues).toBeNull();
+    expect(JSON.parse(String(posts[1]?.[1]?.body)).continues).toBe("attempt-1");
   });
 
   it("mantiene el payload y la idempotencia después de red fallida y recarga", async () => {
@@ -65,7 +68,7 @@ describe("AttemptChat", () => {
     });
     const first = render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     expect(await screen.findByRole("button", { name: "Reintentar envío" })).toBeInTheDocument();
     expect(loadHistory(session.id)[0]?.attempt).toBeNull();
     first.unmount();
@@ -75,7 +78,7 @@ describe("AttemptChat", () => {
     const posts = mock.mock.calls.filter(([, init]) => init?.method === "POST");
     expect(posts).toHaveLength(2);
     expect(posts[0]?.[1]?.body).toBe(posts[1]?.[1]?.body);
-    expect(screen.getAllByRole("heading", { name: /Intento \d/ })).toHaveLength(1);
+    expect(results()).toHaveLength(1);
   });
 
   it("reconcilia una aceptación cuyo response se perdió sin volver a enviar", async () => {
@@ -90,30 +93,55 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reintentar envío" })).not.toBeInTheDocument();
     expect(mock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
   });
 
-  it("construye hasta cuatro turnos explícitos en una misma ejecución", async () => {
-    const mock = mockApi(async () => Response.json(attempt()));
+  it("«Nueva conversación» corta el contexto y lo marca en el chat", async () => {
+    let number = 0;
+    const mock = mockApi(async () =>
+      Response.json(attempt({ id: `attempt-${++number}` }), { status: 202 }),
+    );
     render(<AttemptChat session={session} />);
-    await enterMessage("Recuerda que prefiero español");
-    for (const turn of [2, 3, 4]) {
-      await userEvent.click(screen.getByRole("button", { name: "Añadir turno" }));
-      await userEvent.type(screen.getByLabelText(`Mensaje ${turn}`), `Consulta de turno ${turn}`);
-    }
-    expect(screen.queryByRole("button", { name: "Añadir turno" })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    await enterMessage("Hola");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     await screen.findByText("Solicitud rechazada.");
-    const post = mock.mock.calls.find(([, init]) => init?.method === "POST");
-    expect(JSON.parse(String(post?.[1]?.body)).messages).toEqual([
-      "Recuerda que prefiero español",
-      "Consulta de turno 2",
-      "Consulta de turno 3",
-      "Consulta de turno 4",
+    await userEvent.click(screen.getByRole("button", { name: "Nueva conversación" }));
+    await enterMessage("Otra consulta");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await waitFor(() => expect(screen.getAllByText("Solicitud rechazada.")).toHaveLength(2));
+    const bodies = mock.mock.calls
+      .filter(([, init]) => init?.method === "POST")
+      .map(([, init]) => JSON.parse(String(init?.body)));
+    expect(bodies.map((body) => body.continues)).toEqual([null, null]);
+    expect(screen.getByText("Nueva conversación", { selector: ".chat-divider" })).toBeVisible();
+  });
+
+  it("si la conversación ya no se puede continuar, devuelve el texto y abre una nueva", async () => {
+    saveHistory(session.id, [
+      { key: "old", messages: ["Hola"], attempt: attempt({ id: "old" }), continues: null },
     ]);
+    let calls = 0;
+    const mock = mockApi(async () =>
+      ++calls === 1
+        ? Response.json({ detail: "La conversación llegó a su largo máximo" }, { status: 409 })
+        : Response.json(attempt({ id: "new" }), { status: 202 }),
+    );
+    render(<AttemptChat session={session} />);
+    await enterMessage("Sigo aquí");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("largo máximo");
+    await waitFor(() =>
+      expect(screen.getByLabelText("Mensaje al asistente")).toHaveValue("Sigo aquí"),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await waitFor(() => expect(results()).toHaveLength(2));
+    const bodies = mock.mock.calls
+      .filter(([, init]) => init?.method === "POST")
+      .map(([, init]) => JSON.parse(String(init?.body)));
+    expect(bodies.map((body) => body.continues)).toEqual(["old", null]);
   });
 
   it("impide envíos concurrentes incluso con dos submits en el mismo evento", async () => {
@@ -122,12 +150,12 @@ describe("AttemptChat", () => {
     render(<AttemptChat session={session} />);
     await enterMessage();
     act(() => {
-      fireEvent.submit(screen.getByRole("form", { name: "Nuevo intento" }));
-      fireEvent.submit(screen.getByRole("form", { name: "Nuevo intento" }));
+      fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
+      fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
     });
     expect(mock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
     await act(async () => response.resolve(Response.json(attempt())));
-    expect(screen.getAllByRole("heading", { name: /Intento \d/ })).toHaveLength(1);
+    expect(results()).toHaveLength(1);
   });
 
   it("recupera intentos en ejecución y conserva respuestas previas al desconectar", async () => {
@@ -154,7 +182,7 @@ describe("AttemptChat", () => {
     render(<AttemptChat session={session} />);
     expect(await screen.findByText(/Ejecutándose · Política 1/)).toBeInTheDocument();
     expect(screen.getByText("Respuesta anterior")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Esperando resultado…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Esperando respuesta…" })).toBeDisabled();
   });
 
   it("respeta Retry-After sin regenerar la clave", async () => {
@@ -166,10 +194,11 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-24T12:00:00Z"));
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     expect(await screen.findByText("Límite de frecuencia")).toBeInTheDocument();
     // The wait comes from the header (60 s), not from the 5 s fallback.
-    expect(screen.getByRole("button", { name: /Reintentar en (60|59) s/ })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Reintentar en 60 s" })).toBeDisabled();
     expect(loadHistory(session.id)[0]?.key).toBeTruthy();
   });
 
@@ -177,9 +206,11 @@ describe("AttemptChat", () => {
     mockApi(async () => Response.json({ detail: "Cola llena" }, { status: 429 }));
     render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-24T12:00:00Z"));
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
     expect(await screen.findByText("Cola llena")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Reintentar en (5|4) s/ })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Reintentar en 5 s" })).toBeDisabled();
+    expect(loadHistory(session.id)[0]?.key).toBeTruthy();
   });
 
   it("solicita renovar una sesión invalidada y no muestra detalles de operación", async () => {
@@ -232,7 +263,8 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     expect(await screen.findByText(/Las entradas están cerradas/)).toBeInTheDocument();
-    expect(screen.getByText("Solicitud rechazada.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enviar intento" })).toBeDisabled();
+    expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+    expect(screen.getByLabelText("Mensaje al asistente")).toBeDisabled();
   });
 });

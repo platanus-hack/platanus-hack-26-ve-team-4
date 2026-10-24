@@ -1,10 +1,10 @@
-import re
 from typing import Any
 
 from sqlalchemy import select
 
 from agent_zero.agent_gateway.business_policy import CallContext
 from agent_zero.arena.models import ArenaState
+from agent_zero.attempts.conversation import links_for, public_reply
 from agent_zero.attempts.models import Attempt, AttemptOutcome
 from agent_zero.attempts.repository import AttemptRepository
 from agent_zero.shared.database import Database
@@ -41,7 +41,7 @@ def attempt_view(
         "status": attempt.status.value,
         "outcome": outcome,
         "policy_version": attempt.policy_version,
-        "reply": re.sub(r"AZ[PH]_[a-f0-9]+_[A-Z]-\d+", "[referencia]", attempt.reply),
+        "reply": public_reply(attempt.reply),
         "created_at": attempt.created_at.isoformat(),
         "updated_at": attempt.updated_at.isoformat(),
         "messages": attempt.messages,
@@ -90,6 +90,10 @@ class AttemptQueryService:
                     .order_by(Attempt.created_at, Attempt.id)
                 )
             )
+
+    async def links(self, attempt_ids: list[str]) -> dict[str, str]:
+        async with self._database.sessions() as db:
+            return await links_for(db, attempt_ids)
 
     async def all(self) -> list[Attempt]:
         async with self._database.sessions() as db:

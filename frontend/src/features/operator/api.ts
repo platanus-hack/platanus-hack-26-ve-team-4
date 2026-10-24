@@ -8,6 +8,8 @@ export interface Policy {
   reason: string;
   finding_ids?: string[];
   content_hash?: string;
+  created_at?: string;
+  activated_at?: string | null;
   analysis?: {
     status: string;
     advisory: boolean;

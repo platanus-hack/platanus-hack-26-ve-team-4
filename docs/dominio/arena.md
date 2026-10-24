@@ -33,6 +33,8 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 | `POST /api/operator/reset` | Operador: `{ "reason": "Nuevo ensayo" }`; archiva y devuelve estado nuevo más `archive_id`. Alias: `/api/operator/arena/reset`. |
 | `GET /api/operator/rounds` | Operador: listado de archivos previos. |
 | `GET /api/operator/rounds/{archive_id}/archive` | Operador: snapshot y hash, con verificación de integridad. |
+| `GET /api/operator/monitor` | Operador: vista de la empresa ([monitor_view.py](../../backend/src/agent_zero/arena/monitor_view.py)). Por intento: resultado, ruta, familia (de la campaña o, si no hay, del analizador), hallazgo, parche que lo cerró (`version`, `activated_at`, `replay`), duración y uso de modelo (`calls`, `measured_calls`, tokens y coste) agregado desde el ledger LLM por `scope.attempt_id`. Más `totals` de los intentos de la ronda y `llm_mode`. |
+| `GET /api/operator/attempts/{id}` | Operador: evidencia del intento con sus eventos y `graph`, el grafo de sus propias llamadas (efecto indebido según los veredictos, o denegación con su control). |
 
 El operador usa `X-Operator-Secret`; un token Bearer de participante no concede estas operaciones. El estado público es un snapshot leído en una transacción. Los eventos recientes del navegador no son la fuente del marcador.
 
