@@ -58,6 +58,12 @@ El informe contiene `passed`, `level1_passed`, los casos, `adversarial_cases=3`,
 
 La validación agrega `integrity_probe` ([integrity_probe.py](../../backend/src/agent_zero/patches/integrity_probe.py)): un reembolso de 10 USD sobre un pedido propio, inyectado por un resultado de herramienta. Los oráculos no lo cuentan como violación porque está dentro del límite. `untrusted_effects` cuenta los efectos ejecutados con argumentos de integridad baja. En modo demo, el catálogo deja pasar 1 y la política sintetizada 0 (`tests/arena/test_flow_synthesis_cycle.py`). Es informativo y no decide `passed`.
 
+## Repetición del ataque (`replay`)
+
+Al aprobar el nivel 1, `validate` conserva la decisión del motor por cada llamada completada y, con los resultados de las tareas legítimas, `replay_report.build_replay` añade `replay` al informe (JSON de `PolicyVersion.validation`, sin migración). `replay_graph.build_graph` construye un grafo agente → herramienta → efecto para la política del intento original y para la nueva: solo nombres de herramienta, etiqueta del efecto (`foreign_order_read`, `refund_over_limit`, `permission_memory`), estado y nombre del control que bloquea; nunca argumentos, salidas, clientes ni canarios. No se construye para intentos del señuelo ni para trazas sin violación. No llama al modelo ni vuelve a ejecutar el «antes».
+
+`GET /api/arena/replay/{version}` ([replay_router.py](../../backend/src/agent_zero/arena/replay_router.py)) es público y devuelve 404 si la política no existe, no aprobó la validación o no tiene `replay`. Pruebas: `tests/arena/test_replay_graph.py`, `test_replay_report.py` y `test_replay_router.py` (ciclo completo).
+
 ## Asesoría, fallos y recuperación
 
 `PatchExplanation` sólo admite `rationale`, `expected_effect`, `regression_risks` y `limitations`. La tabla separada registra `available`/`unavailable` y el tipo de error; una salida que intente agregar reglas o aprobarse a sí misma falla el contrato.
