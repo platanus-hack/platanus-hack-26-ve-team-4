@@ -3,6 +3,7 @@ import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { usePolling } from "../../shared/api/usePolling";
 import { useArenaState } from "../arena/hooks/useArenaState";
 import { ModeNotice } from "../arena/ModeNotice";
+import { GuardPanel } from "../guard/GuardPanel";
 import { AttemptList } from "./AttemptList";
 import {
   type Campaign,
@@ -441,6 +442,7 @@ function OperatorDashboard({
               </article>
             ))}
           </section>
+          <GuardPanel secret={secret} logout={logout} />
           <DecoyPanel secret={secret} />
           <EvaluationPanel
             policies={data.policies}

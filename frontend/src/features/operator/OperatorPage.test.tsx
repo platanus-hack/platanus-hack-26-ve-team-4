@@ -21,6 +21,7 @@ function mockOperator(
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const path = String(input);
     if (path === "/api/arena/state") return Response.json(arena);
+    if (path === "/api/guard/contracts") return Response.json([]);
     if (options.denied) return Response.json({ detail: "No autorizado" }, { status: 403 });
     if (init?.method === "POST") return action(path, init);
     if (path === "/api/operator/policies") return Response.json(policies);
