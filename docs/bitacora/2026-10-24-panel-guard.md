@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@equipo"
 rama: worktree-agent-a8e74895b82f28cc6
-pr: pendiente
-estado: en revisión
+pr: ninguno  # push directo a main
+estado: integrado
 dominios: [guard, frontend]
 requisitos: []
 ---

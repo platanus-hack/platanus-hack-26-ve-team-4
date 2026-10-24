@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@usuario"
 rama: worktree-agent-a143ca38560c437d6
-pr: pendiente
-estado: en revisión
+pr: ninguno  # push directo a main
+estado: integrado
 dominios: [guard, contract]
 requisitos: []
 ---

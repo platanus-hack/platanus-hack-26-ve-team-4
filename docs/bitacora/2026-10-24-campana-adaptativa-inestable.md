@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: fix/campana-adaptativa-inestable
-pr: pendiente
-estado: en revisión
+pr: 38
+estado: integrado
 dominios: [prober, patches, evals]
 requisitos: []
 ---

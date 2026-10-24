@@ -1,3 +1,4 @@
+import asyncio
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -81,7 +82,13 @@ def _activate_patch_for_a_break(client: TestClient, campaign: dict[str, Any]) ->
         report = await core.validator.validate(version, original, events, objective)
         assert report["passed"] is True
         await core.policies.record_validation(version, report)
-        assert await core.policies.activate(version, core.attempts.drained)
+        # El DefenseScheduler puede activar la candidata validada antes que la prueba,
+        # o la cola puede no estar drenada todavía: se espera a que la versión quede activa.
+        deadline = time.monotonic() + 30
+        while not await core.policies.activate(version, core.attempts.drained):
+            assert time.monotonic() < deadline, "la versión validada no llegó a activarse"
+            await asyncio.sleep(0.05)
+        assert await core.policies.active_version() == version
         return version
 
     assert client.portal is not None

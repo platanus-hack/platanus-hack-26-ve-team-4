@@ -168,8 +168,18 @@ describe("AttemptChat", () => {
     await enterMessage();
     await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
     expect(await screen.findByText("Límite de frecuencia")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Reintentar en \d+ s/ })).toBeDisabled();
+    // The wait comes from the header (60 s), not from the 5 s fallback.
+    expect(screen.getByRole("button", { name: /Reintentar en (60|59) s/ })).toBeDisabled();
     expect(loadHistory(session.id)[0]?.key).toBeTruthy();
+  });
+
+  it("espera 5 s ante un 429 sin Retry-After", async () => {
+    mockApi(async () => Response.json({ detail: "Cola llena" }, { status: 429 }));
+    render(<AttemptChat session={session} />);
+    await enterMessage();
+    await userEvent.click(screen.getByRole("button", { name: "Enviar intento" }));
+    expect(await screen.findByText("Cola llena")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Reintentar en (5|4) s/ })).toBeDisabled();
   });
 
   it("solicita renovar una sesión invalidada y no muestra detalles de operación", async () => {

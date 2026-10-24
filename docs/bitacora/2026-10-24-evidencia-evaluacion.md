@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: feat/evidencia-evaluacion
-pr: pendiente
-estado: en revisión
+pr: 36
+estado: integrado
 dominios: [evals]
 requisitos: []
 ---
