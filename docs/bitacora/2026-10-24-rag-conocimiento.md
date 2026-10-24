@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: feat/rag-conocimiento
-pr: pendiente
-estado: en revisión
+pr: 32
+estado: integrado
 dominios: [victim, infraestructura]
 requisitos: [CORE-08]
 ---
