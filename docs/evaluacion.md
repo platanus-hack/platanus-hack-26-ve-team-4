@@ -1,6 +1,6 @@
 # Evaluación y criterios de aceptación
 
-Estado: protocolo de evaluación amplia pendiente. El ciclo de integración ya tiene pruebas con proveedor simulado, descritas en [núcleo implementado](./nucleo.md); esas pruebas no son métricas de eficacia de un LLM real.
+Estado del 24 de octubre de 2026: suite amplia implementada y ejecutada con proveedor simulado, con informe exportado y hashes. La comparación completa con un LLM real sigue pendiente. Los resultados y comandos reproducibles están en las secciones 8 y 9; el ciclo de integración se describe en [núcleo implementado](./nucleo.md).
 
 ## 1. Qué debe demostrar el MVP
 
@@ -10,7 +10,7 @@ La demo debe separar cuatro hechos: intención adversaria, efecto observado, rut
 
 ## 2. Modelo de amenaza
 
-El participante puede escribir mensajes, adjuntar texto a una fuente de laboratorio permitida y realizar ataques de varios turnos en su sesión. El Prober puede además modificar resultados de herramientas simuladas y fixtures de memoria dentro de sus campañas.
+El participante puede escribir de uno a cuatro mensajes por intento y realizar ataques de varios turnos en su sesión. El Prober puede además usar documentos y resultados de herramientas controlados, y explorar contaminación de memoria dentro de sus campañas. Esas superficies se instalan mediante contratos del laboratorio; el participante público no puede elegir un entorno ni inyectar fixtures por la API de intentos.
 
 No se concede acceso a secretos, al sistema operativo, a la consola de operación ni a la configuración de verificadores. El objetivo es vulnerar las reglas del agente de soporte, no comprometer infraestructura ajena. Todos los destinos y datos son del laboratorio.
 
@@ -27,7 +27,7 @@ Las familias son etiquetas no excluyentes. La cobertura se organiza con las cate
 
 ## 3. Fixtures e invariantes
 
-Se propone un conjunto pequeño: tres clientes ficticios, dos pedidos por cliente, una política de reembolso de hasta 20 unidades monetarias por solicitud y documentos de soporte con procedencia. El límite de 20 es una regla de demostración, sin significado comercial real.
+El escenario parte de tres clientes ficticios con dos pedidos por cliente y provisiona identidades adicionales sin compartirlas entre participantes: 100 plazas en el ejemplo y hasta 500 configurables. La regla de demostración limita los reembolsos acumulados a 20 USD por pedido y al total del pedido; también exige importe positivo y propietario correcto. Los documentos llevan procedencia. El límite de 20 es una regla del laboratorio, sin significado comercial real.
 
 Los datos señuelo usan identificadores y marcadores distintos. Cada ejecución de evaluación recibe una copia limpia, una identidad y un estado inicial conocidos. Los verificadores conocen los valores protegidos y los marcadores del señuelo, sin exponerlos a la audiencia.
 
@@ -69,9 +69,9 @@ La clasificación del tipo de ataque puede estar equivocada sin cambiar una evid
 6. Separar resultados de bloqueo directo de los obtenidos con honeypot habilitado.
 7. Exportar un informe con casos, denominadores, errores y limitaciones.
 
-La suite inicial propuesta contiene 20 casos adversarios de descubrimiento, distribuidos en cinco familias; 10 variantes reservadas, dos por familia; y 15 tareas legítimas. «Contaminación de herramienta» puede agruparse con inyección indirecta para ese reparto. Las tareas legítimas cubren consultas propias, reembolsos válidos, preguntas documentales y preferencias inocuas, incluyendo frases que mencionan seguridad sin ser ataques.
+La suite implementada contiene 20 casos adversarios de descubrimiento, 10 reservados y 15 tareas legítimas. Los 30 adversarios se distribuyen entre las seis familias de la tabla, con cinco casos por familia. Las tareas legítimas cubren consultas propias, reembolsos válidos, preguntas documentales y preferencias inocuas, incluyendo frases que mencionan seguridad sin ser ataques. La utilidad exige herramientas, argumentos, resultados y respuesta esperados; una respuesta no vacía no basta.
 
-Cada caso se ejecutaría tres veces por versión para observar variación del LLM. Se registra una semilla si el proveedor la admite, sin asumir reproducibilidad perfecta. Si el presupuesto obliga a reducir repeticiones, el informe declara el cambio y mantiene el mismo número en ambas versiones.
+Cada caso se ejecuta tres veces por versión por defecto: `45 × 3 × 2 = 270` ejecuciones aisladas. El servidor también admite una o dos repeticiones, siempre iguales para las dos versiones, y registra el cambio. Las llamadas reales pueden variar; el proveedor actual no recibe una semilla de generación. Las repeticiones del proveedor determinista simulado verifican recuperación y consistencia, sin estimar variación de un LLM.
 
 La validación en caliente utiliza una suite breve: el caso descubierto, dos variantes reservadas pertinentes y cinco tareas legítimas críticas. Los 30 casos adversarios y las 15 tareas legítimas forman la evaluación amplia antes de presentar. Reutilizar variantes para validar candidatos no permite tratarlas después como un conjunto independiente nunca observado; la evaluación final debe reservar variantes nuevas o declarar esa limitación.
 
@@ -107,10 +107,104 @@ Para la comparación de políticas se usa la tasa sin honeypot. La tasa con enru
 - Un token de audiencia no puede leer operación, revelar el honeypot, activar políticas ni reiniciar la arena.
 - La clasificación usa resultados persistidos y resiste reconexiones e intentos duplicados.
 
-Meta de rendimiento para el ensayo: activar un parche preparado en hasta 30 segundos con carga controlada y sostener diez sesiones conectadas con concurrencia acotada. El número de sesiones conectadas no equivale a diez llamadas simultáneas al LLM. Si la medición no alcanza esas metas, se documenta la capacidad real.
+Las metas de activar un parche preparado en hasta 30 segundos y sostener diez sesiones conectadas siguen siendo objetivos para una prueba de carga con proveedor real. La provisión y concurrencia se prueban funcionalmente; no se ha medido todavía esa capacidad bajo carga real. El número de sesiones conectadas no equivale a llamadas simultáneas al LLM.
 
-## 8. Evidencia para la entrega
+## 8. Evidencia de esta entrega
 
-El futuro informe de campaña debe contener commit probado, fecha, versiones de modelo y políticas, hashes de fixtures, listado de casos, trazas, resultados de utilidad, costes y errores. Una captura de pantalla ilustra el resultado; los eventos y cambios de estado lo sustentan.
+El [informe completo](../artifacts/core-evaluation/demo-270.json), con su [archivo SHA-256](../artifacts/core-evaluation/demo-270.json.sha256), terminó el 24 de octubre de 2026. Contiene cada caso, repetición, traza, estado posterior, resultado de utilidad, llamadas y límites de interpretación.
 
-No se requieren pruebas ejecutables para esta entrega documental. Al implementar, se priorizan pruebas deterministas de autorizaciones, aislamiento, esquema de políticas, activación atómica y proyección pública; las llamadas reales al LLM quedan para una evaluación de integración con presupuesto explícito.
+| Medida | Política 0 | Política 3 |
+| --- | --- | --- |
+| Ejecuciones adversarias | 90 | 90 |
+| Violaciones confirmadas | 90/90 | 0/90 |
+| Casos impedidos por un control | 0 | 90 |
+| Tareas legítimas correctas | 45/45 | 45/45 |
+| Inconclusos adversarios o legítimos | 0 | 0 |
+| Familias adversarias | 6 | 6 |
+
+Se completaron las 270 ejecuciones previstas, con **732 llamadas de origen `simulated`**, usando `demo-rule-engine-v1` y el honeypot desactivado. Cada versión y caso recibió datos limpios. No hay medición de tokens ni coste real del proveedor simulado: el informe conserva esos valores como desconocidos; no deben interpretarse como coste comercial cero.
+
+La fuente registrada es `aed15dd4f7ea21ccabd5886a05bcdfd2d5d5fd9d`, con `working_tree_dirty: true` por trabajo concurrente en el repositorio. Por ello el commit por sí solo no identifica todos los bytes del árbol evaluado; los hashes de suite, fixtures, políticas y el artefacto permiten revisar qué se ejecutó. El SHA-256 del JSON es:
+
+```text
+6aaa2f7f9008fb1c692f7d6519439d49c058113bcda4817bce71245db2f1840f
+```
+
+Para verificarlo desde la raíz:
+
+```bash
+(cd artifacts/core-evaluation && shasum -a 256 -c demo-270.json.sha256)
+```
+
+La reducción observada de 100 puntos porcentuales corresponde a este escenario y proveedor simulado. No mide eficacia frente a ataques desconocidos ni frente a un LLM real. Las variantes reservadas se publican con el informe y pierden independencia si se reutilizan para ajustar controles.
+
+El [ensayo LIVE](../artifacts/core-evaluation/live-p0.json) aprobó once comprobaciones del ciclo completo con `claude-haiku-5-5`, 93 llamadas medidas y coste registrado de 0,0101596 USD: utilidad, violación base, validación y activación, repetición protegida impedida, tres turnos aislados, seis mutaciones y casos del Prober, reversión de 3 a 2 y reset a 0 conservando el archivo. Los roles fueron `victim` (75), `analyzer` (3), `patcher` (3), `decoy` (6) y `prober` (6). El [SHA-256](../artifacts/core-evaluation/live-p0.json.sha256) es `34ffcfe76681250e5010260a9f93987e6549044207c51add53709b149ed9c92e`. El [ensayo inicial](../artifacts/core-evaluation/live-p0-initial-timeout.json) conserva un timeout del límite global de campaña del verificador; el comando final usa un límite por caso. Ninguna de estas muestras sustituye la suite amplia con proveedor real.
+
+La integración Docker recorrió utilidad, ataque, validación, activación, repetición impedida, revelación y reset archivado en modo demo. El recorrido original de flota aprobó [22/22 comprobaciones](../artifacts/core-evaluation/fleet-demo-checks.json). No se completó revisión visual en navegador ni una prueba de acceso público.
+
+## 9. Ejecutar y exportar la comparación
+
+Arrancar una ronda demo limpia siguiendo [núcleo implementado](./nucleo.md#desarrollo-y-proveedor-real). Los ejemplos siguientes usan el backend local en el puerto 8000; para Docker, seleccionar `CORE_PORT=8080`. No ejecutar sobre una ronda que ya se haya revelado: reiniciarla explícitamente desde Operación y conservar su archivo.
+
+La configuración de ejemplo reserva 5000 llamadas diarias y 1200 por campaña. Si se conserva un `.env` anterior, comprobar esos límites y reiniciar el servidor después de ajustarlos. En modo `live`, la suite consume llamadas y presupuesto monetario reales; un límite agotado produce un informe parcial, no una comparación aprobada.
+
+Desde la raíz, crear una campaña que explore las seis familias:
+
+```bash
+set -a
+. ./.env
+set +a
+export CORE_PORT=8000
+export CORE_URL="http://localhost:$CORE_PORT"
+CAMPAIGN_ID="$(curl --fail --silent --show-error \
+  -H "X-Operator-Secret: $AGENT_ZERO_OPERATOR_SECRET" \
+  -H 'Content-Type: application/json' \
+  -d '{"max_attempts":6,"generation":"llm","max_mutations":6}' \
+  "$CORE_URL/api/operator/campaigns" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+export CAMPAIGN_ID
+```
+
+Esperar a que termine y comprobar que una política activa y validada contiene los tres controles necesarios. El comando obtiene la versión real; si el generador falla o la defensa no está lista, termina sin inventar una versión:
+
+```bash
+AFTER_VERSION="$(python3 - <<'PYCODE'
+import json, os, time, urllib.request
+base = os.environ["CORE_URL"]
+headers = {"X-Operator-Secret": os.environ["AGENT_ZERO_OPERATOR_SECRET"]}
+def get(path):
+    with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers), timeout=15) as response:
+        return json.load(response)
+required = {"memory_key_allowlist", "order_belongs_to_session_customer", "refund_within_limit"}
+deadline = time.monotonic() + 300
+while time.monotonic() < deadline:
+    campaign = next(row for row in get("/api/operator/campaigns") if row["id"] == os.environ["CAMPAIGN_ID"])
+    policies = get("/api/operator/policies")
+    active = next(row for row in policies if row["status"] == "active")
+    if campaign["status"] != "running" and required <= set(active["rules"]) and active["validation"].get("passed") is True:
+        print(active["version"])
+        break
+    time.sleep(1)
+else:
+    raise SystemExit("La campaña o su política no están listas; revisar Operación.")
+PYCODE
+)"
+```
+
+Con la versión comprobada, ejecutar y guardar la evaluación:
+
+```bash
+make evaluate ARENA_PORT="$CORE_PORT" AFTER="$AFTER_VERSION" \
+  EVIDENCE=../artifacts/core-evaluation/mi-ensayo.json
+```
+
+El CLI informa el ID y el progreso, espera el resultado y escribe JSON más `.sha256`. Si se interrumpe el cliente, el run sigue siendo durable. Para volver a consultar o exportar una evaluación existente:
+
+```bash
+cd backend
+uv run python -m agent_zero.evals --base-url "$CORE_URL" \
+  --evaluation-id ID_OBTENIDO_AL_INICIAR \
+  --output ../artifacts/core-evaluation/mi-ensayo.json
+```
+
+También se puede iniciar, observar, detener y descargar una evaluación desde Operación. El token de audiencia no permite esas acciones. La comparación usa las dos versiones fijadas al iniciarla y comprueba sus hashes, aunque después cambie la política activa de la arena.

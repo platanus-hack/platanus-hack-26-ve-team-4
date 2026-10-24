@@ -15,9 +15,14 @@ El arranque de la arena, sus contratos HTTP y los límites actuales se documenta
 ## Arranque
 
 ```bash
-cp .env.example .env
+test -f .env || cp .env.example .env
 make install
-make dev-backend
+make arena-server ARENA_MODE=demo
+```
+
+En otra terminal, desde la raíz:
+
+```bash
 make dev-frontend
 ```
 
@@ -29,7 +34,7 @@ make smoke
 make down
 ```
 
-Con contenedores, la aplicación queda en `http://localhost:8080`; `FRONTEND_PORT` cambia ese puerto.
+Con contenedores, la aplicación queda en `http://localhost:8080`; `FRONTEND_PORT` cambia ese puerto. `make smoke` sólo lee estado. Para el recorrido con escrituras, exportar el `.env` (`set -a; . ./.env; set +a`) y ejecutar `make smoke-exercise` en una ronda base abierta. El reset archivado y la comparación amplia se describen en [núcleo implementado](./nucleo.md). El modo `demo` es explícitamente simulado y no necesita clave de IA.
 
 ## Estructura
 

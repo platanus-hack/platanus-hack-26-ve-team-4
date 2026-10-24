@@ -1,6 +1,6 @@
 # Plan de construcción en 36 horas
 
-Estado: planificación propuesta para tres integrantes. No supone que las tareas estén realizadas ni asigna responsables personales sin acuerdo del equipo.
+Estado del 24 de octubre de 2026: se conserva el plan de referencia y se registra su avance real en la sección 8. El núcleo, la arena local y la comparación amplia simulada están implementados; el despliegue público y la evaluación amplia con proveedor real siguen pendientes. La distribución personal conserva su carácter de propuesta.
 
 ## 1. Resultado mínimo
 
@@ -42,7 +42,7 @@ Las ventanas describen hitos integrados: los tres frentes pueden avanzar simult�
 
 **P2, ampliaciones si queda tiempo:** más familias, explicación visual de causas, exportación de informe y comparación de varios candidatos. Soporte de más proveedores, integraciones externas y despliegue empresarial quedan para después del evento.
 
-Si solo se completa P0, el proyecto se presenta como demostrador del ciclo y se declara pendiente la arena pública o el honeypot. El alcance comunicado debe corresponder a lo construido.
+P0 y las funciones locales de P1 ya están integrados. El acceso público de P1 requiere todavía un despliegue y una URL comprobados. La cobertura de seis familias y la exportación de P2 también existen. El alcance comunicado debe distinguir esos resultados de las mediciones pendientes con proveedor real.
 
 ## 5. Cómo recortar sin perder el concepto
 
@@ -69,7 +69,7 @@ Si solo se completa P0, el proyecto se presenta como demostrador del ciclo y se 
 
 La revisión final debe confirmar:
 
-- El README identifica el estado real y explica instalación y ejecución una vez que existan.
+- El README identifica el estado real y ofrece arranque Docker/demo, smoke y desarrollo reproducibles.
 - Los comandos documentados se prueban desde un entorno limpio o sus requisitos se declaran.
 - El repositorio incluye dependencias fijadas, variables de ejemplo sin secretos y fixtures sintéticos.
 - La evidencia satisface los [criterios de evaluación](./evaluacion.md) o declara explícitamente las brechas.
@@ -80,8 +80,23 @@ La revisión final debe confirmar:
 - `deploy-url` contiene una URL pública comprobada, sin usar una dirección de ejemplo.
 - Este repositorio contiene los cambios usados en la presentación; el espejo personal permite desplegarlos.
 
-## 8. Estado de esta entrega documental
+## 8. Estado de la implementación y entrega
 
-Ya están redactados el README, la descripción extensa, los metadatos descriptivos, la arquitectura, el protocolo de evaluación, el guion y este plan. El logo existente cumple tamaño y dimensiones. Siguen pendientes la implementación, las pruebas, la evidencia, la revisión visual del logo y el despliegue; por ello `deploy-url` permanece vacío.
+| Área | Estado comprobado |
+| --- | --- |
+| Ciclo P0 | Integrado con oráculos, controles acumulativos, ocho casos de validación, activación, repetición protegida y reversión. |
+| Arena local | Chat e historial recuperables, QR configurable, tiempo transcurrido, clasificación provisional/final y operación autorizada. |
+| Autonomía | Campañas durables de seis familias, mutación estructurada y explicaciones de asesoría con roles separados. |
+| Recuperación | Outbox, leases, escrituras de negocio idempotentes, auditoría con journal y reset archivado recuperable. |
+| Capacidad de identidad | 100 plazas por defecto y hasta 500 configurables, sin compartir cliente entre participantes; no equivale a una prueba de carga real. |
+| Evaluación amplia | [Artefacto](../artifacts/core-evaluation/demo-270.json): 270 ejecuciones y 732 llamadas simuladas, 90/90 → 0/90 violaciones, 45/45 tareas útiles por versión, cero inconclusos. |
+| Proveedor real | [Once comprobaciones del ciclo completo](../artifacts/core-evaluation/live-p0.json), 93 llamadas LIVE, cinco roles y coste registrado de 0,0101596 USD. Comparación amplia real aún pendiente. |
+| Contenedores | Ambas imágenes construidas; proxy, ejercicio completo y reset archivado comprobados en modo demo. |
+| Frontend | 47 pruebas, tipado, lint y build aprobados. La revisión visual en navegador sigue pendiente. |
+| Entrega pública | URL pública, prueba desde un teléfono externo, medición de carga y grabación de respaldo pendientes. |
 
-La documentación no atribuye resultados a un sistema que todavía no existe. Al construir, debe actualizarse el estado y reemplazar objetivos por mediciones respaldadas por la campaña correspondiente.
+La evidencia simulada identifica el modelo efectivo, hashes y commit de referencia, y declara que el árbol tenía cambios concurrentes. Sus tasas no se atribuyen a un LLM real. El protocolo, comandos de generación/evaluación y procedencia completa están en [evaluación](./evaluacion.md).
+
+Para repetir el ensayo local, usar [núcleo implementado](./nucleo.md): `make up`, `make smoke` y `make smoke-exercise`, con el secreto exportado desde el `.env` propio. El ejercicio cierra la ronda tras revelar; el siguiente ensayo empieza con reset archivado explícito. La evaluación se inicia con la versión activa comprobada, no con un número supuesto.
+
+La revisión final pendiente se concentra en ejecutar la comparación real con presupuesto, medir capacidad y latencia bajo carga, revisar visualmente la interfaz y publicar una URL comprobada. El logo existente cumple tamaño y dimensiones; su revisión de identidad sigue separada. `deploy-url` debe permanecer sin una URL inventada mientras no exista ese despliegue.

@@ -1,92 +1,146 @@
 # Núcleo implementado
 
-Estado del 24 de octubre de 2026. Esta guía distingue la implementación actual del diseño completo en `docs/dominio/`.
+Estado del 24 de octubre de 2026. El ciclo del laboratorio está conectado de extremo a extremo: sesión firmada → intento durable → herramientas → oráculos → hallazgo → candidato → validación → activación → repetición y reversión. Esta guía describe lo que existe; los documentos de dominio conservan parte del diseño inicial.
 
 ## Qué funciona
 
-El ciclo P0 está conectado a la aplicación real: sesión firmada → intento durable → herramientas elegidas por el modelo → oráculos → hallazgos → candidato del catálogo → validación → activación → repetición y reversión.
-
 | Pieza | Implementación |
 | --- | --- |
-| Sesiones | Consentimiento, alias sin PII, identidad sintética asignada sin repetir entre participantes, token HMAC con vencimiento y autorización de lectura por propietario. Hay tres plazas, correspondientes a los tres clientes del fixture. |
-| Intentos | Uno a cuatro mensajes, idempotencia por sesión, cupos, frecuencia, entradas abiertas/cerradas y versión fijada al encolar. Intento y run se guardan en la misma transacción. |
-| Víctima | Bucle nativo de herramientas sobre `Model.stream`, con checkpoints entre generación y ejecución. Usa los modelos instrumentados de `LlmGateway`, incluidos live, record, replay y playback de pruebas. |
-| Gateway | Identidad y permisos de la flota, validadores de negocio por versión, Armor, ejecución y auditoría. El cliente, entorno y versión vienen exclusivamente del servidor. |
-| Escenario | `protected.db` y `honeypot.db` separados; validación en bases desechables independientes. Pedidos con canarios, reembolsos persistidos y memoria cifrada con procedencia. |
-| Oráculos | Pedidos ajenos, reembolsos indebidos —incluido el fraccionamiento por encima de 20 USD por pedido— y escrituras que conceden permisos. La lectura cuenta aunque Armor bloquee después la salida. |
-| Hallazgos | Agrupación estable por objetivo, herramienta y control ausente; suma de evidencia y reapertura. No depende de un clasificador. |
-| Parches | Catálogo cerrado, controles acumulativos y hash de reglas y versión padre. Un intento que vulnera varios objetivos produce un candidato que los cubre juntos. |
-| Validación | Nivel 1 sin modelo sobre la traza original; reconstruye los efectos permitidos anteriores para comprobar secuencias. Nivel 2 con el original, dos variantes reservadas y cinco tareas legítimas, cada una en datos limpios, con concurrencia acotada. |
-| Activación | Solo con validación aprobada, padre vigente y cola drenada. Cambio del puntero en transacción; memoria contaminada en cuarentena antes de abrir la nueva versión. La reversión restaura el padre verificado. |
-| Señuelo | Desvío permanente tras violación, señal de Armor o tres negaciones consecutivas. El oráculo comprueba ausencia de canarios y efectos protegidos. |
-| Prober | Campañas durables de hasta 30 intentos con plantillas y deduplicación deterministas para tres familias: inyección directa, abuso de herramientas y envenenamiento de memoria. Presupuesto LLM identificado por campaña; clasificación separada de la audiencia. |
-| Arena | Chat del participante, SSE con historia en base de datos y reanudación, clasificación provisional/final y panel de operación autorizado por el servidor. |
+| Sesiones | Consentimiento, alias sin PII, token HMAC con vencimiento, historial propio e identidades sintéticas distintas. El ejemplo configura 100 participantes; el límite admite hasta 500. Cada cliente recibe pedidos propios provisionados en ambos entornos. |
+| Intentos | Uno a cuatro mensajes, frecuencia y cupos separados por origen. Intento, run y eventos de admisión se guardan en una transacción. Reintentar la misma clave y contenido devuelve el mismo intento; cambiar el contenido con esa clave devuelve 409. |
+| Runtime | Checkpoints durables, reintentos, leases con renovación y protección frente a escrituras de un worker vencido. Una operación de negocio conserva su resultado para evitar duplicar efectos al recuperar un paso. |
+| Víctima | Bucle nativo sobre `Model.stream`, con parsing estricto de herramientas y checkpoints entre generación y ejecución. El servidor fija cliente, entorno, versión y operación. |
+| Escenario | `protected.db` y `honeypot.db` separados; cada caso de validación/evaluación usa datos y memoria limpios. El chequeo de política y el efecto comparten una transacción del entorno. |
+| Oráculos | Lecturas de pedidos ajenos, reembolsos indebidos —incluido el fraccionamiento por encima de 20 USD por pedido— y memoria que concede permisos. Una lectura indebida cuenta aunque la respuesta la oculte. |
+| Hallazgos | Agrupación determinista, evidencia acumulada y reapertura. `ANALYZER` añade una explicación de asesoría; su opinión no cambia el veredicto. |
+| Parches | Catálogo cerrado, controles acumulativos y hash de reglas y padre. `PATCHER` explica la propuesta en una tabla aparte; no puede modificar controles, oráculos ni resultados. |
+| Validación | Nivel 1 sobre la traza original, reconstruyendo efectos permitidos anteriores. Nivel 2 con el original, dos variantes y cinco tareas legítimas en entornos aislados. El informe guardado no se sobrescribe al reintentar. |
+| Activación | Exige validación aprobada, padre vigente y drenaje. El cambio de puntero y su evento son atómicos; se pone en cuarentena la memoria contaminada antes de abrir la nueva versión. Revertir restaura el padre verificado y reabre hallazgos afectados. |
+| Señuelo | Desvío permanente tras violación, señal de Armor o tres negaciones consecutivas. Los oráculos verifican que no haya canarios ni efectos protegidos. |
+| Prober | Hasta 30 intentos por campaña; seis familias y superficies de mensaje, documento, resultado de herramienta y memoria. Admite plantillas y mutación estructurada con `PROBER`, deduplicación y presupuesto durable. |
+| Evaluación | 30 casos adversarios y 15 legítimos, hasta tres repeticiones en dos versiones: 270 ejecuciones. Guarda trazas, estado, hashes, origen, llamadas, errores y utilidad; permite detener, reanudar la consulta y exportar JSON con SHA-256. |
+| Eventos y auditoría | Outbox transaccional, publicación recuperable, SSE con cursor y lectura del log entre procesos. La auditoría usa firma, bloqueo de archivo, fsync y journal firmado para recuperar una escritura interrumpida. |
+| Arena | Chat con recuperación de sesión e historial, clasificación provisional/final, cronómetro transcurrido y QR configurable. Operación exige el secreto del servidor. El reinicio archiva la ronda y recupera un reset interrumpido al arrancar. |
 
-El recorrido original de la flota conserva `support_conversation`, el manifiesto 1.0.0 y sus herramientas con controles internos. La arena publica sus manifiestos 2.0.0 al usarse por primera vez y usa `arena_attempt`. Así sigue siendo posible comprobar las garantías de la plataforma sin eliminar las omisiones intencionales del laboratorio.
+El recorrido original de la flota conserva `support_conversation` y el manifiesto 1.0.0 con sus controles internos. La arena publica sus manifiestos 2.0.0 y usa `arena_attempt`: las omisiones vulnerables pertenecen exclusivamente al laboratorio.
 
-## Arranque
+## Arranque reproducible con Docker
 
-Con dependencias instaladas y `.env` configurado:
+Desde la raíz, con Docker y Compose disponibles:
 
 ```bash
-make fleet-server FLEET_MODE=live FLEET_DATA=./data/arena-ensayo
+test -f .env || cp .env.example .env
+make up
+make smoke
 ```
 
-En otra terminal:
+El ejemplo usa `AGENT_ZERO_LLM_MODE=demo`: proveedor determinista, sin clave de IA, etiquetado como simulado. Conserva cualquier `.env` que ya exista; revisa sus valores si proviene de un ensayo anterior. Personaliza `AGENT_ZERO_OPERATOR_SECRET` antes de compartir la arena.
+
+Abrir `http://localhost:8080/` para participar, `/arena` para proyectar y `/operator` para operar. `FRONTEND_PORT=18080 make up` permite usar otro puerto. La base persiste en el volumen `agent-zero-data`; `make down` detiene la pila y conserva ese volumen.
+
+`make smoke` sólo comprueba salud, frontend, autorización, estado público y proxy SSE. Para crear sesiones e intentos y recorrer utilidad → violación → validación → activación → repetición impedida → revelación:
+
+```bash
+set -a
+. ./.env
+set +a
+make smoke-exercise
+```
+
+Este ejercicio requiere una ronda abierta con política base y deja evidencia y la ronda revelada. Para otro ensayo, archivar primero una ronda drenada de forma explícita:
+
+```bash
+./infra/scripts/smoke.sh http://localhost:8080 --exercise --reset-round
+```
+
+El reset invalida tokens anteriores. Si hay intentos, campañas, análisis o validaciones pendientes devuelve 409; detener nuevas generaciones y dejar drenar antes de repetirlo. También se puede reiniciar y descargar los archivos desde Operación.
+
+## Desarrollo y proveedor real
+
+Requiere Python 3.12 mediante `uv`, Node 24 y pnpm fijado por el proyecto:
+
+```bash
+test -f .env || cp .env.example .env
+make install
+make arena-server ARENA_MODE=demo
+```
+
+En otra terminal, desde la raíz:
 
 ```bash
 make dev-frontend
 ```
 
-Abrir `http://localhost:5173/` para participar, `/arena` para proyectar la actividad y `/operator` para operar con `AGENT_ZERO_OPERATOR_SECRET`.
+Abrir `http://localhost:5173/`. Vite redirige `/api` al backend en el puerto 8000. `ARENA_DATA=./data/arena-ensayo` selecciona otro directorio, relativo a `backend/`; una ruta absoluta evita ambigüedad.
 
-`live` necesita la clave de IA ya usada por la flota. `offline` exige proporcionar un guion `PlaybackModel` al construir la app; un guion vacío termina en `inconclusive`, sin inventar resultados. Las pruebas inyectan un proveedor simulado explícito y no gastan tokens reales.
+Para llamadas reales, configurar `AGENT_ZERO_LLM_API_KEY`, el modelo y presupuestos en el `.env` local y ejecutar `make arena-server ARENA_MODE=live`. `record` guarda llamadas reales para reproducirlas con `replay`; `offline` no instala un proveedor de demostración y, sin un guion inyectado, termina inconcluso. La interfaz y los informes identifican el origen de la evidencia. Un error o presupuesto agotado no se convierte en éxito defensivo.
 
-La ronda queda persistida en su directorio de datos. Para otro ensayo completamente limpio, usar un directorio nuevo; conservar el anterior permite revisar sus efectos y evidencia. Revertir una política no deshace los reembolsos ni otras acciones anteriores.
+## Campaña y comparación amplia
+
+En una ronda abierta, lanzar desde Operación una campaña de seis intentos con generación `llm`, o usar la API:
+
+```bash
+set -a
+. ./.env
+set +a
+export CORE_URL=http://localhost:8000
+curl --fail --silent --show-error \
+  -H "X-Operator-Secret: $AGENT_ZERO_OPERATOR_SECRET" \
+  -H 'Content-Type: application/json' \
+  -d '{"max_attempts":6,"generation":"llm","max_mutations":6}' \
+  "$CORE_URL/api/operator/campaigns"
+```
+
+En `demo`, también la mutación y las explicaciones son simuladas; en `live` consumen el proveedor configurado. Esperar a que la campaña y sus validaciones terminen. Revisar en Operación la versión activa y su informe. No asumir que tendrá el número 3: depende de los hallazgos y del orden de activación.
+
+[Evaluación](./evaluacion.md#9-ejecutar-y-exportar-la-comparación) contiene la comprobación por API de los controles activos y el comando `make evaluate AFTER="$AFTER_VERSION"`. La evaluación requiere una ronda abierta y un límite de campaña de al menos 1200 llamadas, como en `.env.example`. No ejecutarla sobre una ronda que el smoke haya revelado; reiniciar y generar de nuevo sus políticas.
 
 ## Contratos HTTP
 
-| Ruta | Autorización | Uso |
-| --- | --- | --- |
-| `POST /api/sessions` | Pública, con cupo | `{"alias":"neo","accepted_rules":true}`. Devuelve token, vencimiento, nombre ficticio y pedidos propios. |
-| `POST /api/attempts` | `Authorization: Bearer <token>` | `{"message":"Consulta A-1001","idempotency_key":"turno-1"}` o `messages` de hasta cuatro elementos. Devuelve 202. |
-| `GET /api/attempts/{id}` | Token del propietario | Estado, respuesta redactada y resultado provisional; oculta ruta, canarios, identidad interna y evidencia. |
-| `GET /api/arena/state` | Pública | Estado de entradas, política y clasificación. |
-| `GET /api/arena/events` | Pública | SSE; admite `Last-Event-ID` y filtra campos de operación. |
-| `GET /api/operator/attempts` | Secreto de operador | Intentos y resultados reales, incluidos señuelo e inconclusos. |
-| `GET /api/operator/attempts/{id}` | Secreto | Evidencia de herramientas y oráculos. |
-| `POST /api/operator/attempts/{id}/replay` | Secreto | Repite sobre la política actual en una sesión protegida nueva. No modifica la ruta de la sesión original. |
-| `GET /api/operator/findings` | Secreto | Hallazgos consolidados. |
-| `GET /api/operator/policies` | Secreto | Versiones, hash y resultados de los ocho casos de validación. |
-| `POST /api/operator/policies/{version}/rollback` | Secreto | `{"reason":"Ensayo de reversión"}`; exige drenaje. |
-| `POST /api/operator/arena/pause` | Secreto | Cierra entradas. |
-| `POST /api/operator/arena/resume` | Secreto | Abre entradas. |
-| `POST /api/operator/arena/reveal` | Secreto | Cierra entradas y publica clasificación final tras el drenaje. |
-| `POST /api/operator/campaigns` | Secreto | `{"max_attempts":9}`; una campaña activa a la vez. |
-| `GET /api/operator/campaigns` | Secreto | Estado y referencias de intentos por campaña. |
-| `POST /api/operator/campaigns/{id}/stop` | Secreto | Detiene nuevas generaciones; conserva intentos y evidencia existentes. |
+El encabezado de operación es `X-Operator-Secret`. El token del participante no lo sustituye.
 
-El encabezado de operación es `X-Operator-Secret`. El token de participante no lo sustituye.
+| Ruta | Autorización y uso |
+| --- | --- |
+| `POST /api/sessions` | Pública, con cupo. `{"alias":"neo","accepted_rules":true}` devuelve token, vencimiento, cliente ficticio, pedidos y límites. |
+| `GET /api/sessions/me` | Bearer del propietario; recupera sesión y límites sin emitir otro token. |
+| `POST /api/attempts` | Bearer. `{"message":"Consulta A-1001","idempotency_key":"turno-1"}`, o `messages` hasta cuatro elementos; devuelve 202. |
+| `GET /api/attempts` y `/{id}` | Historial propio, mensajes, clave idempotente, estado y respuesta redactada. Resultado provisional hasta la revelación; no incluyen ruta ni evidencia de operación. |
+| `GET /api/arena/state` | Pública: ronda, inicio, modo, cupos, conteos y clasificación. |
+| `GET /api/arena/events` | SSE público; admite `Last-Event-ID` y filtra campos privados. |
+| `GET /api/operator/attempts` y `/{id}` | Resultados reales y, en el detalle, evidencia de herramientas y oráculos. |
+| `POST /api/operator/attempts/{id}/replay` | Repite con la política actual en una sesión protegida nueva. |
+| `GET /api/operator/findings` y `/policies` | Hallazgos, reglas, hashes, explicaciones e informes de validación. |
+| `POST /api/operator/policies/{version}/rollback` | `{"reason":"Ensayo de reversión"}`; exige drenaje. No deshace efectos anteriores. |
+| `POST /api/operator/arena/pause`, `/resume`, `/reveal` | Cerrar, abrir o revelar. Revelar exige drenaje y cierra la ronda. |
+| `POST /api/operator/campaigns` | `{"max_attempts":6,"generation":"llm","max_mutations":6}`; una campaña activa. |
+| `GET /api/operator/campaigns` y `POST /{id}/stop` | Estado, casos, presupuestos y detención de nuevas generaciones. |
+| `POST /api/operator/evaluations` | `{"before_version":0,"after_version":3,"repetitions":3,"max_calls":1200}`; elegir versiones existentes. |
+| `GET /api/operator/evaluations` y `/{id}`; `POST /{id}/stop` | Progreso, informe, casos, resultados y detención. |
+| `POST /api/operator/reset` o `/arena/reset` | `{"reason":"Nuevo ensayo"}`: archiva, restaura fixtures, política base y sesiones; exige drenaje. |
+| `GET /api/operator/rounds` y `/rounds/{archive_id}/archive` | Listado y snapshot JSON verificado de rondas anteriores. |
 
-## Comprobación
+## Evidencia verificada
+
+La [comparación exportada](../artifacts/core-evaluation/demo-270.json) está completa: **270 ejecuciones, 732 llamadas simuladas, cero inconclusos**. Entre las políticas 0 y 3, las violaciones adversarias pasan de **90/90 a 0/90** y la utilidad se conserva en **45/45** por versión, en seis familias. El proveedor efectivo es `demo-rule-engine-v1`; estas cifras verifican la integración del escenario y no estiman eficacia de un LLM real. Su SHA-256 y procedencia se detallan en [evaluación](./evaluacion.md#8-evidencia-de-esta-entrega).
+
+Las dos imágenes Docker se construyeron y el ejercicio completo se comprobó a través de nginx, incluido reset archivado. El frontend tiene **47 pruebas** aprobadas, además de tipado, lint y build. Las pruebas del núcleo cubren fallos antes y después de commit, recuperación de outbox y auditoría, workers concurrentes, activación/reversión frente a admisión, aislamiento, duplicados, presupuesto, varios participantes y reset interrumpido.
+
+El [ensayo LIVE completo](../artifacts/core-evaluation/live-p0.json) aprobó once comprobaciones con `claude-haiku-5-5`: utilidad, violación base, ocho validaciones, activación, repetición protegida impedida, tres turnos en señuelo, seis casos del Prober con mutación LLM, reversión y reset archivado. Sus 93 llamadas son de origen `live`, con uso medido y coste registrado de 0,0101596 USD. Participaron los cinco roles. La [primera ejecución](../artifacts/core-evaluation/live-p0-initial-timeout.json) conserva el timeout de un límite global del ensayo; el comando final espera por caso y no oculta ese resultado anterior. Esta verificación del ciclo no sustituye una comparación amplia real. No se completó revisión visual en navegador.
+
+Para repetir el ensayo LIVE en datos temporales, con la clave configurada en el `.env` de la raíz:
+
+```bash
+cd backend
+uv run python scripts/verify_live.py --budget-usd 0.50
+```
+
+El comando limita llamadas y gasto, conserva resultados y devuelve error si alguna comprobación falla. `--diagnostic-doh` es opcional para entornos sin DNS operativo: sólo resuelve `api.anthropic.com` en ese proceso mediante HTTPS, mantiene la verificación TLS del nombre y no cambia DNS del sistema ni la aplicación.
 
 ```bash
 make check
-cd backend && uv run pytest tests/arena -q
+cd backend && uv run pytest tests/arena tests/runtime tests/events tests/telemetry -q
 ```
 
-`tests/arena/` comprueba el ciclo con los tres objetivos, utilidad conservada, rechazo por sobrebloqueo, reembolsos fraccionados, varios objetivos en un intento, tokens, idempotencia, drenaje, aislamiento, presupuesto del Prober y recuperación tras recrear la app. La historia SSE se recupera desde SQLite incluso si se ha expulsado de la caché del proceso. La auditoría firmada registra el hash de los eventos persistidos.
+## Lo que sigue pendiente
 
-Los resultados de playback son evidencia simulada de integración; no demuestran una tasa de éxito con el proveedor real ni cobertura amplia del escenario.
-
-Verificación local de esta implementación: 799 pruebas de backend aprobadas, dos pruebas live omitidas por su configuración y cinco pruebas de frontend aprobadas; Ruff, mypy, Biome, TypeScript y build pasan. Una prueba adicional con el proveedor real configurado terminó con `APIConnectionError`, sin llamadas a herramientas ni activación; sus intentos quedaron `inconclusive`. La API también se comprobó a través del proxy de Vite. La revisión visual en navegador no estuvo disponible en este entorno.
-
-## Pendiente del diseño completo
-
-- Mutación con LLM y playbooks sobre documentos o resultados de herramientas. El Prober actual genera mensajes con plantillas de tres familias.
-- Enriquecimiento semántico de hallazgos y explicaciones de parches con los roles `ANALYZER` y `PATCHER`; el camino crítico ya usa reglas deterministas.
-- Suite de evaluación de 30 casos adversarios y 15 legítimos con tres repeticiones e informe de antes y después. Los ocho casos de activación no sustituyen esa evaluación.
-- Reinicio de ronda desde operación con archivado explícito; hoy se usa un directorio de datos nuevo para conservar la evidencia anterior.
-- Capacidad pública superior a los tres clientes sintéticos, despliegue, QR y mediciones de latencia bajo carga.
-
-Cada validación tiene un run durable; sus ocho ejecuciones aisladas se repiten si ese run se interrumpe antes de guardar el informe. Las escrituras de negocio usan identificadores de operación y resultados persistidos para no duplicar efectos al reintentar un paso de la víctima.
+Despliegue público y URL verificadas desde otro dispositivo; medición de capacidad y latencia bajo carga real; revisión visual del frontend; evaluación amplia con un proveedor real y presupuesto explícito. El QR ya se genera localmente y admite una URL configurada, pero `localhost` no permite participación desde otro teléfono. No hay una URL de despliegue publicada como evidencia de esta revisión.
