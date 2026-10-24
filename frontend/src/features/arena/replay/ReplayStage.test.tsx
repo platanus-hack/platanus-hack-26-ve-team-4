@@ -13,6 +13,7 @@ function motion(reduced: boolean) {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("ReplayStage", () => {
@@ -25,14 +26,14 @@ describe("ReplayStage", () => {
 
   it("con movimiento reducido salta al estado final en dos columnas", async () => {
     motion(true);
-    const mock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(replay));
+    const mock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json(replay));
     render(<ReplayStage events={[validated(2)]} />);
     expect(await screen.findByText("Política v1")).toBeInTheDocument();
     expect(screen.getByText("Política v2")).toBeInTheDocument();
     expect(String(mock.mock.calls[0]?.[0])).toBe("/api/arena/replay/2");
     expect(screen.getByText(/repetición de las llamadas a herramientas registradas/)).toBeVisible();
     expect(screen.getByText("El efecto indebido ocurrió.")).toBeInTheDocument();
-    expect(screen.getByText("Arista cortada.")).toBeInTheDocument();
+    expect(await screen.findByText("Arista cortada.")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("bloqueado por política v2");
     expect(screen.getByText("efecto indebido")).toBeInTheDocument();
     expect(screen.getByText("bloqueado")).toBeInTheDocument();
@@ -44,7 +45,7 @@ describe("ReplayStage", () => {
   it("anima por fases: repetición, corte y sello", async () => {
     motion(false);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(replay));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json(replay));
     render(<ReplayStage events={[validated(2)]} />);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
