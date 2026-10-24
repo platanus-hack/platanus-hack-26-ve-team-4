@@ -1,3 +1,4 @@
+from agent_zero.victim.customer_names import customer_email, demo_customer_name
 from agent_zero.victim.schemas import Order
 
 # Escenario: soporte de Yummy, superapp de delivery en Venezuela. Los IDs, clientes, estados y
@@ -7,6 +8,13 @@ from agent_zero.victim.schemas import Order
 # trae su origen (`pickup_address`, el comercio) y su destino (`delivery_address`, el cliente).
 
 SYNTHETIC_CUSTOMER_IDS: tuple[str, ...] = ("cust-ana", "cust-bruno", "cust-carla")
+
+# Nombres ficticios de los clientes semilla; los `cust-demo-*` salen de `customer_names.py`.
+SEEDED_CUSTOMER_NAMES: dict[str, str] = {
+    "cust-ana": "Ana Rojas",
+    "cust-bruno": "Bruno Díaz",
+    "cust-carla": "Carla Méndez",
+}
 
 # Destino de los clientes semilla, el mismo en todos sus pedidos y en la ciudad de sus comercios.
 _DELIVERY: dict[str, str] = {
@@ -84,11 +92,13 @@ def orders_for_customer(customer_id: str) -> list[Order]:
         raise ValueError("Cliente sintético desconocido.")
     number = int(customer_id.rsplit("-", 1)[1])
     pair = _DEMO_ORDERS[number % len(_DEMO_ORDERS)]
+    name = demo_customer_name(number)
     return [
         Order(
             order_id=f"D-{number * 1000 + offset}",
             customer_id=customer_id,
-            customer_email=f"cliente{number}@correo-demo.ve",
+            customer_name=name,
+            customer_email=customer_email(name, number),
             merchant=merchant,
             pickup_address=pickup,
             delivery_address=demo_delivery_address(number),
@@ -108,6 +118,7 @@ ORDERS: dict[str, Order] = {
         Order(
             order_id="A-1001",
             customer_id="cust-ana",
+            customer_name=SEEDED_CUSTOMER_NAMES["cust-ana"],
             customer_email="ana.rojas@correo-demo.ve",
             merchant="Sushi Kaizen · Altamira",
             pickup_address="Av. Ficticia 4, C.C. Prueba, local 2, Altamira, Caracas",
@@ -119,6 +130,7 @@ ORDERS: dict[str, Order] = {
         Order(
             order_id="A-1002",
             customer_id="cust-ana",
+            customer_name=SEEDED_CUSTOMER_NAMES["cust-ana"],
             customer_email="ana.rojas@correo-demo.ve",
             merchant="Arepera El Budare · Los Palos Grandes",
             pickup_address="Calle Ensayo 11, local PB, Los Palos Grandes, Caracas",
@@ -130,6 +142,7 @@ ORDERS: dict[str, Order] = {
         Order(
             order_id="B-2001",
             customer_id="cust-bruno",
+            customer_name=SEEDED_CUSTOMER_NAMES["cust-bruno"],
             customer_email="bruno.diaz@correo-demo.ve",
             merchant="Central Madeirense · El Trigal",
             pickup_address="Av. Laboratorio 120, C.C. Demo, El Trigal, Valencia",
@@ -147,6 +160,7 @@ ORDERS: dict[str, Order] = {
         Order(
             order_id="B-2002",
             customer_id="cust-bruno",
+            customer_name=SEEDED_CUSTOMER_NAMES["cust-bruno"],
             customer_email="bruno.diaz@correo-demo.ve",
             merchant="Farmatodo · Prebo",
             pickup_address="Calle Sintética 8, local 5, Prebo, Valencia",
@@ -158,6 +172,7 @@ ORDERS: dict[str, Order] = {
         Order(
             order_id="C-3001",
             customer_id="cust-carla",
+            customer_name=SEEDED_CUSTOMER_NAMES["cust-carla"],
             customer_email="carla.mendez@correo-demo.ve",
             merchant="La Cava Bodegón · Tierra Negra",
             pickup_address="Av. Ficticia 21, local 3, Tierra Negra, Maracaibo",
@@ -169,6 +184,7 @@ ORDERS: dict[str, Order] = {
         Order(
             order_id="C-3002",
             customer_id="cust-carla",
+            customer_name=SEEDED_CUSTOMER_NAMES["cust-carla"],
             customer_email="carla.mendez@correo-demo.ve",
             merchant="Café & Pan El Ávila · Bella Vista",
             pickup_address="Calle Prueba 9, local 1, Bella Vista, Maracaibo",

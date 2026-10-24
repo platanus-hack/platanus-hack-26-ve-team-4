@@ -1,6 +1,7 @@
 import zlib
 from typing import NamedTuple
 
+from agent_zero.victim.customer_names import decoy_identity
 from agent_zero.victim.schemas import Order
 
 
@@ -63,10 +64,16 @@ def _differs(decoy: DecoyOrder, order: Order) -> bool:
 
 
 def honeypot_order(order: Order) -> Order:
-    """Devuelve el pedido señuelo estable para `order`, sin ningún dato del comercio real."""
+    """Devuelve el pedido señuelo estable para `order`, sin datos del comercio ni del cliente.
+
+    El nombre y el correo fabricados dependen del `customer_id`, no del pedido: todos los
+    pedidos de un cliente muestran la misma identidad falsa.
+    """
+    name, email = decoy_identity(order.customer_id)
     start = zlib.crc32(order.order_id.encode()) % len(HONEYPOT_ORDERS)
     for offset in range(len(HONEYPOT_ORDERS)):
         decoy = HONEYPOT_ORDERS[(start + offset) % len(HONEYPOT_ORDERS)]
         if _differs(decoy, order):
-            return order.model_copy(update=decoy._asdict())
+            identity = {"customer_name": name, "customer_email": email}
+            return order.model_copy(update={**decoy._asdict(), **identity})
     raise ValueError("No hay un pedido señuelo distinto del real.")

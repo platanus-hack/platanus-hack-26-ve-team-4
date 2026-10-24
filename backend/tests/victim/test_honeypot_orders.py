@@ -1,5 +1,6 @@
 import pytest
 
+from agent_zero.victim.customer_names import customer_email, demo_number
 from agent_zero.victim.fixtures import ORDERS, customer_ids, orders_for_customer
 from agent_zero.victim.honeypot_fixtures import HONEYPOT_ORDERS, honeypot_order
 from agent_zero.victim.schemas import Order
@@ -45,3 +46,24 @@ def test_decoy_addresses_are_in_the_city_of_their_merchant() -> None:
         city = decoy.pickup_address.rsplit(", ", 1)[1]
 
         assert decoy.delivery_address.endswith(f", {city}"), decoy.merchant
+
+
+@pytest.mark.requirement("CORE-06")
+def test_the_decoy_never_reveals_a_real_customer_name_or_email() -> None:
+    real_names = {order.customer_name for order in _all_orders()}
+    real_emails = {order.customer_email for order in _all_orders()}
+
+    for order in _all_orders():
+        decoy = honeypot_order(order)
+
+        assert decoy.customer_name not in real_names, order.order_id
+        assert decoy.customer_email not in real_emails, order.order_id
+
+
+def test_the_decoy_identity_is_the_same_in_every_order_of_a_customer() -> None:
+    for customer in customer_ids(500):
+        decoys = [honeypot_order(order) for order in orders_for_customer(customer)]
+
+        assert len({(d.customer_name, d.customer_email) for d in decoys}) == 1, customer
+        name = decoys[0].customer_name
+        assert decoys[0].customer_email == customer_email(name, demo_number(customer)), customer
