@@ -68,11 +68,11 @@ infra/
 
 ## Ramas y revisión
 
-`main` está protegida: no admite force-push ni borrado, y los cambios entran por pull request. El rol admin puede integrar directamente. Antes de abrir un PR se ejecuta `make check`; si el cambio toca contenedores, también `make up && make smoke`.
+`main` está protegida: no admite force-push ni borrado. El rol admin hace push directo; el resto del equipo entra por pull request. Antes de abrir un PR se ejecuta `make check`; si el cambio toca contenedores, también `make up && make smoke`.
 
 ## Integración y entrega continua
 
-El flujo `ci` corre en cada pull request y en cada push a `main`:
+El flujo `ci` está desactivado por ahora y la verificación es local con `make check` y `make up && make smoke`. Se reactiva con `gh workflow enable ci`; entonces corre en cada pull request y en cada push a `main`:
 
 1. **backend:** Ruff, formato, mypy y pytest.
 2. **frontend:** Biome, TypeScript, Vitest y build.

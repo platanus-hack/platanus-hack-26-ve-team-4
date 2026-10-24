@@ -45,7 +45,7 @@ El MVP adapta políticas y controles; no reentrena el modelo. Cada parche necesi
 
 Los metadatos de votación están en [platanus-hack-project.jsonc](./platanus-hack-project.jsonc). Falta registrar una URL pública verificada en `deploy-url` cuando exista el despliegue. El logo existente cumple las dimensiones de 1000 × 1000 píxeles y ocupa menos de 500 KB; su identidad visual queda por revisar.
 
-Según la plantilla del evento, las integraciones de despliegue deben conectarse a un repositorio personal y este repositorio se conserva como destino de entrega al jurado. CI publica imágenes de contenedor independientes del proveedor; el destino de despliegue está pendiente.
+Según la plantilla del evento, las integraciones de despliegue deben conectarse a un repositorio personal y este repositorio se conserva como destino de entrega al jurado. Las imágenes de contenedor no dependen del proveedor; el destino de despliegue está pendiente.
 
 ## Desarrollo
 
