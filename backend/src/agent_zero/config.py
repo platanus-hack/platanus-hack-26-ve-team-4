@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     session_signing_key: SecretStr = SecretStr("change-me-session")
     session_token_ttl_seconds: int = Field(default=4 * 3600, ge=60)
 
+    attempt_min_interval_seconds: float = Field(default=3.0, ge=0)
+    attempt_queue_limit: int = Field(default=20, ge=1)
+
     identity_signing_key: SecretStr = SecretStr("change-me-identity")
     identity_token_ttl_seconds: int = Field(default=900, ge=30)
 

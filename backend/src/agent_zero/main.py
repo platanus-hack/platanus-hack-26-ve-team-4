@@ -4,6 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from agent_zero.attempts.attempt_events import AttemptEvents
+from agent_zero.attempts.attempt_tracker import AttemptTracker
+from agent_zero.attempts.execution import ArenaWiring
+from agent_zero.attempts.operator_router import router as attempts_operator_router
+from agent_zero.attempts.router import router as attempts_router
 from agent_zero.config import Settings
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.router import router as events_router
@@ -43,10 +48,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.audit_log = fleet.audit
     app.state.handler_registry = fleet.handlers
     app.state.tool_registry = fleet.tools
+    tracker = AttemptTracker(
+        database.sessions,
+        app.state.arena,
+        AttemptEvents(app.state.event_broker),
+        settings.runtime_poll_seconds,
+    )
+    app.state.attempt_tracker = tracker
     fleet.start()
+    tracker.start()
     try:
         yield
     finally:
+        await tracker.stop()
         await fleet.stop()
         await database.dispose()
 
@@ -58,6 +72,7 @@ def create_app(
     app = FastAPI(title="Agent Zero", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings or Settings()
     app.state.llm_playback = llm_playback
+    app.state.arena = ArenaWiring()
     if app.state.settings.cors_origins:
         app.add_middleware(
             CORSMiddleware,
@@ -68,6 +83,8 @@ def create_app(
     app.include_router(health_router)
     app.include_router(sessions_router)
     app.include_router(sessions_operator_router)
+    app.include_router(attempts_router)
+    app.include_router(attempts_operator_router)
     app.include_router(events_router)
     app.include_router(registry_router)
     app.include_router(runtime_router, dependencies=[OperatorOnly])

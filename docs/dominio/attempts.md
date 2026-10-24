@@ -10,7 +10,25 @@ Recibe cada intento, sea de una persona o del Prober, lo encola contra la vícti
 
 | Archivo | Contenido |
 | --- | --- |
-| `models.py` | `AttemptStatus`: `queued`, `running`, `evaluated`, `inconclusive`. `AttemptOutcome`: `confirmed_violation`, `prevented`, `not_achieved`, `contained_honeypot`, `inconclusive`. |
+| `models.py` | Tabla `attempts` (clave de idempotencia única por sesión) y los enums `AttemptStatus`, `AttemptOutcome` y `AttemptOrigin`. |
+| `schemas.py` | `AttemptCreate` (`message` o `messages`, de 1 a 4 turnos de hasta 4000 caracteres), `AttemptPublicView` y `AttemptOperatorView`. |
+| `execution.py` | `ArenaWiring`: el punto de conexión con la víctima, los oráculos y la versión de política. |
+| `attempt_submission_service.py` | Idempotencia, límites, versión fijada y encolado del run. |
+| `rate_limits.py` | Un intento cada `AGENT_ZERO_ATTEMPT_MIN_INTERVAL_SECONDS` (3) por sesión: 429. Cola global de `AGENT_ZERO_ATTEMPT_QUEUE_LIMIT` (20) intentos abiertos: 503. Ambos con `Retry-After`. |
+| `attempt_tracker.py` | Proceso en segundo plano que sigue el run de cada intento abierto y lo pasa a `running`, `evaluated` o `inconclusive`. |
+| `attempt_events.py` | Publica `attempt_queued`, `attempt_started` y `attempt_evaluated` dos veces: completa para operación y sin identificadores para el público. |
+| `router.py` | `POST /api/attempts` (202 nuevo, 200 si la clave ya existía) y `GET /api/attempts/{id}`, solo para la sesión dueña. |
+| `operator_router.py` | `GET /api/operator/attempts` y `GET /api/operator/attempts/{id}`, con ruta, run y resultado reales. |
+
+### Conexión con otros dominios
+
+Hasta que existan la víctima de la arena (#5), los oráculos (#8) y el registro de políticas (#11), el intento se conecta por `app.state.arena` (`ArenaWiring`):
+
+- **`target`** (`ArenaTarget`): agente aprobado y handler del runtime, `arena_attempt` por defecto. El handler recibe `attempt_id`, `session_id`, `customer_id`, `messages`, `objective_id`, `policy_version` y `route`; si su salida trae `reply`, es lo que ve el participante. Sin `target`, `POST /api/attempts` responde 503.
+- **`evaluator`** (`AttemptEvaluator`): recibe el intento y la salida del run y devuelve un `AttemptOutcome`. Sin evaluador, un intento terminado queda `inconclusive`: no se inventa un veredicto.
+- **`policy_version`**: función que devuelve la versión activa al encolar; hoy devuelve 0.
+
+Un run que falla o se cancela deja el intento `inconclusive` sin consultar al evaluador. El resultado público convierte `confirmed_violation` y `contained_honeypot` en `apparent_success` hasta la revelación (#13). Siguen pendientes la fase de la ronda (409 con entradas cerradas, #15), el cupo propio del Prober y la ruta decidida por `routing` (hoy se copia la de la sesión).
 
 ## Responsabilidades
 
