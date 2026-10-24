@@ -1,1 +1,23 @@
 * @CarSanoja @FernandoSiavato @franbastardo
+
+/backend/src/agent_zero/shared/ @CarSanoja
+/backend/src/agent_zero/config.py @CarSanoja
+/backend/src/agent_zero/main.py @CarSanoja
+/backend/src/agent_zero/victim/ @CarSanoja
+/backend/src/agent_zero/routing/ @CarSanoja
+/backend/src/agent_zero/policies/ @CarSanoja
+
+/backend/src/agent_zero/prober/ @FernandoSiavato
+/backend/src/agent_zero/analyzer/ @FernandoSiavato
+/backend/src/agent_zero/patches/ @FernandoSiavato
+/backend/src/agent_zero/evals/ @FernandoSiavato
+
+/backend/src/agent_zero/sessions/ @franbastardo
+/backend/src/agent_zero/attempts/ @franbastardo
+/backend/src/agent_zero/events/ @franbastardo
+/backend/src/agent_zero/arena/ @franbastardo
+/backend/src/agent_zero/operator/ @franbastardo
+/frontend/ @franbastardo
+
+/infra/ @CarSanoja
+/.github/ @CarSanoja
