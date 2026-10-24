@@ -8,7 +8,8 @@ Todos los JSON siguientes están en [artifacts/core-evaluation](../../artifacts/
 
 | Artefacto | Resultado y alcance |
 | --- | --- |
-| [demo-270.json](../../artifacts/core-evaluation/demo-270.json) | Comparación completa DEMO de 270 ejecuciones, 732 llamadas de origen `simulated`. |
+| [demo-270.json](../../artifacts/core-evaluation/demo-270.json) | Comparación completa DEMO de 270 ejecuciones, 732 llamadas de origen `simulated`. Corresponde a los fixtures anteriores a los comercios de Yummy (#24), el origen y destino de entrega (#29) y los nombres de clientes (#34): su `fixture_hash` ya no coincide con `fixture_hash()` actual. |
+| [demo-270-2026-10-24-yummy.json](../../artifacts/core-evaluation/demo-270-2026-10-24-yummy.json) | La misma comparación DEMO repetida sobre los fixtures actuales, en `63e1096` con árbol limpio: 270 ejecuciones, 732 llamadas `simulated`, cifras iguales a `demo-270.json`. |
 | [live-p0.json](../../artifacts/core-evaluation/live-p0.json) | Once comprobaciones LIVE aprobadas, 93 llamadas reales y cinco roles. |
 | [live-p0-initial-timeout.json](../../artifacts/core-evaluation/live-p0-initial-timeout.json) | Primer ensayo: P0 verificado, pero timeout del límite global de campaña; `passed=false` preservado. |
 | [fleet-demo.json](../../artifacts/core-evaluation/fleet-demo.json) | Cuatro runs del recorrido original de la flota en DEMO. |
@@ -31,6 +32,27 @@ La evaluación `eval-0b4b840a0609` comparó políticas 0 y 3 con `demo-rule-engi
 Las tres repeticiones completaron 15/15 tareas legítimas por versión y repetición. Las 732 llamadas no contienen uso medido; `total_cost_usd` es `null`. No presentar esas tasas como eficacia de un LLM real ni el coste desconocido como facturación cero.
 
 La partición reservada está publicada y puede haberse usado al validar controles. No debe tratarse como un conjunto nuevo independiente en un futuro ajuste.
+
+### Repetición sobre los fixtures actuales
+
+`demo-270.json` se generó antes de que los pedidos tuvieran comercio de Yummy, dirección de retiro y entrega, y nombre del cliente. Su `fixture_hash` (`26095a2e…6d5fd0`) ya no coincide con el de los datos actuales. La evaluación `eval-4f9375e1912d` repite la comparación sobre `63e10960319fa6beef292b717a4dc2e251e4edb5`, con `working_tree_dirty=false` y `fixture_hash` `0fe4044f383bdc0606fa07bd9983b52746232a8ce046ae72fb99abcf2d1aebf9`, el mismo que devuelve `fixture_hash()` en ese commit. La suite (`9a4a0cd3…457f91`) y los hashes de las políticas 0 y 3 son idénticos a los de la evaluación anterior.
+
+| Medida | `demo-270.json` | `demo-270-2026-10-24-yummy.json` |
+| --- | --- | --- |
+| Violaciones, política 0 → 3 | 90/90 → 0/90 | 90/90 → 0/90 |
+| Intentos impedidos en la política 3 | 90 | 90 |
+| Tareas legítimas correctas por versión | 45/45 | 45/45 |
+| Inconclusos | 0 | 0 |
+| Llamadas `simulated` | 732 | 732 |
+| Resultado por caso, versión y repetición | — | Idéntico en las 270 ejecuciones |
+| `state_hash` de cada ejecución | — | Distinto en las 270: el estado guardado ahora incluye comercio, direcciones y nombre |
+
+Los datos nuevos no cambiaron ninguna cifra. Los seis pedidos conservan identificador, dueño, total, estado y saldo reembolsado. Cambian los artículos y el dominio del correo, y se agregan el comercio, las direcciones de retiro y entrega y el nombre del cliente. Ningún oráculo ni expectativa de utilidad depende de esos campos. Los casos usan los mismos pedidos, dueños e importes. La latencia por ejecución no se compara entre los dos JSON, porque depende de la máquina: en la repetición fue de 0,10 a 0,56 s, con mediana de 0,19 s, frente a 0,03 a 0,13 s en `demo-270.json`. Se descartó una corrida previa porque el reloj de Windows estaba desincronizado y producía latencias de ±222 s.
+
+Se generó con el procedimiento HTTP de [evaluación](../evaluacion.md#9-ejecutar-y-exportar-la-comparación), en un contenedor `python:3.12-slim-bookworm` con un clon limpio del commit, SQLite, `AGENT_ZERO_LLM_MODE=demo`, sin `.env` y con secretos aleatorios de un solo uso. La campaña de seis intentos activó la política 3 con los tres controles del catálogo. Dos variables difieren de `.env.example`, y conviene fijarlas para repetir la comparación:
+
+- `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=false`. Con `true`, la campaña mitiga pedido y reembolso con `flow_rules` sintetizadas y la versión activa no llega a tener los tres controles del catálogo, así que la espera de la sección 9 no termina.
+- `AGENT_ZERO_GATEWAY_RATE_LIMIT_PER_MINUTE=10000`, el mismo valor que fija `scripts/verify_live.py`. Con el valor por defecto, 60 por minuto por agente, las 270 ejecuciones comparten `soporte-tienda` y el gateway deniega herramientas con `rate_limited`. Esas denegaciones no son defensas de la política: convierten violaciones y tareas útiles en `not_achieved`. El límite global por agente ya figura como pendiente en la [bitácora de la traza v2](../bitacora/2026-10-24-traza-herramientas-v2.md).
 
 ## Ensayo completo LIVE
 
@@ -73,7 +95,7 @@ Desde la raíz, sin servidor ni clave de IA:
 (cd artifacts/core-evaluation && shasum -a 256 -c *.sha256)
 ```
 
-En Linux puede utilizarse `sha256sum -c *.sha256` dentro de la misma carpeta. Los seis hashes fueron cotejados contra sus JSON durante esta revisión documental.
+En Linux puede utilizarse `sha256sum -c *.sha256` dentro de la misma carpeta. Los seis hashes fueron cotejados contra sus JSON durante esta revisión documental. El séptimo, de la repetición sobre los fixtures actuales, se cotejó al guardarlo.
 
 | JSON | SHA-256 |
 | --- | --- |
@@ -83,6 +105,7 @@ En Linux puede utilizarse `sha256sum -c *.sha256` dentro de la misma carpeta. Lo
 | `fleet-demo.json` | `1ec4c403e529c31ec9a269160278e51a57da7808e92697a850249b742e512eb9` |
 | `fleet-demo-checks.json` | `ce4739fd199d46ae405a18027cae7202cb156b5c1c1ef6dbf4f7d690fc60c2a8` |
 | `commit-map.json` | `8d473a972fbbdfc102956ec1efc0a8121b396fc0b340790edb28c21c1ca21943` |
+| `demo-270-2026-10-24-yummy.json` | `ed6623b94a80839a5d6f5d712a19dbf0190da7128ec4444cfc4568197ed27459` |
 
 La comparación DEMO registró originalmente `aed15dd4f7ea21ccabd5886a05bcdfd2d5d5fd9d` con árbol de trabajo modificado. La historia local se reorganizó antes de publicarse: el mapa identifica `20f97a771f309c0380b0a244d112a56ba870c926` con el mismo árbol Git. La referencia original `cc35d0661eb6439fa6e416f1c871385a4a339362` corresponde a `568f642f6658d18d10ae944b36db081873cad6c9`, también con árbol idéntico.
 
@@ -90,7 +113,7 @@ Los JSON conservan sus referencias originales. Los hashes de suite, fixtures y p
 
 ## Cómo repetir sin perder la referencia
 
-Para la comparación DEMO, preparar otra ronda, esperar la política verificada y seguir [el procedimiento de evaluación](../evaluacion.md#9-ejecutar-y-exportar-la-comparación). Elegir un nuevo archivo de salida, por ejemplo `mi-comparacion.json`, y conservar su `.sha256`. La versión activa puede diferir de 3.
+Para la comparación DEMO, preparar otra ronda, esperar la política verificada y seguir [el procedimiento de evaluación](../evaluacion.md#9-ejecutar-y-exportar-la-comparación). Elegir un nuevo archivo de salida, por ejemplo `mi-comparacion.json`, y conservar su `.sha256`. La versión activa puede diferir de 3. Fijar en el servidor `AGENT_ZERO_ARENA_FLOW_SYNTHESIS=false` y `AGENT_ZERO_GATEWAY_RATE_LIMIT_PER_MINUTE=10000`, como en la [repetición sobre los fixtures actuales](#repetición-sobre-los-fixtures-actuales).
 
 Para el recorrido original usar [prueba de la flota](../prueba-flota.md), con `FLEET_MODE=demo` si no se desean llamadas reales. Para el ensayo LIVE, desde la raíz y con la clave local configurada:
 
