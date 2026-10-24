@@ -194,21 +194,8 @@ Se propone iniciar con un mensaje cada tres segundos por sesión y entradas de h
 
 El panel mostrará llamadas, tokens, errores y latencias. El coste estimado será la suma de tokens de entrada y salida por el precio configurado del proveedor; se registrarán modelo y fecha de referencia, sin fijar tarifas de memoria.
 
-## 12. Estructura de implementación sugerida
+## 12. Estructura de implementación
 
-```text
-backend/
-  api/           # sesiones, intentos y vistas autorizadas
-  victim/        # agente de soporte y adaptadores
-  prober/        # plantillas, mutaciones y campañas
-  analyzer/      # verificadores y clasificación
-  patches/       # catálogo, validación y versiones
-  policy/        # autorización y enrutamiento
-  events/        # persistencia y publicación SSE
-frontend/        # arena, participante y operación
-fixtures/        # clientes, pedidos, documentos y señuelos
-evals/           # casos, variantes reservadas y tareas legítimas
-docs/            # especificaciones y guion
-```
+El backend se organiza por dominios en `backend/src/agent_zero/`: `sessions`, `events`, `routing`, `victim`, `attempts`, `prober`, `analyzer` y `policies`, con un núcleo `shared`. El frontend agrupa `participant`, `arena` y `operator` en `frontend/src/features/`. La estructura detallada, las convenciones y los comandos están en [desarrollo](./desarrollo.md).
 
-Esta estructura es una guía para construir; no representa carpetas ya creadas. Los criterios para aceptar el sistema se encuentran en [evaluación](./evaluacion.md).
+Ya existen la creación de sesiones, el broker de eventos con SSE, los contratos de `AttackCase`, hallazgos y políticas, y el ciclo de vida de políticas. Fixtures completos, el agente víctima, el Prober, el analizador y el honeypot siguen pendientes. Los criterios para aceptar el sistema se encuentran en [evaluación](./evaluacion.md).

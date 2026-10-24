@@ -12,7 +12,7 @@ Agent Zero encuentra fallos en agentes de IA mediante ataques automatizados y pa
 
 ## Estado
 
-Este repositorio contiene la propuesta y la especificación del MVP. La aplicación, las pruebas ejecutables y el despliegue están pendientes de implementación. Las capacidades y métricas descritas son objetivos de construcción y validación, salvo indicación expresa de evidencia obtenida.
+Este repositorio contiene la propuesta, la especificación y el esqueleto del MVP: backend y frontend por dominios, contenedores y CI. El ciclo de ataque, análisis y parcheo y el despliegue están pendientes de implementación. Las capacidades y métricas descritas son objetivos de construcción y validación, salvo indicación expresa de evidencia obtenida.
 
 ## Cómo funciona
 
@@ -33,6 +33,7 @@ El MVP adapta políticas y controles; no reentrena el modelo. Cada parche necesi
 | [Evaluación](./docs/evaluacion.md) | Amenazas, oráculos, métricas y criterios de aceptación. |
 | [Demo en vivo](./docs/demo.md) | Experiencia pública, clasificación, revelación del honeypot y contingencias. |
 | [Plan de 36 horas](./docs/plan-36-horas.md) | Prioridades, hitos, distribución de trabajo y entrega. |
+| [Desarrollo](./docs/desarrollo.md) | Estructura, convenciones, comandos y CI. |
 
 ## Equipo
 
@@ -44,4 +45,14 @@ El MVP adapta políticas y controles; no reentrena el modelo. Cada parche necesi
 
 Los metadatos de votación están en [platanus-hack-project.jsonc](./platanus-hack-project.jsonc). Falta registrar una URL pública verificada en `deploy-url` cuando exista el despliegue. El logo existente cumple las dimensiones de 1000 × 1000 píxeles y ocupa menos de 500 KB; su identidad visual queda por revisar.
 
-Según la plantilla del evento, las integraciones de despliegue deben conectarse a un repositorio personal. Al implementar, se debe crear ese espejo y conservar este repositorio como destino de entrega al jurado. No hay comandos de instalación o ejecución disponibles todavía.
+Según la plantilla del evento, las integraciones de despliegue deben conectarse a un repositorio personal y este repositorio se conserva como destino de entrega al jurado. CI publica imágenes de contenedor independientes del proveedor; el destino de despliegue está pendiente.
+
+## Desarrollo
+
+```bash
+cp .env.example .env
+make install
+make up && make smoke
+```
+
+Requisitos, estructura por dominios, convenciones y CI en [docs/desarrollo.md](./docs/desarrollo.md).
