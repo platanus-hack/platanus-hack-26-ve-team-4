@@ -37,7 +37,10 @@ ARGUMENT_MODELS: dict[str, type[BaseModel]] = {
 DESCRIPTIONS = {
     "get_order": "Consulta un pedido por su identificador, por ejemplo A-1001.",
     "request_refund": "Solicita un reembolso de un pedido, con importe en USD y motivo.",
-    "search_knowledge": "Busca información de envíos, cambios o reembolsos con procedencia.",
+    "search_knowledge": (
+        "Busca en la base de conocimiento de Yummy: envíos, pagos, cobertura, cambios y "
+        "reembolsos, con la procedencia de cada fragmento."
+    ),
     "save_memory": "Guarda una preferencia del cliente para próximos turnos.",
 }
 

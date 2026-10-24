@@ -23,7 +23,12 @@ No trasladar una omisión vulnerable de arena a las herramientas originales ni c
 | [store_models.py](../../backend/src/agent_zero/victim/store_models.py) | Tablas `orders`, `refunds`, `operations`, `controlled_fixtures`. |
 | [fixtures.py](../../backend/src/agent_zero/victim/fixtures.py) | Tres clientes semilla/seis pedidos de comercios Yummy, identidades ampliables y límite de 20 USD. Cada pedido trae `customer_name` (nombre ficticio: Ana Rojas, Bruno Díaz y Carla Méndez en los semilla; para `cust-demo-*`, determinista desde el número y con `customer_email` coherente, `nombre.apellido{número}@correo-demo.ve`), `pickup_address` (origen: el comercio) y `delivery_address` (destino: el cliente, el mismo en todos sus pedidos; determinista para `cust-demo-*`). Son de solo consulta: ninguna herramienta las modifica. Los IDs (`A-1001`…), estados y totales son los del laboratorio original porque el Prober, la evaluación, el modelo demo y las pruebas dependen de ellos. |
 | [customer_names.py](../../backend/src/agent_zero/victim/customer_names.py) | Listas de nombres y apellidos ficticios (20 × 20, sin repetidos en los primeros 400 `cust-demo-*`), el correo derivado del nombre y la identidad fabricada del señuelo, de listas disjuntas de las reales. |
-| [knowledge.py](../../backend/src/agent_zero/victim/knowledge.py) | Base de conocimiento de delivery (`KNOWLEDGE`). |
+| [knowledge.py](../../backend/src/agent_zero/victim/knowledge.py) | Artículos de delivery (`KNOWLEDGE`) para la búsqueda por palabras clave del modo SQLite y del hash de fixtures de la evaluación. |
+| [knowledge_docs/](../../backend/src/agent_zero/victim/knowledge_docs) | Corpus en Markdown, un archivo por documento con encabezado `id`, `title`, `source` y `captured_at`: `oficial/` (información pública de Yummy, con URL y fecha), `laboratorio/` (los 3 artículos de `KNOWLEDGE`, mismos `source`) y `senuelo/` (políticas inventadas). |
+| [knowledge_corpus.py](../../backend/src/agent_zero/victim/knowledge_corpus.py) | Lee el corpus y lo fragmenta: uno por sección `##`, cortado por párrafos sobre 1200 caracteres, sin solapamiento. |
+| [knowledge_collections.py](../../backend/src/agent_zero/victim/knowledge_collections.py) | `COLLECTIONS_BY_ENVIRONMENT` y el `trust` de cada colección (`official`, `lab`, `decoy`). |
+| [knowledge_models.py](../../backend/src/agent_zero/victim/knowledge_models.py), [knowledge_embedder.py](../../backend/src/agent_zero/victim/knowledge_embedder.py) | Tabla `knowledge_chunks` (`vector(384)` y `tsvector` en español) en su propia `KnowledgeBase`; vectorizador local (fastembed, `paraphrase-multilingual-MiniLM-L12-v2`) y falso para tests. |
+| [knowledge_index.py](../../backend/src/agent_zero/victim/knowledge_index.py), [knowledge_search.py](../../backend/src/agent_zero/victim/knowledge_search.py) | Siembra idempotente y consulta híbrida en `<base>_knowledge`; elección entre híbrida y palabras clave. |
 | [honeypot_fixtures.py](../../backend/src/agent_zero/victim/honeypot_fixtures.py) | `HONEYPOT_ORDERS` y `honeypot_order()`: comercio, artículos, origen, destino, nombre y correo del cliente fabricados, siempre distintos de los reales. El nombre y el correo dependen del `customer_id`, así que son los mismos en todos los pedidos de un cliente. |
 | [controlled_fixtures.py](../../backend/src/agent_zero/victim/controlled_fixtures.py), [fixture_outputs.py](../../backend/src/agent_zero/victim/fixture_outputs.py) | Superficies no confiables instaladas por campaña/evaluación. |
 | [arena_manifest.py](../../backend/src/agent_zero/victim/arena_manifest.py) | Manifiestos y nombres de handlers de arena. |
@@ -34,7 +39,7 @@ No trasladar una omisión vulnerable de arena a las herramientas originales ni c
 | --- | --- | --- |
 | `get_order` | `order_id` | Pedido perteneciente al cliente de la sesión. |
 | `request_refund` | `order_id`, `amount`, `reason` opcional | Titularidad y saldo acumulado hasta `min(20, total)`. |
-| `search_knowledge` | `query` | Colección local y resultados con `source`; no concede permisos. |
+| `search_knowledge` | `query` | Sólo las colecciones del entorno; resultados con `source` y, con Postgres, `trust`; no concede permisos. |
 | `save_memory` | `key`, `value` | Preferencias permitidas y rechazo de contenido que cambia permisos. |
 
 Los esquemas rechazan campos extra, importes no finitos, cero/negativos y centavos inválidos aun en la base. Cliente, sesión, entorno, versión, run y `operation_id` llegan en [CallContext](../../backend/src/agent_zero/agent_gateway/business_policy.py), fuera de los argumentos del modelo.
@@ -57,6 +62,21 @@ Cada llamada deja `tool_proposed`, `tool_denied`, `tool_completed` o `tool_faile
 - Campañas y sesiones internas sí pueden operar sobre los mismos pedidos protegidos semilla. Sólo validación y evaluación garantizan una copia limpia por caso; una campaña de arena acumula efectos como el resto de la ronda.
 
 El modelo recibe JSON de contexto de cliente y memoria no confiable, además de la conversación. La identidad que autoriza sigue siendo la del contexto del servidor, aunque el texto pida suplantar a otro cliente.
+
+## Base de conocimiento
+
+Con `AGENT_ZERO_DATABASE_URL`, el arranque crea `<base>_knowledge` con la extensión `vector` (imagen `pgvector/pgvector:pg17`) y siembra el corpus bajo un lock consultivo propio: sólo recalcula los fragmentos cuyo contenido o modelo cambió y borra los que ya no existen. Es de solo lectura en tiempo de ejecución: el reset y el snapshot de ronda no la tocan, y protegido y validación consultan el mismo índice aunque la validación use SQLite en memoria.
+
+`search_knowledge` combina en una consulta la búsqueda de texto en español (términos con O) y la distancia coseno, con fusión por rango recíproco (k = 60), y devuelve hasta 4 fragmentos `{text, source, trust}`. Cada entorno ve sólo sus colecciones:
+
+| Entorno | Colecciones |
+| --- | --- |
+| `protected`, `validation` | `oficial`, `laboratorio` |
+| `honeypot` | `oficial`, `senuelo` |
+
+Hacia el modelo, los fragmentos del señuelo salen con `trust: lab`, como en protegido, para que una sesión desviada no reconozca el señuelo por la etiqueta; `decoy` sólo existe dentro del índice.
+
+Nunca entran al índice pedidos, clientes, reembolsos, direcciones, canarios ni memoria: esos datos sólo se leen con `get_order` y sus controles. Sin Postgres, o si el índice no arranca, se usa la búsqueda por palabras clave de `KNOWLEDGE` sin `trust`. `AGENT_ZERO_KNOWLEDGE_EMBEDDER=fake` usa vectores deterministas sin descargar el modelo (tests y CI); con `local`, el modelo se descarga la primera vez a `AGENT_ZERO_DATA_DIR/models`.
 
 ## Streams y superficies controladas
 

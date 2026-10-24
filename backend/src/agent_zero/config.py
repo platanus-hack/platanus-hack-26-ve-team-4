@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # Without it every database is a SQLite file in data_dir. With a postgresql+asyncpg URL the
     # app uses that database and adds `<name>_protected` and `<name>_honeypot` for the stores.
     database_url: SecretStr | None = None
+    # Vectorizador de la base de conocimiento `<name>_knowledge`, que solo existe con Postgres.
+    # `fake` es determinista y no descarga nada; lo usan los tests y la CI.
+    knowledge_embedder: Literal["local", "fake"] = "local"
     operator_secret: SecretStr = SecretStr("change-me")
     guard_api_key: SecretStr = SecretStr("change-me-guard")
     contracts_dir: Path = Path("./contracts")
@@ -82,6 +85,17 @@ class Settings(BaseSettings):
             return f"sqlite+aiosqlite:///{self.data_dir / (name + '.db')}"
         url = make_url(self.database_url.get_secret_value())
         return url.set(database=f"{url.database}_{name}").render_as_string(hide_password=False)
+
+    @property
+    def knowledge_database_url(self) -> str | None:
+        """Base de conocimiento híbrida; sin Postgres no existe y se usan palabras clave."""
+        if self.database_url is None:
+            return None
+        return self.environment_database_url("knowledge")
+
+    @property
+    def knowledge_model_dir(self) -> Path:
+        return self.data_dir / "models"
 
     @property
     def llm_ledger_path(self) -> Path:

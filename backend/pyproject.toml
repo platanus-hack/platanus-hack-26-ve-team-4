@@ -17,6 +17,8 @@ dependencies = [
   "cryptography>=44",
   "asyncpg>=0.30",
   "pyyaml>=6.0.3",
+  "pgvector>=0.5.1",
+  "fastembed>=0.9.0",
 ]
 
 [dependency-groups]

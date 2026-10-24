@@ -3,7 +3,7 @@ fecha: 2026-10-24
 autor: "@FernandoSiavato"
 rama: feat/direcciones-entrega
 pr: 29
-estado: en revisión
+estado: integrado
 dominios: [victim, evals]
 requisitos: [CORE-06]
 ---

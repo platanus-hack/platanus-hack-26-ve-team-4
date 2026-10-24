@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         await core.worker.stop()
         await fleet.stop()
-        await core.environments.dispose()
+        await core.dispose_stores()
         await database.dispose()
 
 

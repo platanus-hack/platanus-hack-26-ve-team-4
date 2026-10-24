@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from agent_zero.analyzer.enrichment import AnalyzerHandler, SemanticAnalyzerService
 from agent_zero.analyzer.finding_service import FindingService
@@ -34,9 +35,12 @@ from agent_zero.routing.route_decision_service import RouteDecisionService
 from agent_zero.victim.arena_manifest import arena_manifest, patch_manifest
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.honeytools import Honeytools
+from agent_zero.victim.knowledge_index import build_knowledge_index
 from agent_zero.victim.scenario_tools import ScenarioTools
 from agent_zero.victim.tool_loop import ConversationExecutor
 from agent_zero.victim.trace_observer import TraceObserver
+
+logger = logging.getLogger(__name__)
 
 
 class ProductCore:
@@ -49,7 +53,8 @@ class ProductCore:
         self.events = EventStore(fleet, broker)
         self.environments = Environments(fleet.settings)
         self.rounds = RoundService(fleet, self.events, self.environments)
-        self.scenario = ScenarioTools(fleet, self.environments)
+        self.knowledge = build_knowledge_index(fleet.settings)
+        self.scenario = ScenarioTools(fleet, self.environments, self.knowledge)
         self.honeytools = Honeytools(fleet)
         self.engine = BusinessPolicyEngine(fleet.database, self.environments)
         self.observer = TraceObserver(self.events)
@@ -82,6 +87,7 @@ class ProductCore:
 
     async def initialize(self) -> None:
         await self.environments.initialize()
+        await self._initialize_knowledge()
         await self.policies.initialize()
         async with self.fleet.database.sessions() as db:
             if await db.get(ArenaState, 1) is None:
@@ -119,6 +125,17 @@ class ProductCore:
             EvaluationHandler(self.fleet, self.evaluation_runner, self._llm)
         )
 
+    async def _initialize_knowledge(self) -> None:
+        if self.knowledge is None:
+            return
+        try:
+            report = await self.knowledge.initialize()
+        except Exception:
+            # Sin modelo o sin pgvector la víctima sigue respondiendo con palabras clave.
+            logger.exception("La base de conocimiento híbrida no arrancó; se usan palabras clave.")
+            return
+        logger.info("Base de conocimiento sembrada: %s", report)
+
     async def ensure_agents(self) -> None:
         async with self._bootstrap_lock:
             if self._bootstrapped:
@@ -140,6 +157,11 @@ class ProductCore:
                     )
             self._bootstrapped = True
 
+    async def dispose_stores(self) -> None:
+        await self.environments.dispose()
+        if self.knowledge is not None:
+            await self.knowledge.dispose()
+
     async def stop(self) -> None:
         await self.worker.stop()
-        await self.environments.dispose()
+        await self.dispose_stores()

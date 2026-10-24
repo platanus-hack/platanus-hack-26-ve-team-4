@@ -17,7 +17,7 @@ from agent_zero.shared.classification import DataClassification
 from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.environments import Environment, Environments
 from agent_zero.victim.fixture_outputs import contaminate, install_fixture
-from agent_zero.victim.knowledge import KNOWLEDGE
+from agent_zero.victim.knowledge_search import KnowledgeSearch, knowledge_output
 from agent_zero.victim.operation_identity import operation_fingerprint
 from agent_zero.victim.store_models import (
     ControlledFixtureRecord,
@@ -41,9 +41,15 @@ async def _context_required(arguments: dict[str, Any]) -> str:
 
 
 class ScenarioTools:
-    def __init__(self, fleet: Fleet, environments: Environments) -> None:
+    def __init__(
+        self,
+        fleet: Fleet,
+        environments: Environments,
+        knowledge: KnowledgeSearch | None = None,
+    ) -> None:
         self._fleet = fleet
         self._environments = environments
+        self._knowledge = knowledge
 
     async def install_fixture(self, context: CallContext, fixture: ControlledFixture) -> None:
         await install_fixture(self._environments.for_context(context), context, fixture)
@@ -90,15 +96,9 @@ class ScenarioTools:
                 return replayed_operation(previous.output)
             effect: ToolEffect = NoEffect()
             if tool == "search_knowledge":
-                query = str(parsed["query"]).casefold()
-                output: dict[str, Any] = {
-                    "articles": [
-                        {"text": article.answer, "source": f"knowledge:{article.slug}"}
-                        for article in KNOWLEDGE
-                        if any(word in query for word in article.keywords)
-                    ],
-                    "source": "knowledge:tienda",
-                }
+                output: dict[str, Any] = await knowledge_output(
+                    str(parsed["query"]), environment.name, self._knowledge
+                )
             elif tool == "save_memory":
                 writer = MemoryWriteService(
                     db,
