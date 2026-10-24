@@ -79,6 +79,34 @@ El motor evalúa acciones antes de ejecutarlas y salidas antes de publicarlas. P
 
 El honeypot utiliza clientes, pedidos, memoria y herramientas propios. Una aparente extracción de datos señuelo no cuenta como una vulneración del entorno protegido. La separación se realiza en el servidor, antes de cualquier acción, y permanece durante la sesión.
 
+## Agent Zero Guard: el mismo ciclo para cualquier agente
+
+El ciclo de la arena no depende de la tienda ficticia. El Guard lo aplica al agente de cualquier empresa a partir de un **contrato de dominio** en YAML. En él, la empresa declara:
+
+- sus herramientas;
+- el tipo de cada argumento: monto, recurso con dueño, lista cerrada, identificador o texto;
+- los invariantes de negocio que nunca deben romperse;
+- unas pocas tareas legítimas que ninguna regla puede bloquear.
+
+El agente consulta al Guard antes y después de cada herramienta. Con eso el Guard:
+
+- etiqueta la procedencia de cada argumento: lo dijo el usuario, sale de un sistema propio, de un tercero o de la memoria;
+- confirma violaciones sobre hechos;
+- sintetiza reglas dentro de una gramática cerrada, propuestas por el modelo o derivadas de forma determinista;
+- las valida contra las tareas legítimas y contra inyecciones simuladas;
+- las activa o las deja propuestas para aprobación humana.
+
+Si algo no está declarado, se deniega. Los contratos se versionan en el repositorio o se registran por API desde la consola del operador.
+
+El repositorio incluye tres contratos de dominios distintos que funcionan sobre el mismo código: soporte de comercio, banca personal y clínica. En la prueba con el banco ocurre lo siguiente:
+
+- Un correo intenta que el agente transfiera 900 USD a un beneficiario externo. Se bloquea antes de ejecutarse.
+- De ese intento, el Guard aprende reglas de procedencia.
+- Una transferencia de 40 USD dictada por otro correo, que no rompe ningún invariante, se bloquea igual.
+- El pago legítimo del alquiler sigue funcionando.
+
+La integración se describe en [docs/integracion.md](./docs/integracion.md).
+
 ## La experiencia «wow»
 
 El jurado ve un asistente de soporte y una vulnerabilidad inicial reproducible. Se abre un QR para que participantes intenten vulnerarlo durante tres o cuatro minutos. La arena muestra actividad, hallazgos, parches y un indicador de vulnerabilidades abiertas en el conjunto conocido.
@@ -107,7 +135,7 @@ La barra de vulnerabilidades abiertas representa hallazgos conocidos y reproduci
 
 ## Evolución del producto
 
-Tras el hackathon, la ruta propuesta es ofrecer un kit de evaluación para desarrollo, integrar suites de regresión en CI y añadir adaptadores para agentes existentes. Una etapa posterior podría ofrecer campañas programadas, gestión por organización y propuestas de política con aprobación del responsable del sistema.
+Tras el hackathon, la ruta propuesta es ofrecer un kit de evaluación para desarrollo, integrar suites de regresión en CI y ampliar los adaptadores del Guard para agentes existentes. Una etapa posterior podría ofrecer campañas programadas, gestión por organización y propuestas de política con aprobación del responsable del sistema.
 
 La hipótesis comercial es una suscripción por agentes evaluados y volumen de ejecuciones, con campañas privadas para equipos de seguridad. Precios, disposición de pago y comparación con proveedores existentes requieren entrevistas y validación; no se asumen clientes ni ingresos.
 
