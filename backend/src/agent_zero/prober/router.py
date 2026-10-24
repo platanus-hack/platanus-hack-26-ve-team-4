@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,6 +13,8 @@ router = APIRouter(prefix="/api/operator/campaigns", tags=["prober"], dependenci
 class CampaignCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     max_attempts: int = Field(default=9, ge=1, le=30)
+    generation: Literal["templates", "llm"] = "templates"
+    max_mutations: int = Field(default=30, ge=1, le=30)
 
 
 @router.post("", status_code=202)
@@ -20,7 +22,9 @@ async def start(payload: CampaignCreate, core: Core) -> dict[str, Any]:
     await core.ensure_agents()
     async with core.admission_lock:
         try:
-            return await CampaignService(core.fleet).start(payload.max_attempts)
+            return await CampaignService(core.fleet).start(
+                payload.max_attempts, payload.generation, payload.max_mutations
+            )
         except ValueError as error:
             raise HTTPException(409, str(error)) from error
 

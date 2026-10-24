@@ -59,6 +59,7 @@ class ProductCore:
             fleet, self.policies, self.findings, self.attempts, self.environments
         )
         self.worker = AttemptWorker(fleet, self.events, self.findings, self.defense)
+        self._llm = llm
 
     async def initialize(self) -> None:
         await self.environments.initialize()
@@ -80,7 +81,9 @@ class ProductCore:
             PatchValidationHandler(self.policies, self.attempts, self.events, self.validator)
         )
 
-        self.fleet.handlers.register(CampaignHandler(self.fleet, self.submissions, self.attempts))
+        self.fleet.handlers.register(
+            CampaignHandler(self.fleet, self.submissions, self.attempts, self._llm, self.scenario)
+        )
 
     async def ensure_agents(self) -> None:
         async with self._bootstrap_lock:
