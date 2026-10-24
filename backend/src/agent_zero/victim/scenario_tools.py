@@ -2,6 +2,8 @@ import json
 from functools import partial
 from typing import Any
 
+from sqlalchemy import select
+
 from agent_zero.agent_gateway.business_policy import CallContext
 from agent_zero.agent_gateway.schemas import ToolSpec
 from agent_zero.fleet.fleet_builder import Fleet
@@ -16,7 +18,12 @@ from agent_zero.victim.environments import Environment, Environments
 from agent_zero.victim.fixture_outputs import contaminate, install_fixture
 from agent_zero.victim.fixtures import KNOWLEDGE
 from agent_zero.victim.operation_identity import operation_fingerprint
-from agent_zero.victim.store_models import StoreOperation, StoreOrder, StoreRefund
+from agent_zero.victim.store_models import (
+    ControlledFixtureRecord,
+    StoreOperation,
+    StoreOrder,
+    StoreRefund,
+)
 from agent_zero.victim.tool_schemas import ARGUMENT_MODELS, parse_arguments
 
 
@@ -31,6 +38,15 @@ class ScenarioTools:
 
     async def install_fixture(self, context: CallContext, fixture: ControlledFixture) -> None:
         await install_fixture(self._environments.for_context(context), context, fixture)
+
+    async def fixtures(self, context: CallContext) -> tuple[ControlledFixture, ...]:
+        async with self._environments.for_context(context).session() as db:
+            rows = await db.scalars(
+                select(ControlledFixtureRecord).where(
+                    ControlledFixtureRecord.session_id == context.session_id
+                )
+            )
+            return tuple(ControlledFixture.model_validate(row.data) for row in rows)
 
     def register(self) -> None:
         self._fleet.tools.register(

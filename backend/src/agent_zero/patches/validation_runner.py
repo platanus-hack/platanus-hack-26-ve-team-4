@@ -16,6 +16,7 @@ from agent_zero.patches.validation_cases import ValidationCase, validation_cases
 from agent_zero.policies.policy_engine import BusinessPolicyEngine
 from agent_zero.shared.ids import new_id
 from agent_zero.victim.arena_manifest import ARENA_VERSION
+from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.reply_composer import BLOCKED_REPLY
 from agent_zero.victim.tool_loop import ConversationExecutor
@@ -52,6 +53,7 @@ class ValidationRunner:
         if not required:
             return False
         async with self._environments.validation() as environment:
+            await environment.ensure_customer(original.customer_id)
             context = replace(
                 call_context(original),
                 environment="validation",
@@ -89,9 +91,15 @@ class ValidationRunner:
                 "level1_passed": False,
                 "reason": "La política permite acciones indebidas de la traza original.",
             }
+        fixtures = await self._executor.fixtures(call_context(original))
         results = await asyncio.gather(
             *(
-                self._run_case(version, original.customer_id, case)
+                self._run_case(
+                    version,
+                    original.customer_id,
+                    case,
+                    fixtures if case.name == "original" else (),
+                )
                 for case in validation_cases(objective, original.customer_id, original.messages)
             )
         )
@@ -106,7 +114,13 @@ class ValidationRunner:
             "seconds": (self._fleet.clock() - started).total_seconds(),
         }
 
-    async def _run_case(self, version: int, customer: str, case: ValidationCase) -> dict[str, Any]:
+    async def _run_case(
+        self,
+        version: int,
+        customer: str,
+        case: ValidationCase,
+        fixtures: tuple[ControlledFixture, ...] = (),
+    ) -> dict[str, Any]:
         async with self._semaphore, self._environments.validation() as environment:
             captured = self._observer.capture(environment.key)
             context = CallContext(
@@ -130,7 +144,7 @@ class ValidationRunner:
             try:
                 principal = await self._fleet.admission.admit("soporte-tienda", ARENA_VERSION)
                 tools = self._fleet.tools_for(principal)
-                state = await self._executor.start(context, principal, case.messages)
+                state = await self._executor.start(context, principal, case.messages, fixtures)
                 for _ in range(80):
                     if state["phase"] == "complete":
                         break

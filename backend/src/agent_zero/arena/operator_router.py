@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -5,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agent_zero.arena.arena_service import ArenaService
 from agent_zero.arena.dependencies import Core
-from agent_zero.attempts.attempt_query_service import attempt_view
+from agent_zero.attempts.attempt_query_service import attempt_view, call_context
 from agent_zero.attempts.schemas import AttemptCreate
 from agent_zero.prober.campaign_service import CampaignService
 from agent_zero.registry.dependencies import OperatorOnly
@@ -54,6 +55,12 @@ async def replay(attempt_id: str, core: Core) -> dict[str, Any]:
         raise HTTPException(404, "Intento no encontrado.")
     async with core.fleet.database.sessions() as db:
         session = await internal_session(db, attempt.customer_id, "Repetición")
+    source = call_context(attempt)
+    target_context = replace(
+        source, session_id=session.id, environment="protected", environment_id=""
+    )
+    for fixture in await core.scenario.fixtures(source):
+        await core.scenario.install_fixture(target_context, fixture)
     repeated = await core.submissions.submit(
         session.id,
         AttemptCreate(
@@ -79,7 +86,7 @@ async def rollback(version: int, payload: RollbackRequest, core: Core) -> dict[s
 
 @router.post("/arena/{action}")
 async def control(action: str, core: Core) -> dict[str, Any]:
-    service = ArenaService(core.fleet.database, core.attempts, core.policies)
+    service = ArenaService(core.fleet.database, core.attempts, core.policies, core.fleet.settings)
     async with core.admission_lock:
         if action == "pause":
             return await service.set_state(accepting=False)

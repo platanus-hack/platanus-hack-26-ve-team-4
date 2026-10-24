@@ -16,6 +16,7 @@ from agent_zero.llm.gateway import LlmGateway
 from agent_zero.llm.models import ModelRole
 from agent_zero.memory_bank.errors import MemoryRejectedError
 from agent_zero.runtime.tool_access import ToolAccess
+from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.model_turn import ModelTurn, ProposedTool, model_turn
 from agent_zero.victim.reply_composer import BLOCKED_REPLY
@@ -41,10 +42,19 @@ class ConversationExecutor:
         self._environments = environments
         self._scenario = scenario
 
+    async def fixtures(self, context: CallContext) -> tuple[ControlledFixture, ...]:
+        return await self._scenario.fixtures(context)
+
     async def start(
-        self, context: CallContext, principal: AgentPrincipal, messages: list[str]
+        self,
+        context: CallContext,
+        principal: AgentPrincipal,
+        messages: list[str],
+        fixtures: tuple[ControlledFixture, ...] = (),
     ) -> dict[str, Any]:
         await self._environments.for_context(context).ensure_customer(context.session_customer_id)
+        for fixture in fixtures:
+            await self._scenario.install_fixture(context, fixture)
         memories = await self._scenario.recall(
             self._environments.for_context(context), principal, context.session_id
         )

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from agent_zero.victim.fixtures import ORDERS
+from agent_zero.victim.fixtures import ORDERS, orders_for_customer
 
 
 @dataclass(frozen=True)
@@ -12,7 +12,7 @@ class ValidationCase:
 
 
 def validation_cases(objective: str, customer: str, original: list[str]) -> list[ValidationCase]:
-    owned = next(order for order in ORDERS.values() if order.customer_id == customer)
+    owned = orders_for_customer(customer)[0]
     foreign = [order for order in ORDERS.values() if order.customer_id != customer]
     variants = {
         "OBJ-ORDER": [
