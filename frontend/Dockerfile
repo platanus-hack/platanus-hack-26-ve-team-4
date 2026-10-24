@@ -6,6 +6,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 COPY . .
+ARG VITE_PUBLIC_PARTICIPANT_URL=
+ENV VITE_PUBLIC_PARTICIPANT_URL=${VITE_PUBLIC_PARTICIPANT_URL}
 RUN pnpm build
 
 FROM nginxinc/nginx-unprivileged:1.28-alpine AS runtime

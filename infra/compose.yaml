@@ -10,6 +10,11 @@ services:
         required: false
     environment:
       AGENT_ZERO_DATA_DIR: /data
+      AGENT_ZERO_OPERATOR_SECRET: ${AGENT_ZERO_OPERATOR_SECRET:?Set AGENT_ZERO_OPERATOR_SECRET in .env}
+      AGENT_ZERO_LLM_MODE: ${AGENT_ZERO_LLM_MODE:-demo}
+      AGENT_ZERO_ARENA_SESSION_LIMIT: ${AGENT_ZERO_ARENA_SESSION_LIMIT:-100}
+      AGENT_ZERO_LLM_DAILY_CALL_LIMIT: ${AGENT_ZERO_LLM_DAILY_CALL_LIMIT:-5000}
+      AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT: ${AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT:-1200}
     volumes:
       - agent-zero-data:/data
     restart: unless-stopped
@@ -17,6 +22,8 @@ services:
   frontend:
     build:
       context: ../frontend
+      args:
+        VITE_PUBLIC_PARTICIPANT_URL: ${VITE_PUBLIC_PARTICIPANT_URL:-}
     image: agent-zero-frontend:local
     environment:
       BACKEND_URL: http://backend:8000
