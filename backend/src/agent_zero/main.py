@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from agent_zero.config import Settings
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.router import router as events_router
+from agent_zero.llm.factory import build_gateway
 from agent_zero.sessions.router import router as sessions_router
 from agent_zero.shared.database import Database
 from agent_zero.shared.health_router import router as health_router
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await database.create_schema()
     app.state.database = database
     app.state.event_broker = EventBroker()
+    app.state.llm = build_gateway(settings)
     yield
     await database.dispose()
 
