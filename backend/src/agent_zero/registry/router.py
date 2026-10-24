@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from agent_zero.armor.model_armor import ModelArmor
 from agent_zero.registry.approval_service import ApprovalService
-from agent_zero.registry.dependencies import OperatorFlag, OperatorOnly
 from agent_zero.registry.discovery_service import DiscoveryService
 from agent_zero.registry.errors import (
     InvalidTransitionError,
@@ -19,6 +18,7 @@ from agent_zero.registry.schemas import (
     IntegrityReport,
 )
 from agent_zero.shared.dependencies import DbSession
+from agent_zero.shared.operator_auth import OperatorFlag, OperatorOnly
 
 router = APIRouter(prefix="/api/registry", tags=["registry"])
 

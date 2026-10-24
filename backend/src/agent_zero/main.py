@@ -15,12 +15,13 @@ from agent_zero.llm.factory import build_gateway
 from agent_zero.llm.models import ModelRole
 from agent_zero.llm.playback_model import PlaybackModel
 from agent_zero.memory_bank.router import router as memory_router
-from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.registry.router import router as registry_router
 from agent_zero.runtime.router import router as runtime_router
+from agent_zero.sessions.operator_router import router as sessions_operator_router
 from agent_zero.sessions.router import router as sessions_router
 from agent_zero.shared.database import Database
 from agent_zero.shared.health_router import router as health_router
+from agent_zero.shared.operator_auth import OperatorOnly
 from agent_zero.victim.registration import register_victim
 
 
@@ -66,6 +67,7 @@ def create_app(
         )
     app.include_router(health_router)
     app.include_router(sessions_router)
+    app.include_router(sessions_operator_router)
     app.include_router(events_router)
     app.include_router(registry_router)
     app.include_router(runtime_router, dependencies=[OperatorOnly])

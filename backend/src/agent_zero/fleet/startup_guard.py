@@ -1,9 +1,10 @@
 from agent_zero.config import Settings
 from agent_zero.memory_bank.memory_cipher import LOCAL_ENVIRONMENTS
 
-DEFAULT_SECRETS = frozenset({"change-me", "change-me-identity", ""})
+DEFAULT_SECRETS = frozenset({"change-me", "change-me-identity", "change-me-session", ""})
 MIN_SECRET_LENGTH = 32
 SHARED_SECRET = "la clave de firma de identidad y el secreto de operador son iguales"
+SHARED_SESSION_SECRET = "la clave de firma de sesión coincide con otro secreto"
 
 
 class InsecureConfigurationError(RuntimeError):
@@ -28,10 +29,13 @@ def enforce_secure_settings(settings: Settings) -> None:
         return
     signing = settings.identity_signing_key.get_secret_value()
     operator = settings.operator_secret.get_secret_value()
+    session = settings.session_signing_key.get_secret_value()
     found = (
         _weak("AGENT_ZERO_IDENTITY_SIGNING_KEY", signing),
         _weak("AGENT_ZERO_OPERATOR_SECRET", operator),
+        _weak("AGENT_ZERO_SESSION_SIGNING_KEY", session),
         SHARED_SECRET if signing == operator else None,
+        SHARED_SESSION_SECRET if session in (signing, operator) else None,
     )
     problems = tuple(problem for problem in found if problem is not None)
     if problems:

@@ -10,12 +10,15 @@ Representa a cada participante: su alias, el cliente sintético que le toca y la
 
 | Archivo | Contenido |
 | --- | --- |
-| `models.py` | `ArenaSession`: `id`, `alias`, `customer_id`, `route`, `created_at`. |
-| `schemas.py` | `SessionCreate` (alias de 2 a 40 caracteres) y `SessionRead`. |
+| `models.py` | `ArenaSession`: `id`, `alias`, `customer_id`, `route`, `created_at` (UTC). |
+| `schemas.py` | `SessionCreate` (alias de 2 a 40 caracteres y `accepted_rules: true`; rechaza campos extra como `customer_id`), `SessionRead`, `SessionIssued` y `SessionOperatorView`. |
 | `session_creation_service.py` | Asigna un cliente sintético al azar y ruta `protected`. |
-| `repository.py`, `router.py` | `POST /api/sessions` devuelve 201 con `id`, `alias` y `created_at`. |
+| `session_token.py` | Token HMAC-SHA256 con `session_id` y vencimiento; sin `customer_id` ni ruta. |
+| `dependencies.py` | `CurrentSession`: resuelve la sesión desde `Authorization: Bearer <token>` o responde 401. |
+| `router.py` | `POST /api/sessions` devuelve 201 con `id`, `alias`, `created_at`, `token` y `expires_at`; `GET /api/sessions/me` devuelve la proyección pública de la sesión del token. |
+| `operator_router.py` | `GET /api/operator/sessions`, con secreto de operador: sesiones con `customer_id` y ruta reales. |
 
-Falta el token firmado: hoy cualquier cliente que conozca un `id` de sesión podría usarlo.
+La clave de firma es `AGENT_ZERO_SESSION_SIGNING_KEY` y la vigencia `AGENT_ZERO_SESSION_TOKEN_TTL_SECONDS` (4 horas). Fuera de `local` y `test`, la aplicación no arranca si la clave es la de ejemplo, mide menos de 32 caracteres o coincide con el secreto de operador o la clave de identidad. Las rutas `/api/operator/*` usan `shared/operator_auth.py`, el mismo guard de `/api/fleet`, `/api/memory` y `/api/runtime`. Siguen pendientes el cupo por ronda, la redacción de PII del alias y el nombre ficticio del cliente en `SessionIssued`.
 
 ## Responsabilidades
 

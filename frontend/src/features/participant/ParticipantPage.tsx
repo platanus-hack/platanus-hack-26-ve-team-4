@@ -4,6 +4,7 @@ import type { ArenaSession } from "./types";
 
 export function ParticipantPage() {
   const [alias, setAlias] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [session, setSession] = useState<ArenaSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -47,7 +48,16 @@ export function ParticipantPage() {
           maxLength={40}
           required
         />
-        <button type="submit" disabled={pending}>
+        <label>
+          <input
+            type="checkbox"
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            required
+          />
+          Acepto las reglas de la simulación
+        </label>
+        <button type="submit" disabled={pending || !accepted}>
           {pending ? "Entrando…" : "Entrar a la arena"}
         </button>
       </form>

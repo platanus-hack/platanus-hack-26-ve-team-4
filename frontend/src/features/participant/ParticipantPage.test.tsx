@@ -11,20 +11,38 @@ describe("ParticipantPage", () => {
   it("crea la sesión con el alias y saluda al participante", async () => {
     const fetchMock = mockFetch(
       Response.json(
-        { id: "sess-1", alias: "neo", created_at: "2026-10-24T00:00:00Z" },
+        {
+          id: "sess-1",
+          alias: "neo",
+          created_at: "2026-10-24T00:00:00Z",
+          token: "firmado",
+          expires_at: "2026-10-24T04:00:00Z",
+        },
         { status: 201 },
       ),
     );
     render(<ParticipantPage />);
 
     await userEvent.type(screen.getByLabelText("Alias"), "neo");
+    await userEvent.click(screen.getByLabelText("Acepto las reglas de la simulación"));
     await userEvent.click(screen.getByRole("button", { name: "Entrar a la arena" }));
 
     expect(await screen.findByRole("heading", { name: "Hola, neo" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/sessions",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ alias: "neo" }) }),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ alias: "neo", accepted_rules: true }),
+      }),
     );
+  });
+
+  it("no permite entrar sin aceptar las reglas", async () => {
+    render(<ParticipantPage />);
+
+    await userEvent.type(screen.getByLabelText("Alias"), "neo");
+
+    expect(screen.getByRole("button", { name: "Entrar a la arena" })).toBeDisabled();
   });
 
   it("muestra un error si la API rechaza la sesión", async () => {
@@ -32,6 +50,7 @@ describe("ParticipantPage", () => {
     render(<ParticipantPage />);
 
     await userEvent.type(screen.getByLabelText("Alias"), "neo");
+    await userEvent.click(screen.getByLabelText("Acepto las reglas de la simulación"));
     await userEvent.click(screen.getByRole("button", { name: "Entrar a la arena" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos crear tu sesión");

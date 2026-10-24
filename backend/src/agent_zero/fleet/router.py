@@ -13,9 +13,9 @@ from agent_zero.fleet.schemas import (
 )
 from agent_zero.identity.revocation_service import RevocationService
 from agent_zero.llm.gateway import LlmGateway
-from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.runtime.repository import RunRepository
 from agent_zero.shared.dependencies import DbSession
+from agent_zero.shared.operator_auth import OperatorOnly
 from agent_zero.telemetry.audit_schemas import AuditDecision, AuditEvent
 
 router = APIRouter(prefix="/api/fleet", tags=["fleet"], dependencies=[OperatorOnly])

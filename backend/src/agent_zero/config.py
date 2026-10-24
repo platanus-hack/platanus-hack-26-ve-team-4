@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     llm_breaker_failures: int = Field(default=3, ge=1)
     llm_breaker_recovery_seconds: float = Field(default=30.0, gt=0)
 
+    session_signing_key: SecretStr = SecretStr("change-me-session")
+    session_token_ttl_seconds: int = Field(default=4 * 3600, ge=60)
+
     identity_signing_key: SecretStr = SecretStr("change-me-identity")
     identity_token_ttl_seconds: int = Field(default=900, ge=30)
 

@@ -8,8 +8,9 @@ echo "frontend responde en ${BASE_URL}"
 
 session=$(curl -fsS -X POST "${BASE_URL}/api/sessions" \
   -H "Content-Type: application/json" \
-  -d '{"alias":"smoke"}')
+  -d '{"alias":"smoke","accepted_rules":true}')
 echo "${session}" | grep -q '"id":"sess-' || { echo "sesión inválida: ${session}"; exit 1; }
+echo "${session}" | grep -q '"token":"' || { echo "sesión sin token: ${session}"; exit 1; }
 echo "API crea sesiones a través del proxy"
 
 status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "${BASE_URL}/api/arena/events" || true)

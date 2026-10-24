@@ -10,6 +10,7 @@ from agent_zero.main import create_app
 
 STRONG_A = "a" * 40
 STRONG_B = "b" * 40
+STRONG_C = "c" * 40
 
 
 def _settings(tmp_path: Path, **overrides: object) -> Settings:
@@ -18,6 +19,7 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
         "environment": "production",
         "identity_signing_key": STRONG_A,
         "operator_secret": STRONG_B,
+        "session_signing_key": STRONG_C,
         "memory_encryption_key": Fernet.generate_key().decode(),
     }
     values.update(overrides)
@@ -33,6 +35,10 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
         {"identity_signing_key": "corta"},
         {"operator_secret": "corta"},
         {"identity_signing_key": STRONG_B},
+        {"session_signing_key": "change-me-session"},
+        {"session_signing_key": "corta"},
+        {"session_signing_key": STRONG_A},
+        {"session_signing_key": STRONG_B},
     ],
 )
 def test_production_refuses_default_short_or_shared_secrets(
