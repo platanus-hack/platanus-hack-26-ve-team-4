@@ -27,7 +27,10 @@ class GatewayAuditor:
     def record(
         self, principal: AgentPrincipal | None, tool_name: str, outcome: GatewayOutcome
     ) -> None:
-        attributes = {"gateway_decision": outcome.decision.value, **outcome.details}
+        attributes = {
+            "gateway_decision": outcome.decision.value,
+            **{key: self._clean(value) for key, value in outcome.details.items()},
+        }
         if principal is not None:
             attributes.update(
                 agent_version=principal.version, credential_id=principal.credential_id
@@ -43,6 +46,15 @@ class GatewayAuditor:
                 attributes=attributes,
             )
         )
+
+    def _clean(self, value: Any) -> Any:
+        if isinstance(value, str):
+            return self._redact(value)[:MAX_RESOURCE_LENGTH]
+        if isinstance(value, list | tuple):
+            return [self._clean(item) for item in value]
+        if isinstance(value, dict):
+            return {str(key): self._clean(item) for key, item in value.items()}
+        return value
 
 
 def _audit_decision(outcome: GatewayOutcome) -> AuditDecision:

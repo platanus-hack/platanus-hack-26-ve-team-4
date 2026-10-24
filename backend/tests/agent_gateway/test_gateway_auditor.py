@@ -36,3 +36,19 @@ def test_redact_maps_to_allow_and_failure_to_error() -> None:
     assert first.attributes["gateway_decision"] == "redact"
     assert second.decision is AuditDecision.ERROR
     assert log.verify().ok
+
+
+@pytest.mark.requirement("GW-03", "OBS-03")
+def test_string_details_are_redacted_before_reaching_the_chain() -> None:
+    log = AuditLog.in_memory()
+    auditor = GatewayAuditor(log, ModelArmor().redact_pii)
+    details = {"data_region": "juan@example.com", "tags": ["4111 1111 1111 1111"], "n": 3}
+    auditor.record(
+        None,
+        "t",
+        GatewayOutcome(GatewayDecision.DENY, GatewayReason.REGION_NOT_ALLOWED_FOR_AGENT, details),
+    )
+    entry = log.entries()[0]
+    assert entry.attributes["data_region"] == "[EMAIL]"
+    assert entry.attributes["tags"] == ["[CARD]"]
+    assert entry.attributes["n"] == 3

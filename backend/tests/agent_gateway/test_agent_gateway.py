@@ -246,3 +246,16 @@ async def test_audit_chain_stays_valid_after_mixed_decisions(harness: Harness) -
     await denial_of(harness, credential.token, "get_secret")
     assert harness.audit.verify().ok
     assert len(harness.audit.entries()) == 2
+
+
+@pytest.mark.requirement("GW-03", "OBS-03")
+async def test_caller_controlled_region_never_reaches_the_audit_log_as_pii(
+    harness: Harness,
+) -> None:
+    credential = await harness.approve()
+    for region in ("juan.perez@acme.com", "4111 1111 1111 1111"):
+        await denial_of(harness, credential.token, "get_order", data_region=region)
+    raw = " ".join(entry.model_dump_json() for entry in harness.audit.entries())
+    assert "acme.com" not in raw
+    assert "4111" not in raw
+    assert last_entry(harness).reason == "region_not_allowed_for_agent"
