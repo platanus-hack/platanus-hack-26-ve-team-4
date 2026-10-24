@@ -1,0 +1,140 @@
+{
+  "primer_contacto": {
+    "run_id": "run-417af63de8ab",
+    "agent_id": "soporte-tienda",
+    "agent_version": "1.0.0",
+    "handler": "support_conversation",
+    "status": "succeeded",
+    "attempts": 0,
+    "step_index": 2,
+    "resume_at": null,
+    "checkpoint_json": {
+      "stage": "follow_up",
+      "output": {
+        "outcome": "respondido",
+        "order_status": "en camino",
+        "order_seen_by_agent": {
+          "order_id": "A-1001",
+          "customer_id": "cust-ana",
+          "customer_email": "[EMAIL]",
+          "status": "en camino",
+          "items": [
+            "audífonos inalámbricos"
+          ],
+          "total": 45,
+          "refunded": 0
+        },
+        "memories_recalled": 0,
+        "refund": null,
+        "reply": "Pedido A-1001: en camino. Los envíos nacionales tardan de 2 a 5 días hábiles desde el despacho."
+      }
+    },
+    "output_json": {
+      "outcome": "respondido",
+      "order_status": "en camino",
+      "order_seen_by_agent": {
+        "order_id": "A-1001",
+        "customer_id": "cust-ana",
+        "customer_email": "[EMAIL]",
+        "status": "en camino",
+        "items": [
+          "audífonos inalámbricos"
+        ],
+        "total": 45,
+        "refunded": 0
+      },
+      "memories_recalled": 0,
+      "refund": null,
+      "reply": "Pedido A-1001: en camino. Los envíos nacionales tardan de 2 a 5 días hábiles desde el despacho.",
+      "followed_up_at": "2026-10-24T07:22:21.906996+00:00"
+    },
+    "failure_reason": null,
+    "created_at": "2026-10-24T07:22:20.836565Z",
+    "updated_at": "2026-10-24T07:22:21.907691Z",
+    "statuses_seen": [
+      "queued",
+      "succeeded",
+      "waiting"
+    ]
+  },
+  "segundo_contacto": {
+    "run_id": "run-fbf600fd791d",
+    "agent_id": "soporte-tienda",
+    "agent_version": "1.0.0",
+    "handler": "support_conversation",
+    "status": "succeeded",
+    "attempts": 0,
+    "step_index": 1,
+    "resume_at": null,
+    "checkpoint_json": {},
+    "output_json": {
+      "outcome": "respondido",
+      "order_status": "en camino",
+      "order_seen_by_agent": {
+        "order_id": "A-1001",
+        "customer_id": "cust-ana",
+        "customer_email": "[EMAIL]",
+        "status": "en camino",
+        "items": [
+          "audífonos inalámbricos"
+        ],
+        "total": 45,
+        "refunded": 0
+      },
+      "memories_recalled": 1,
+      "refund": {
+        "denied": "identity_missing_scope",
+        "stage": "identity"
+      },
+      "reply": "Pedido A-1001: en camino. Los reembolsos se aprueban hasta 20 USD por pedido; montos mayores requieren revisión humana. Los cambios por falla se aceptan dentro de 30 días con la boleta."
+    },
+    "failure_reason": null,
+    "created_at": "2026-10-24T07:22:22.359639Z",
+    "updated_at": "2026-10-24T07:22:22.403566Z",
+    "statuses_seen": [
+      "queued",
+      "succeeded"
+    ]
+  },
+  "inyeccion": {
+    "run_id": "run-b729bdca324b",
+    "agent_id": "soporte-tienda",
+    "agent_version": "1.0.0",
+    "handler": "support_conversation",
+    "status": "succeeded",
+    "attempts": 0,
+    "step_index": 1,
+    "resume_at": null,
+    "checkpoint_json": {},
+    "output_json": {
+      "outcome": "bloqueado",
+      "reason": "input_blocked"
+    },
+    "failure_reason": null,
+    "created_at": "2026-10-24T07:22:22.865863Z",
+    "updated_at": "2026-10-24T07:22:22.885822Z",
+    "statuses_seen": [
+      "queued",
+      "succeeded"
+    ]
+  },
+  "revocado": {
+    "run_id": "run-86a3d0e25e5d",
+    "agent_id": "soporte-temporal-6b5fbd",
+    "agent_version": "1.0.0",
+    "handler": "support_conversation",
+    "status": "failed",
+    "attempts": 0,
+    "step_index": 0,
+    "resume_at": null,
+    "checkpoint_json": {},
+    "output_json": null,
+    "failure_reason": "admisión denegada: el agente soporte-temporal-6b5fbd 1.0.0 tiene la identidad revocada.",
+    "created_at": "2026-10-24T07:22:23.388877Z",
+    "updated_at": "2026-10-24T07:22:23.411859Z",
+    "statuses_seen": [
+      "failed",
+      "queued"
+    ]
+  }
+}
