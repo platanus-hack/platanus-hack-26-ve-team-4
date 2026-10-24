@@ -9,6 +9,7 @@ from agent_zero.attempts.attempt_execution_handler import AttemptExecutionHandle
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.attempts.attempt_submission_service import AttemptSubmissionService
 from agent_zero.attempts.attempt_worker import AttemptWorker
+from agent_zero.decoy.metrics_service import DecoyMetricsService
 from agent_zero.evals.handler import EvaluationHandler
 from agent_zero.evals.runner import EvaluationHarness, EvaluationRunner
 from agent_zero.evals.service import EvaluationService
@@ -58,6 +59,7 @@ class ProductCore:
         self.semantic = SemanticAnalyzerService(fleet)
         self.findings = FindingService(fleet.database, self.events, self.semantic.enqueue)
         self.attempts = AttemptQueryService(fleet.database)
+        self.decoy = DecoyMetricsService(fleet.database, fleet.settings)
         self.routing = RouteDecisionService(fleet, self.events)
         self.submissions = AttemptSubmissionService(
             fleet, self.policies, self.events, self.routing, self.admission_lock

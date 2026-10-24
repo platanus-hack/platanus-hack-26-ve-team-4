@@ -11,6 +11,7 @@ from agent_zero.arena.reset_router import router as reset_router
 from agent_zero.arena.router import router as arena_router
 from agent_zero.attempts.router import router as attempts_router
 from agent_zero.config import Settings
+from agent_zero.decoy.router import router as decoy_router
 from agent_zero.evals.router import router as evaluations_router
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.router import router as events_router
@@ -87,6 +88,7 @@ def create_app(
     app.include_router(reset_router)
     app.include_router(operator_router)
     app.include_router(evaluations_router)
+    app.include_router(decoy_router)
     app.include_router(prober_router)
     app.include_router(events_router)
     app.include_router(registry_router)
