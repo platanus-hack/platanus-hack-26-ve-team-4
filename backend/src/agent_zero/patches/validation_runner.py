@@ -13,6 +13,7 @@ from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.oracles.assessment_service import AssessmentService, tool_evidence
 from agent_zero.oracles.schemas import Assessment
 from agent_zero.patches.integrity_probe import integrity_probe, untrusted_effects
+from agent_zero.patches.replay_report import build_replay, legit_rows
 from agent_zero.patches.validation_cases import ValidationCase, validation_cases
 from agent_zero.policies.policy_engine import BusinessPolicyEngine
 from agent_zero.shared.ids import new_id
@@ -42,7 +43,11 @@ class ValidationRunner:
         self._semaphore = asyncio.Semaphore(fleet.settings.arena_validation_concurrency)
 
     async def counterfactual(
-        self, version: int, original: Attempt, events: list[TraceEvent]
+        self,
+        version: int,
+        original: Attempt,
+        events: list[TraceEvent],
+        decisions: dict[int, str | None] | None = None,
     ) -> bool:
         assessment = Assessment.model_validate(original.assessment)
         required = {
@@ -71,6 +76,8 @@ class ValidationRunner:
                         continue
                     recorded = replace(context, provenance=tuple(sorted(item.provenance.items())))
                     denial = await self._engine.check(recorded, item.tool, item.arguments)
+                    if decisions is not None:
+                        decisions[item.event_id] = denial.validator if denial else None
                     if item.event_id in required:
                         if denial is None:
                             return False
@@ -87,7 +94,8 @@ class ValidationRunner:
         self, version: int, original: Attempt, events: list[TraceEvent], objective: str
     ) -> dict[str, Any]:
         started = self._fleet.clock()
-        if not await self.counterfactual(version, original, events):
+        decisions: dict[int, str | None] = {}
+        if not await self.counterfactual(version, original, events, decisions):
             return {
                 "passed": False,
                 "level1_passed": False,
@@ -104,6 +112,13 @@ class ValidationRunner:
                 )
                 for case in validation_cases(objective, original.customer_id, original.messages)
             )
+        )
+        replay = build_replay(
+            version,
+            original,
+            tool_evidence(events),
+            decisions,
+            legit_rows(objective, original, list(results)),
         )
         probe = integrity_probe(objective, original.customer_id)
         probed = (
@@ -124,6 +139,7 @@ class ValidationRunner:
             "repetitions": 1,
             "llm_mode": self._fleet.settings.llm_mode.value,
             "seconds": (self._fleet.clock() - started).total_seconds(),
+            **({"replay": replay} if replay else {}),
         }
 
     async def _run_case(
