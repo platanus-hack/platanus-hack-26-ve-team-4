@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import text
 
 from agent_zero.config import Settings
 from agent_zero.fleet.fleet_builder import build_fleet
@@ -109,4 +110,24 @@ async def test_approved_agent_run_succeeds_with_a_real_principal(
     assert run.status is RunStatus.SUCCEEDED
     assert run.output_json == {"agent": "agente-soporte"}
     assert handler.executed == 1
+    await fleet.stop()
+
+
+@pytest.mark.requirement("REG-02", "IDN-01")
+async def test_tampered_manifest_gets_no_identity(
+    fleet_settings: Settings, database: Database, clock: FakeClock
+) -> None:
+    fleet = build_fleet(fleet_settings, database, clock)
+    await publish_approved(fleet, build_manifest())
+    async with database.sessions() as db:
+        await db.execute(
+            text(
+                "UPDATE registry_agent_versions SET manifest_json = "
+                "replace(manifest_json, 'get_order', 'drop_tables')"
+            )
+        )
+        await db.commit()
+    with pytest.raises(AdmissionDeniedError) as caught:
+        await fleet.admission.admit("agente-soporte", "1.0.0")
+    assert "integridad" in caught.value.reason
     await fleet.stop()

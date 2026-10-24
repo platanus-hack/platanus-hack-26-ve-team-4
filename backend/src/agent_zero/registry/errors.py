@@ -36,3 +36,12 @@ class InvalidTransitionError(RegistryError):
         super().__init__(f"Transición no permitida: {current} → {target}")
         self.current = current
         self.target = target
+
+
+class ManifestTamperedError(RegistryError):
+    def __init__(self, agent_id: str, version: str) -> None:
+        super().__init__(
+            f"Falla de integridad: el manifiesto de {agent_id} {version} no coincide con su sha256."
+        )
+        self.agent_id = agent_id
+        self.version = version

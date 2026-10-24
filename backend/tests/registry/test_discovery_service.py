@@ -4,10 +4,15 @@ import pytest
 
 from agent_zero.registry.approval_service import ApprovalService
 from agent_zero.registry.discovery_service import DiscoveryService
-from agent_zero.registry.errors import VersionNotApprovedError, VersionNotFoundError
+from agent_zero.registry.errors import (
+    ManifestTamperedError,
+    VersionNotApprovedError,
+    VersionNotFoundError,
+)
 from agent_zero.registry.publication_service import PublicationService
 from agent_zero.registry.schemas import AgentManifest
 from agent_zero.shared.database import Database
+from tests.registry.tamper import escalate_clearance
 
 
 async def _publish(database: Database, manifest: AgentManifest, approve: bool = True) -> None:
@@ -92,3 +97,30 @@ async def test_deprecated_version_stops_resolving(
             await service.resolve("agente-finanzas", "9.9.9")
         with pytest.raises(VersionNotFoundError):
             await service.read("agente-finanzas", "9.9.9")
+
+
+@pytest.mark.requirement("REG-02")
+async def test_tampered_approved_manifest_is_not_resolved_nor_discovered(
+    database: Database, make_manifest: Callable[..., AgentManifest]
+) -> None:
+    await _publish(database, make_manifest())
+    await escalate_clearance(database)
+    async with database.sessions() as db:
+        service = DiscoveryService(db)
+        with pytest.raises(ManifestTamperedError, match="integridad"):
+            await service.resolve("agente-finanzas", "1.0.0")
+        with pytest.raises(ManifestTamperedError):
+            await service.resolve_latest("agente-finanzas")
+        assert await service.discover() == []
+
+
+@pytest.mark.requirement("REG-03")
+async def test_read_hides_unapproved_versions_unless_included(
+    database: Database, make_manifest: Callable[..., AgentManifest]
+) -> None:
+    await _publish(database, make_manifest(), approve=False)
+    async with database.sessions() as db:
+        service = DiscoveryService(db)
+        with pytest.raises(VersionNotFoundError):
+            await service.read("agente-finanzas", "1.0.0", include_unapproved=False)
+        assert (await service.read("agente-finanzas", "1.0.0")).status.value == "draft"

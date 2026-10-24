@@ -5,12 +5,13 @@ import pytest
 from agent_zero.config import Settings
 from agent_zero.identity.credential_issuer import CredentialIssuer
 from agent_zero.registry.approval_service import ApprovalService
-from agent_zero.registry.errors import VersionNotApprovedError
+from agent_zero.registry.errors import ManifestTamperedError, VersionNotApprovedError
 from agent_zero.registry.grant_service import grant_for
 from agent_zero.registry.publication_service import PublicationService
 from agent_zero.registry.schemas import AgentManifest
 from agent_zero.shared.classification import DataClassification
 from agent_zero.shared.database import Database
+from tests.registry.tamper import escalate_clearance
 
 
 @pytest.mark.requirement("IDN-01", "REG-03")
@@ -40,4 +41,17 @@ async def test_grant_for_draft_and_deprecated_is_denied(
         await ApprovalService(db).approve("agente-finanzas", "1.0.0", "ana")
         await ApprovalService(db).deprecate("agente-finanzas", "1.0.0")
         with pytest.raises(VersionNotApprovedError):
+            await grant_for(db, "agente-finanzas", "1.0.0")
+
+
+@pytest.mark.requirement("REG-02", "IDN-01")
+async def test_grant_for_refuses_tampered_manifest(
+    database: Database, make_manifest: Callable[..., AgentManifest]
+) -> None:
+    async with database.sessions() as db:
+        await PublicationService(db).publish(make_manifest())
+        await ApprovalService(db).approve("agente-finanzas", "1.0.0", "ana")
+    await escalate_clearance(database)
+    async with database.sessions() as db:
+        with pytest.raises(ManifestTamperedError):
             await grant_for(db, "agente-finanzas", "1.0.0")
