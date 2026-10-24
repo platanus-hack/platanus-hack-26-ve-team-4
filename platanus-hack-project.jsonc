@@ -1,16 +1,14 @@
 {
-  // Your project's name, as it will appear on the voting page.
-  "project-name": "<FILL THIS>",
+  // Nombre del proyecto en la página de votación.
+  "project-name": "AGENT ZERO",
 
-  // Short one-line summary of your project (in Spanish).
-  "project-oneliner-spanish": "<FILL THIS>",
+  // Resumen del proyecto en una frase.
+  "project-oneliner-spanish": "Arena de red teaming autónomo que descubre vulnerabilidades en agentes de IA, valida parches y activa defensas en vivo.",
 
-  // Brief description of your project (in Spanish).
-  "project-description-spanish": "<FILL THIS>",
+  // Descripción breve para la página de votación; expresa el alcance propuesto.
+  "project-description-spanish": "Agent Zero propone un ciclo continuo de ataque, análisis y defensa para agentes de IA. Un red team autónomo y los participantes de una arena pública intentan vulnerar un asistente con datos sintéticos. El sistema analiza la evidencia, genera políticas, las valida y activa bloqueos o desvíos a un honeypot aislado, mostrando el antes y después del mismo ataque en vivo.",
 
-  // Public URL where your project is deployed and running.
-  // Must be a valid URL, for example: https://my-project.vercel.app
-  // If your project is an app, put the download link here instead
-  // (for example, a URL to download an APK).
-  "deploy-url": "<FILL THIS>"
+  // PENDIENTE DE DESPLIEGUE: sustituir por una URL pública válida y verificada.
+  // El campo vacío evita inventar una dirección; la entrega requiere completarlo.
+  "deploy-url": ""
 }
