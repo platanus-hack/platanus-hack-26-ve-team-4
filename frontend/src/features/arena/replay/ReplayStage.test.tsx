@@ -26,7 +26,9 @@ describe("ReplayStage", () => {
 
   it("con movimiento reducido salta al estado final en dos columnas", async () => {
     motion(true);
-    const mock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json(replay));
+    const mock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => Response.json(replay));
     render(<ReplayStage events={[validated(2)]} />);
     expect(await screen.findByText("Política v1")).toBeInTheDocument();
     expect(screen.getByText("Política v2")).toBeInTheDocument();
