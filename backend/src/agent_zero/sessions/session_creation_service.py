@@ -1,7 +1,10 @@
 import secrets
+from collections.abc import Awaitable, Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agent_zero.arena.models import ArenaState
+from agent_zero.arena.transactions import serialize_write
 from agent_zero.armor.model_armor import ModelArmor
 from agent_zero.routing.models import Route
 from agent_zero.sessions.models import ArenaSession
@@ -9,12 +12,22 @@ from agent_zero.sessions.repository import SessionRepository
 from agent_zero.sessions.schemas import SessionCreate
 from agent_zero.shared.clock import utc_now
 from agent_zero.shared.ids import new_id
-from agent_zero.victim.fixtures import SYNTHETIC_CUSTOMER_IDS
+from agent_zero.victim.fixtures import customer_ids
 
 
-async def create_session(db: AsyncSession, payload: SessionCreate, limit: int = 3) -> ArenaSession:
+async def create_session(
+    db: AsyncSession,
+    payload: SessionCreate,
+    limit: int = 3,
+    *,
+    provision: Callable[[str], Awaitable[None]] | None = None,
+) -> ArenaSession:
+    await serialize_write(db)
+    state = await db.get(ArenaState, 1)
+    if state is not None and not state.accepting:
+        raise ValueError("Las entradas de la ronda están cerradas.")
     allocated = await SessionRepository(db).allocated_customers()
-    available = [customer for customer in SYNTHETIC_CUSTOMER_IDS if customer not in allocated]
+    available = [customer for customer in customer_ids(limit) if customer not in allocated]
     if not available or len(allocated) >= limit:
         raise ValueError("Se agotaron las identidades sintéticas de esta ronda.")
     alias = ModelArmor().redact_pii(payload.alias.strip())
@@ -29,6 +42,8 @@ async def create_session(db: AsyncSession, payload: SessionCreate, limit: int = 
         route=Route.PROTECTED,
         created_at=utc_now(),
     )
+    if provision is not None:
+        await provision(session.customer_id)
     await SessionRepository(db).add(session)
     await db.commit()
     return session

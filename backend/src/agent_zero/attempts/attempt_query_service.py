@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import select
 
 from agent_zero.agent_gateway.business_policy import CallContext
+from agent_zero.arena.models import ArenaState
 from agent_zero.attempts.models import Attempt, AttemptOutcome
 from agent_zero.attempts.repository import AttemptRepository
 from agent_zero.shared.database import Database
@@ -21,9 +22,11 @@ def call_context(attempt: Attempt) -> CallContext:
     )
 
 
-def attempt_view(attempt: Attempt, *, operator: bool = False) -> dict[str, Any]:
+def attempt_view(
+    attempt: Attempt, *, operator: bool = False, revealed: bool = False
+) -> dict[str, Any]:
     outcome = attempt.outcome.value if attempt.outcome else None
-    if not operator and attempt.outcome in {
+    if not operator and not revealed and attempt.outcome in {
         AttemptOutcome.CONFIRMED_VIOLATION,
         AttemptOutcome.CONTAINED_HONEYPOT,
     }:
@@ -35,6 +38,9 @@ def attempt_view(attempt: Attempt, *, operator: bool = False) -> dict[str, Any]:
         "policy_version": attempt.policy_version,
         "reply": re.sub(r"AZ[PH]_[a-f0-9]+_[A-Z]-\d+", "[referencia]", attempt.reply),
         "created_at": attempt.created_at.isoformat(),
+        "updated_at": attempt.updated_at.isoformat(),
+        "messages": attempt.messages,
+        "idempotency_key": attempt.idempotency_key,
     }
     if operator:
         result.update(
@@ -57,6 +63,11 @@ class AttemptQueryService:
         async with self._database.sessions() as db:
             return await AttemptRepository(db).get(attempt_id)
 
+    async def revealed(self) -> bool:
+        async with self._database.sessions() as db:
+            state = await db.get(ArenaState, 1)
+            return state is not None and state.revealed
+
     async def drained(self) -> bool:
         async with self._database.sessions() as db:
             return await AttemptRepository(db).in_flight() == 0
@@ -64,6 +75,16 @@ class AttemptQueryService:
     async def needs_diversion(self, session_id: str) -> bool:
         async with self._database.sessions() as db:
             return await AttemptRepository(db).needs_diversion(session_id)
+
+    async def for_session(self, session_id: str) -> list[Attempt]:
+        async with self._database.sessions() as db:
+            return list(
+                await db.scalars(
+                    select(Attempt)
+                    .where(Attempt.session_id == session_id)
+                    .order_by(Attempt.created_at, Attempt.id)
+                )
+            )
 
     async def all(self) -> list[Attempt]:
         async with self._database.sessions() as db:

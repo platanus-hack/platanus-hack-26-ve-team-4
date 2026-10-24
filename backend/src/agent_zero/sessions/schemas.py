@@ -24,3 +24,4 @@ class SessionIssued(SessionRead):
     customer_name: str
     order_ids: list[str]
     objectives: list[str]
+    limits: dict[str, int] = Field(default_factory=dict)

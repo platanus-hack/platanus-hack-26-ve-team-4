@@ -2,6 +2,7 @@ import asyncio
 
 from agent_zero.analyzer.finding_service import FindingService
 from agent_zero.arena.models import ArenaState
+from agent_zero.arena.round_service import RoundService
 from agent_zero.attempts.attempt_execution_handler import AttemptExecutionHandler
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.attempts.attempt_submission_service import AttemptSubmissionService
@@ -33,10 +34,12 @@ class ProductCore:
     def __init__(self, fleet: Fleet, llm: LlmGateway, broker: EventBroker) -> None:
         self.fleet = fleet
         self.admission_lock = asyncio.Lock()
+        self.maintenance_lock = asyncio.Lock()
         self._bootstrap_lock = asyncio.Lock()
         self._bootstrapped = False
         self.events = EventStore(fleet, broker)
         self.environments = Environments(fleet.settings.data_dir)
+        self.rounds = RoundService(fleet, self.events, self.environments)
         self.scenario = ScenarioTools(fleet, self.environments)
         self.engine = BusinessPolicyEngine(fleet.database, self.environments)
         self.observer = TraceObserver(self.events)
@@ -64,6 +67,7 @@ class ProductCore:
             if await db.get(ArenaState, 1) is None:
                 db.add(ArenaState(id=1, accepting=True, revealed=False))
                 await db.commit()
+        await self.rounds.initialize()
         await self.events.restore()
         self.scenario.register()
         self.fleet.gateway.configure_business_layer(

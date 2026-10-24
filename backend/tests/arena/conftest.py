@@ -14,6 +14,7 @@ def arena_client(settings: Settings) -> Iterator[TestClient]:
     configured = settings.model_copy(
         update={
             "runtime_poll_seconds": 0.005,
+            "arena_session_limit": 3,
             "gateway_rate_limit_per_minute": 10000,
             "llm_session_call_limit": 1000,
         }
@@ -28,6 +29,7 @@ def manual_client(settings: Settings) -> Iterator[TestClient]:
     configured = settings.model_copy(
         update={
             "runtime_poll_seconds": 0.005,
+            "arena_session_limit": 3,
             "gateway_rate_limit_per_minute": 10000,
             "arena_auto_patch": False,
         }

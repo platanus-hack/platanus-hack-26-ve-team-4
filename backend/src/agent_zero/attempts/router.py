@@ -16,9 +16,18 @@ async def submit(payload: AttemptCreate, session: CurrentSession, core: Core) ->
     return attempt_view(await core.submissions.submit(session.id, payload))
 
 
+@router.get("")
+async def history(session: CurrentSession, core: Core) -> list[dict[str, Any]]:
+    revealed = await core.attempts.revealed()
+    return [
+        attempt_view(attempt, revealed=revealed)
+        for attempt in await core.attempts.for_session(session.id)
+    ]
+
+
 @router.get("/{attempt_id}")
 async def get_attempt(attempt_id: str, session: CurrentSession, core: Core) -> dict[str, Any]:
     attempt = await core.attempts.get(attempt_id)
     if attempt is None or attempt.session_id != session.id:
         raise HTTPException(404, "Intento no encontrado.")
-    return attempt_view(attempt)
+    return attempt_view(attempt, revealed=await core.attempts.revealed())

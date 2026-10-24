@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_zero.routing.models import Route
@@ -29,7 +29,7 @@ class SessionRepository:
             await self._db.scalar(
                 select(ArenaSession.id)
                 .where(
-                    ArenaSession.alias == alias,
+                    func.lower(ArenaSession.alias) == alias.lower(),
                     ArenaSession.id.startswith("sess-"),
                 )
                 .limit(1)

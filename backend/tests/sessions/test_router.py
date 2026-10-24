@@ -17,9 +17,15 @@ def test_create_session_returns_public_projection(client: TestClient) -> None:
         "customer_name",
         "order_ids",
         "objectives",
+        "limits",
     }
     assert "customer_id" not in body
     assert "route" not in body
+    assert body["limits"] == {
+        "attempts_per_minute": 12,
+        "max_messages": 4,
+        "message_max_length": 4000,
+    }
 
 
 def test_create_session_rejects_invalid_alias(client: TestClient) -> None:

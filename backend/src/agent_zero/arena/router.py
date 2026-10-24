@@ -10,4 +10,6 @@ router = APIRouter(prefix="/api/arena", tags=["arena"])
 
 @router.get("/state")
 async def state(core: Core) -> dict[str, Any]:
-    return await ArenaService(core.fleet.database, core.attempts, core.policies).state()
+    return await ArenaService(
+        core.fleet.database, core.attempts, core.policies, core.fleet.settings
+    ).state()

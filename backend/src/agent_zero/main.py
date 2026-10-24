@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agent_zero.arena.core import ProductCore
 from agent_zero.arena.operator_router import router as operator_router
+from agent_zero.arena.reset_router import router as reset_router
 from agent_zero.arena.router import router as arena_router
 from agent_zero.attempts.router import router as attempts_router
 from agent_zero.config import Settings
@@ -79,6 +80,7 @@ def create_app(
     app.include_router(sessions_router)
     app.include_router(attempts_router)
     app.include_router(arena_router)
+    app.include_router(reset_router)
     app.include_router(operator_router)
     app.include_router(prober_router)
     app.include_router(events_router)
