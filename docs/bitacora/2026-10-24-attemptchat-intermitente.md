@@ -2,8 +2,8 @@
 fecha: 2026-10-24
 autor: "@franbastardo"
 rama: fix/attemptchat-intermitente
-pr: pendiente
-estado: en revisión
+pr: 46
+estado: integrado
 dominios: [frontend, attempts]
 requisitos: []
 ---
