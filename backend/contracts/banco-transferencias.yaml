@@ -32,6 +32,10 @@ invariants:
     description: Ninguna transferencia del asistente supera 500 USD.
     tools: [transferir]
     never: {kind: exceeds, argument: monto, limit: 500}
+  - id: tope-diario
+    description: El asistente no mueve más de 1000 USD por día.
+    tools: [transferir]
+    never: {kind: window_exceeds, argument: monto, limit: 1000, window_seconds: 86400}
   - id: beneficiarios-registrados
     description: El dinero solo va a beneficiarios dados de alta por el titular.
     tools: [transferir]

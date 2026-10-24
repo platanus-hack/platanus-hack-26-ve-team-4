@@ -1,5 +1,7 @@
 import uuid
+from dataclasses import replace
 
+from agent_zero.arena.transactions import serialize_write
 from agent_zero.contract.conditions import CallFacts, NotOwner
 from agent_zero.contract.provenance import label_arguments
 from agent_zero.contract.schema import DomainContract
@@ -8,6 +10,7 @@ from agent_zero.guard.facts import dump
 from agent_zero.guard.models import GuardCallRecord, GuardPolicyRecord
 from agent_zero.guard.repository import IncompatiblePolicyError, active_policy, rules_of
 from agent_zero.guard.schemas import CheckRequest, Decision
+from agent_zero.guard.window_totals import window_conditions, window_totals
 from agent_zero.shared.database import Database
 
 
@@ -30,9 +33,22 @@ class GuardCheckService:
             request.tool, request.arguments, request.subject, provenance, request.owners
         )
         call_id = f"gc-{uuid.uuid4().hex[:20]}"
-        async with self._database.sessions() as db, db.begin():
+        async with self._database.sessions() as db:
+            await serialize_write(db)
             record = await active_policy(db, contract.contract_id)
             version = record.version if record else 0
+            try:
+                known = rules_of(contract, record)
+            except IncompatiblePolicyError:
+                known = []
+            totals = await window_totals(
+                db,
+                contract.contract_id,
+                request.subject,
+                request.tool,
+                window_conditions(contract, request.tool, known),
+            )
+            facts = replace(facts, totals=totals)
             rule_id, reason = self._decide(contract, request, record, facts)
             db.add(
                 GuardCallRecord(
@@ -46,6 +62,7 @@ class GuardCheckService:
                     policy_version=version,
                 )
             )
+            await db.commit()
         return Decision(
             call_id=call_id,
             allowed=rule_id is None,

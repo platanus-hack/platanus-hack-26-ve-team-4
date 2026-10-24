@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import replace
 from typing import Any
 
 from agent_zero.arena.transactions import serialize_write
@@ -38,6 +39,7 @@ class GuardLearningService:
                 stored.subject,
                 stored.provenance,
                 {**stored.owners, **report.owners},
+                stored.totals,
             )
             violated = contract.violations(facts)
             finding_id = f"gf-{uuid.uuid4().hex[:20]}" if violated else None
@@ -69,6 +71,10 @@ class GuardLearningService:
     async def learn_from_blocked(
         self, contract: DomainContract, call_id: str, facts: CallFacts, version: int
     ) -> dict[str, Any]:
+        async with self._database.sessions() as db:
+            call = await db.get(GuardCallRecord, call_id)
+        if call is not None:
+            facts = replace(facts, totals=load(call.facts).totals)
         violated = contract.violations(facts)
         finding_id = f"gf-{uuid.uuid4().hex[:20]}"
         async with self._database.sessions() as db, db.begin():

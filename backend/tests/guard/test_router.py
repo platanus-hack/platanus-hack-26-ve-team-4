@@ -189,3 +189,38 @@ def test_manual_contracts_wait_for_an_operator(settings: Settings, tmp_path: Pat
         url = f"/api/guard/yummy-soporte/policies/{version}/activate"
         assert client.post(url, headers=OPERATOR).json()["status"] == "active"
         assert check(client, "yummy-soporte", attack)["allowed"] is False
+
+
+def _transfer(amount: int, subject: str = SUBJECT) -> dict[str, object]:
+    return {
+        "subject": subject,
+        "tool": "transferir",
+        "arguments": {
+            "cuenta": "CTA-1",
+            "destino": "BEN-ALQUILER",
+            "monto": amount,
+            "concepto": "pago",
+        },
+        "provenance": {"cuenta": "user", "destino": "user", "monto": "user"},
+        "owners": {"cuenta": subject},
+    }
+
+
+def test_the_daily_cap_blocks_the_third_transfer_and_learns_a_rule_that_passes_the_gate(
+    settings: Settings,
+) -> None:
+    bank = "banco-transferencias"
+    with guard_client(settings) as client:
+        assert check(client, bank, _transfer(450))["allowed"]
+        assert check(client, bank, _transfer(450))["allowed"]
+        third = check(client, bank, _transfer(450))
+        assert third["allowed"] is False
+        assert third["rule_id"] == "invariant:tope-diario"
+        policy = third["learned"]
+        assert policy["status"] == "active"
+        assert policy["report"]["gate"]["accepted"] is True
+        assert "monto acumulado en 24 h > 1000" in policy["rules"][0]["text"]
+        again = check(client, bank, _transfer(450))
+        assert again["allowed"] is False
+        assert not again["rule_id"].startswith("invariant:")
+        assert check(client, bank, _transfer(450, "bruno"))["allowed"]
