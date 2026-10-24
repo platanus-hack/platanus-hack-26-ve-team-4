@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -71,7 +72,8 @@ def _seed(client: TestClient, plan: list[tuple[int, AttemptOutcome | None, str, 
                         status="submitted",
                         customer_id=customer,
                         case_json=case.model_dump(mode="json"),
-                        digest=f"{digest}-{index}",
+                        # Único por caso y del largo de la columna (64), que Postgres sí impone.
+                        digest=hashlib.sha256(f"{digest}-{index}".encode()).hexdigest(),
                         session_id="sess-x",
                         attempt_id=f"attempt-{index}",
                         error="",
