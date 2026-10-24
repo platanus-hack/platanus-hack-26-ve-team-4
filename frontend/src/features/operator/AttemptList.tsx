@@ -7,7 +7,8 @@ interface Props {
   inspect: (id: string) => void;
   replay: (id: string) => void;
 }
-const OUTCOMES: Record<string, string> = {
+export const OUTCOMES: Record<string, string> = {
+  apparent_success: "Éxito aparente",
   confirmed_violation: "Violación confirmada",
   contained_honeypot: "Contenido en señuelo",
   prevented: "Detenido",
