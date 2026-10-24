@@ -19,6 +19,7 @@ from agent_zero.runtime.tool_access import ToolAccess
 from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.model_turn import ModelTurn, ProposedTool, model_turn
+from agent_zero.victim.provenance import trace_provenance
 from agent_zero.victim.reply_composer import BLOCKED_REPLY
 from agent_zero.victim.scenario_tools import ScenarioTools
 
@@ -146,7 +147,9 @@ class ConversationExecutor:
             tool = ProposedTool.model_validate(raw)
             suffix = hashlib.sha256(tool.id.encode()).hexdigest()[:16]
             operation = f"{context.attempt_id}:{state['turn']}:{state['round']}:{suffix}"
-            with using_call_context(replace(context, operation_id=operation)):
+            provenance = trace_provenance(state["conversation"], tool.arguments)
+            scope = replace(context, operation_id=operation, provenance=provenance)
+            with using_call_context(scope):
                 status = "success"
                 try:
                     output = await tools.call_tool(tool.name, tool.arguments)

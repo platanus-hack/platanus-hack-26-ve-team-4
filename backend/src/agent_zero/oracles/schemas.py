@@ -32,3 +32,4 @@ class ToolEvidence(BaseModel):
     output: dict[str, Any] = Field(default_factory=dict)
     validator: str = ""
     operation_id: str = ""
+    provenance: dict[str, str] = Field(default_factory=dict)

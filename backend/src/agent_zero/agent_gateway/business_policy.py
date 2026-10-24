@@ -16,6 +16,7 @@ class CallContext:
     operation_id: str = ""
     environment_id: str = ""
     campaign_id: str | None = None
+    provenance: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

@@ -34,7 +34,8 @@ class TraceObserver:
                 "environment": context.environment,
                 "session_customer_id": context.session_customer_id,
                 "operation_id": context.operation_id,
-            },
+            }
+            | ({"provenance": dict(context.provenance)} if context.provenance else {}),
         )
         if context.environment == "validation":
             captured = self._validation[context.environment_id]
