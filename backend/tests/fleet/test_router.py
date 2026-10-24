@@ -30,6 +30,8 @@ def test_status_lists_the_victim_handler_and_tools(tmp_path: Path) -> None:
 
     assert status["handlers"] == [
         "arena_attempt",
+        "broad_evaluation",
+        "finding_analysis",
         "prober_campaign",
         "support_conversation",
         "validate_patch",
