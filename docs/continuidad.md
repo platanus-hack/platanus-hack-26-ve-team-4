@@ -29,7 +29,7 @@ La [guía del núcleo](./nucleo.md) explica campañas, repetición, reset y eval
 | Regresión | 860 tests backend aprobados, dos LIVE omitidos; 47 tests frontend, lint/tipado/build correctos. | Corpus del repositorio; no cobertura universal. |
 | Ciclo del producto | Sesión → herramienta → oráculo → hallazgo → validación → activación → repetición/reversión. | Escenario sintético y catálogo finito. |
 | Estado durable | Idempotencia, leases/fencing, outbox, journal de auditoría y reset recuperable. | Garantías específicas probadas; cuotas LLM y algunos locks siguen locales. |
-| Evaluación DEMO | 270 ejecuciones, 90/90 → 0/90 violaciones y 45/45 tareas correctas por versión. | Proveedor determinista `simulated`, sin coste/tokens comerciales medidos. |
+| Evaluación DEMO | 270 ejecuciones, 90/90 → 0/90 violaciones y 45/45 tareas correctas por versión, repetidas con las mismas cifras sobre los fixtures actuales en `63e1096`. | Proveedor determinista `simulated`, sin coste/tokens comerciales medidos. |
 | Ensayo LIVE | 93 llamadas, cinco roles y once controles del ciclo aprobados. | No es la comparación amplia de 270 ejecuciones ni una prueba de carga. |
 | Contenedores y flota | Build de ambas imágenes, smoke completo y recorrido de flota 22/22. | Verificación HTTP/DOM; falta revisión visual y acceso móvil externo. |
 
