@@ -1,7 +1,7 @@
 ---
 fecha: 2026-10-24
 autor: "@franbastardo"
-rama: horda/attemptchat-tests-estables-integracion
+rama: fix/attemptchat-intermitente
 pr: pendiente
 estado: en revisión
 dominios: [frontend, attempts]
@@ -32,12 +32,13 @@ No se usaron temporizadores falsos. Interfieren con `userEvent` y con el `setTim
 
 ## Cómo se verificó
 
-Desde `frontend/`, el 2026-10-24, en la rama integrada (commits `ff4c7b9`, `f88dd85` y `1a975eb`):
+Desde `frontend/`, el 2026-10-24, sobre los commits del workflow `lider-horda` (`ff4c7b9`, `f88dd85` y `1a975eb`; en esta rama, `9b964f4`, `50bd3f4` y `703ee54`):
 
 - Bucle de 15 corridas de `pnpm exec vitest run src/features/participant/AttemptChat.test.tsx`: 15 de 15 en verde, 12 pruebas pasadas en cada una.
 - 6 corridas en paralelo del mismo archivo: 6 de 6 en verde, 12 pruebas pasadas en cada una.
 - `pnpm lint`: Biome revisó 86 archivos sin errores. `pnpm typecheck`: sin errores. `pnpm test`: 21 archivos y 96 pruebas pasadas.
 - `git diff --stat -- src/features/participant/AttemptChat.tsx`: vacío. El componente no cambia.
+- Comprobación independiente fuera del workflow: 10 de 10 corridas del archivo y `pnpm test` con 96 pruebas en verde.
 
 ## Riesgos y efectos en otros frentes
 
