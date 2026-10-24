@@ -26,10 +26,15 @@ def attempt_view(
     attempt: Attempt, *, operator: bool = False, revealed: bool = False
 ) -> dict[str, Any]:
     outcome = attempt.outcome.value if attempt.outcome else None
-    if not operator and not revealed and attempt.outcome in {
-        AttemptOutcome.CONFIRMED_VIOLATION,
-        AttemptOutcome.CONTAINED_HONEYPOT,
-    }:
+    if (
+        not operator
+        and not revealed
+        and attempt.outcome
+        in {
+            AttemptOutcome.CONFIRMED_VIOLATION,
+            AttemptOutcome.CONTAINED_HONEYPOT,
+        }
+    ):
         outcome = "apparent_success"
     result: dict[str, Any] = {
         "id": attempt.id,

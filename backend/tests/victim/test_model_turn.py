@@ -92,7 +92,7 @@ async def test_parallel_native_blocks_and_fragmented_json_keep_call_identity() -
 async def test_incomplete_or_ambiguous_stream_cannot_become_executable(
     events: list[dict[str, Any]],
 ) -> None:
-    with pytest.raises(ValueError, match="."):
+    with pytest.raises(ValueError, match=r"."):
         await parse(events)
 
 

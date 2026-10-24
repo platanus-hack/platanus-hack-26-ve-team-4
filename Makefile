@@ -44,7 +44,7 @@ smoke:
 	./infra/scripts/smoke.sh
 
 smoke-exercise:
-	./infra/scripts/smoke.sh --exercise
+	set -a && . ./.env && set +a && ./infra/scripts/smoke.sh --exercise
 
 ARENA_MODE ?= demo
 ARENA_PORT ?= 8000
