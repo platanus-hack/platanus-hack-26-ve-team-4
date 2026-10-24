@@ -31,6 +31,7 @@ La [guía del núcleo](./nucleo.md) explica campañas, repetición, reset y eval
 | Estado durable | Idempotencia, leases/fencing, outbox, journal de auditoría y reset recuperable. | Garantías específicas probadas; cuotas LLM y algunos locks siguen locales. |
 | Evaluación DEMO | 270 ejecuciones, 90/90 → 0/90 violaciones y 45/45 tareas correctas por versión, repetidas con las mismas cifras sobre los fixtures actuales en `63e1096`. | Proveedor determinista `simulated`, sin coste/tokens comerciales medidos. |
 | Ensayo LIVE | 93 llamadas, cinco roles y once controles del ciclo aprobados. | No es la comparación amplia de 270 ejecuciones ni una prueba de carga. |
+| Evaluación LIVE | 270 ejecuciones con `claude-haiku-5-5`, 59/90 → 0/90 violaciones, 45/45 tareas correctas por versión, cero inconclusos, 766 llamadas y 0,075079 USD medidos, en `aba711e`. | Un modelo, sin semilla; la línea base se reproduce en 18 de 30 casos, no en todos. Variantes reservadas ya publicadas. |
 | Contenedores y flota | Build de ambas imágenes, smoke completo y recorrido de flota 22/22. | Verificación HTTP/DOM; falta revisión visual y acceso móvil externo. |
 
 Artefactos, costes estimados, hashes, primer timeout conservado y procedencia en [evidencias](./pruebas/evidencias.md). La historia se reorganizó antes del primer push; el mapa conserva los commits originales de los informes y equivalentes con el mismo árbol. No editar esos JSON para actualizar un número de versión.
@@ -59,7 +60,7 @@ Los frentes y revisores están en [equipo](./equipo.md) y CODEOWNERS. Confirmar 
 | Escala | Cuotas LLM y limiter persistentes/compartidos; coordinación del ledger. | Reiniciar o añadir un worker no reinicia ni multiplica cupos autorizados. |
 | Datos | Migraciones y procedimiento de backup/restauración. | Actualizar una base anterior y recuperar una copia compatible sin eliminar evidencia. `create_all` no migra columnas. |
 | Operación | UI de archivos de ronda y sus descargas; suscripción explícita a `round_started`. | Misma autorización que API, enlaces al archivo correcto y cambio de ronda sin depender sólo del polling. |
-| Evaluación | Nuevas variantes reservadas y comparación amplia LIVE con presupuesto. | Reportar denominadores, inconclusos, estado limpio, modelos, hashes y coste estimado, sin reutilizar como inéditos los casos publicados. |
+| Evaluación | Nuevas variantes reservadas para una próxima comparación LIVE con presupuesto (la de `aba711e` ya existe). | Reportar denominadores, inconclusos, estado limpio, modelos, hashes y coste estimado, sin reutilizar como inéditos los casos publicados. |
 | Experiencia/capacidad | Revisión visual y prueba de carga acotada. | Verificar móvil/accesibilidad, cola y p95 con tamaño de muestra; no confundir plazas con llamadas simultáneas. |
 
 La selección adaptativa por novedad, un servidor de autorización de operadores y restauración arbitraria de un snapshot no están implementados. No anunciar esas capacidades a partir de nombres de DTO o enums del diseño inicial.

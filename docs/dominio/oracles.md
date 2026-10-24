@@ -71,7 +71,7 @@ uv run pytest tests/arena/test_business_objectives.py tests/arena/test_multiturn
 | Fallo de proveedor no suma una victoria defensiva | [test_admission_and_campaign.py](../../backend/tests/arena/test_admission_and_campaign.py), [test_unavailable_provider.py](../../backend/tests/evals/test_unavailable_provider.py). |
 | 270 ejecuciones con estado y herramientas reales sobre bases limpias | [test_full_evaluation.py](../../backend/tests/evals/test_full_evaluation.py). |
 
-La suite amplia automatizada usa proveedor simulado; “herramientas reales” significa los adaptadores, gateway y SQLite de la aplicación, no pedidos comerciales. La evidencia LIVE y los hashes se consultan en [pruebas](../pruebas/README.md).
+La suite amplia automatizada de los tests usa proveedor simulado (existe además una corrida LIVE exportada); “herramientas reales” significa los adaptadores, gateway y SQLite de la aplicación, no pedidos comerciales. La evidencia LIVE y los hashes se consultan en [pruebas](../pruebas/README.md).
 
 ## Continuar el dominio
 

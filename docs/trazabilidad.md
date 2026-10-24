@@ -40,7 +40,7 @@ El texto de referencia es el desafío del track: una red de agentes instituciona
 
 ## Núcleo del producto
 
-La implementación y los límites vigentes se describen en [núcleo implementado](./nucleo.md) y en [cada dominio](dominio/README.md). Las pruebas automatizadas usan proveedores simulados/controlados. El ensayo LIVE completo está exportado por separado; una comprobación real del ciclo no equivale a una tasa de eficacia amplia frente a un LLM.
+La implementación y los límites vigentes se describen en [núcleo implementado](./nucleo.md) y en [cada dominio](dominio/README.md). Las pruebas automatizadas usan proveedores simulados/controlados. La comparación amplia de 270 ejecuciones existe con proveedor simulado y con `claude-haiku-5-5` (59/90 → 0/90 violaciones, 683 llamadas con coste medido), exportadas por separado; esas tasas valen para este escenario y modelo, no para otros ataques ni modelos. El ensayo LIVE del ciclo es otra evidencia.
 
 | ID | Requisito | Prueba de éxito | Módulo | Estado |
 | --- | --- | --- | --- | --- |
