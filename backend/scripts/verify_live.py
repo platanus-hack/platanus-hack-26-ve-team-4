@@ -97,7 +97,7 @@ def main() -> None:
             )
             export_artifact(artifact, arguments.output)
     print(
-        f"LIVE evidencia: {arguments.output}; coste medido: {artifact.get('known_cost_usd')}",
+        f"LIVE evidencia: {arguments.output}; coste estimado: {artifact.get('known_cost_usd')}",
         flush=True,
     )
     if not artifact["passed"]:

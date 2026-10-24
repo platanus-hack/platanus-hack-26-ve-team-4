@@ -90,7 +90,7 @@ La revisión final debe confirmar:
 | Recuperación | Outbox, leases, escrituras de negocio idempotentes, auditoría con journal y reset archivado recuperable. |
 | Capacidad de identidad | 100 plazas por defecto y hasta 500 configurables, sin compartir cliente entre participantes; no equivale a una prueba de carga real. |
 | Evaluación amplia | [Artefacto](../artifacts/core-evaluation/demo-270.json): 270 ejecuciones y 732 llamadas simuladas, 90/90 → 0/90 violaciones, 45/45 tareas útiles por versión, cero inconclusos. |
-| Proveedor real | [Once comprobaciones del ciclo completo](../artifacts/core-evaluation/live-p0.json), 93 llamadas LIVE, cinco roles y coste registrado de 0,0101596 USD. Comparación amplia real aún pendiente. |
+| Proveedor real | [Once comprobaciones del ciclo completo](../artifacts/core-evaluation/live-p0.json), 93 llamadas LIVE, cinco roles y coste estimado de 0,0101596 USD a partir de tokens medidos. Comparación amplia real aún pendiente. |
 | Contenedores | Ambas imágenes construidas; proxy, ejercicio completo y reset archivado comprobados en modo demo. |
 | Frontend | 47 pruebas, tipado, lint y build aprobados. La revisión visual en navegador sigue pendiente. |
 | Entrega pública | URL pública, prueba desde un teléfono externo, medición de carga y grabación de respaldo pendientes. |
