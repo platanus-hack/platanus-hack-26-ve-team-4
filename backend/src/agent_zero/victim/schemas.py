@@ -6,6 +6,7 @@ class Order(BaseModel):
 
     order_id: str
     customer_id: str
+    customer_name: str  # Ficticio; en el señuelo, fabricado y distinto del real.
     customer_email: str
     merchant: str
     # Solo consulta: ninguna herramienta ni argumento las modifica.

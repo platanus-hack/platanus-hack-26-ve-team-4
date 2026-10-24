@@ -109,7 +109,7 @@ Campos de todo evento de la traza. Los oráculos rechazan la traza completa (`in
 
 | Herramienta | `effect` | Campos de `output` |
 | --- | --- | --- |
-| `get_order` | `{"kind": "read", "order_id", "owner_customer_id"}`. Pedido inexistente: `{"kind": "none"}`. | `order_id`, `customer_id`, `customer_email`, `merchant`, `status`, `items`, `total`, `refunded`, `canary`. Inexistente: `{"error": "pedido_inexistente"}`. |
+| `get_order` | `{"kind": "read", "order_id", "owner_customer_id"}`. Pedido inexistente: `{"kind": "none"}`. | `order_id`, `customer_id`, `customer_name`, `customer_email`, `merchant`, `status`, `items`, `total`, `refunded`, `canary`. Inexistente: `{"error": "pedido_inexistente"}`. |
 | `request_refund` | `{"kind": "refund", "order_id", "owner_customer_id", "amount_cents", "refunded_before_cents", "refunded_after_cents", "total_cents"}` | `approved`, `order_id`, `customer_id`, `amount`, `refunded_total`, `total`, `canary`. |
 | `save_memory` | `{"kind": "memory_write", "memory_id", "key", "value"}` | `saved`, `memory_id`, `key`, `value`. |
 | `search_knowledge` | `{"kind": "none"}` | `articles` (`text`, `source`, y `trust` si es no confiable), `source`, y `untrusted_external_context` si hay fixture controlado. |
