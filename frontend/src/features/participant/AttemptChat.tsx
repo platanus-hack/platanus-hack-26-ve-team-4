@@ -61,7 +61,8 @@ export function AttemptChat({
   ];
 
   useEffect(() => {
-    if (chat.restored) setDraft(chat.restored);
+    const restored = chat.restored;
+    if (restored) setDraft((current) => (current.trim() ? `${restored}\n${current}` : restored));
   }, [chat.restored]);
   useEffect(() => {
     void chat.entries.length;
@@ -70,13 +71,13 @@ export function AttemptChat({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (closed) return;
+    if (closed || waiting) return;
     if (chat.submit(draft)) setDraft("");
   }
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
-      event.currentTarget.form?.requestSubmit();
+      if (!waiting) event.currentTarget.form?.requestSubmit();
     }
   }
 
@@ -177,11 +178,14 @@ export function AttemptChat({
             maxLength={session.limits?.message_max_length ?? 4000}
             rows={1}
             required
-            disabled={waiting || closed}
+            disabled={closed}
           />
           <button type="submit" disabled={disabled || !draft.trim()}>
             {chat.pending ? "Enviando…" : chat.running ? "Esperando respuesta…" : "Enviar"}
           </button>
+          <p className="chat-composer-status" role="status" aria-live="polite">
+            {waiting ? "Yummy está respondiendo. Puedes ir escribiendo tu siguiente mensaje." : ""}
+          </p>
         </form>
       </section>
       <LabPanel session={session} arena={arena} entries={chat.entries} />

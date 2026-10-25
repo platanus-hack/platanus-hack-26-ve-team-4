@@ -206,6 +206,15 @@
   border-color: var(--yummy);
 }
 
+.chat-composer-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+}
+.chat-composer-status:empty {
+  display: none;
+}
+
 .lab-panel {
   padding: 12px 14px;
   background: var(--color-surface);
