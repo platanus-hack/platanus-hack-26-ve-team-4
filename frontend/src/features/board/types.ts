@@ -1,7 +1,8 @@
 // Contrato de GET /api/operator/live v2. Espejo de backend/src/agent_zero/live/models.py.
 // Lo mantiene el líder: las tareas lo importan y no lo editan.
 
-export type SessionKind = "audience" | "swarm" | "prober";
+/** "test" es el chat interno del equipo (alias Interno-): se muestra sin enmascarar y no cuenta en KPI. */
+export type SessionKind = "audience" | "swarm" | "prober" | "test";
 export type KpiScope = "all" | "swarm_prober";
 export type RouteName = "protected" | "honeypot";
 export type AttemptStatus = "queued" | "running" | "evaluated" | "inconclusive";
