@@ -1,23 +1,29 @@
 from collections import Counter, defaultdict
-from collections.abc import Iterable
-from dataclasses import dataclass
-from datetime import datetime
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from statistics import median
 from typing import Any
 
 from sqlalchemy import select
 
 from agent_zero.arena.core import ProductCore
+from agent_zero.arena.models import ArenaState
 from agent_zero.attempts.attempt_query_service import attempt_view
-from agent_zero.attempts.models import Attempt, AttemptOutcome
+from agent_zero.attempts.models import Attempt, AttemptOutcome, AttemptStatus
+from agent_zero.events.models import EventRecord, EventType, Visibility
 from agent_zero.live.models import (
     AttackKpi,
     LeakedKpi,
     LiveAttempt,
     LiveBoard,
+    LiveDenial,
     LiveKpis,
+    LivePatch,
     LiveSession,
+    LiveTechnique,
     PatchesKpi,
+    RouteName,
     SafeSpaceKpi,
     Scope,
     SessionKind,
@@ -27,13 +33,16 @@ from agent_zero.live.models import (
 from agent_zero.llm.gateway import LlmGateway
 from agent_zero.llm.reporting import measured_tokens
 from agent_zero.llm.schemas import CallRecord
+from agent_zero.policies.validator_catalog import OBJECTIVE_CONTROLS
+from agent_zero.prober.campaign_models import CampaignCaseRecord
 from agent_zero.routing.models import Route
 from agent_zero.sessions.models import ArenaSession
+from agent_zero.sessions.reserved_alias import SWARM_PREFIX
 from agent_zero.shared.clock import utc_now
 
 PROBER_ALIAS = "Prober"
-SWARM_PREFIX = "Agente-"
 MAX_ATTEMPTS_PER_SESSION = 30
+TERMINAL = {AttemptStatus.EVALUATED, AttemptStatus.INCONCLUSIVE}
 SCOPE_LABELS: dict[Scope, str] = {
     "all": "Toda la ronda",
     "swarm_prober": "Solo enjambre y Prober hasta revelar",
@@ -46,31 +55,201 @@ def session_kind(session: ArenaSession) -> SessionKind | None:
     """Clasifica una sesión; `None` excluye las repeticiones del operador."""
     if session.id.startswith("internal-"):
         return "prober" if session.alias == PROBER_ALIAS else None
+    # El servidor reserva el prefijo (`sessions/reserved_alias.py`): el público no puede usarlo.
     return "swarm" if session.alias.startswith(SWARM_PREFIX) else "audience"
 
 
-def _concealed(kind: SessionKind, revealed: bool) -> bool:
-    return kind == "audience" and not revealed
+def _aware(value: datetime) -> datetime:
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
-def _live_attempt(attempt: Attempt, kind: SessionKind, revealed: bool) -> LiveAttempt:
-    concealed = _concealed(kind, revealed)
-    # `attempt_view` ya redacta referencias y aplica la regla pública de resultado aparente.
-    view = attempt_view(attempt, operator=not concealed, revealed=revealed)
-    return LiveAttempt(
-        id=view["id"],
-        status=view["status"],
-        outcome=view["outcome"],
-        route=None if concealed else attempt.route.value,
-        messages=list(view["messages"]),
-        reply=view["reply"],
-        created_at=view["created_at"],
-    )
+def _parse(value: str) -> datetime:
+    return _aware(datetime.fromisoformat(value))
+
+
+@dataclass
+class BoardGroup:
+    """Una "sesión" del tablero: una sesión real, o una campaña completa del Prober."""
+
+    key: str
+    kind: SessionKind
+    alias: str
+    sessions: list[ArenaSession] = field(default_factory=list)
+    attempts: list[Attempt] = field(default_factory=list)
+    revealed: bool = False
+
+    @property
+    def concealed(self) -> bool:
+        return self.kind == "audience" and not self.revealed
+
+    @property
+    def activity(self) -> datetime:
+        return max(_aware(a.updated_at) for a in self.attempts)
+
+    @property
+    def route(self) -> Route:
+        honeypot = any(s.route is Route.HONEYPOT for s in self.sessions)
+        return Route.HONEYPOT if honeypot else Route.PROTECTED
+
+    @property
+    def finished(self) -> list[Attempt]:
+        return [a for a in self.attempts if a.status in TERMINAL]
+
+    def sent(self) -> list[tuple[int, Attempt]]:
+        numbered = list(enumerate(self.attempts, start=1))
+        return numbered[-MAX_ATTEMPTS_PER_SESSION:]
+
+
+def board_groups(
+    attempts: Iterable[Attempt], sessions: Iterable[ArenaSession], *, revealed: bool
+) -> list[BoardGroup]:
+    """Agrupa los intentos por sesión del tablero, de la más reciente a la más antigua.
+
+    Cada caso del Prober abre su propia sesión interna; se agrupan por `campaign_id`.
+    Solo cuentan las sesiones con al menos un intento; las repeticiones quedan fuera.
+    """
+    by_id = {s.id: s for s in sessions}
+    groups: dict[str, BoardGroup] = {}
+    ordered = sorted(attempts, key=lambda a: (_aware(a.created_at), a.id))
+    for attempt in ordered:
+        session = by_id.get(attempt.session_id)
+        kind = session_kind(session) if session else None
+        if session is None or kind is None:
+            continue
+        key = attempt.campaign_id if kind == "prober" and attempt.campaign_id else session.id
+        group = groups.get(key)
+        if group is None:
+            alias = f"{PROBER_ALIAS} · {key[-4:]}" if kind == "prober" else session.alias
+            group = groups[key] = BoardGroup(key, kind, alias, revealed=revealed)
+        if session not in group.sessions:
+            group.sessions.append(session)
+        group.attempts.append(attempt)
+    return sorted(groups.values(), key=lambda g: g.activity, reverse=True)
 
 
 def _violated_objectives(attempt: Attempt) -> list[str]:
     verdicts = (attempt.assessment or {}).get("verdicts", [])
     return [str(v["objective_id"]) for v in verdicts if v.get("violated")]
+
+
+def _effective_policies(policies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Versiones que llegaron a regir: activadas sobre la base y no revertidas."""
+    return [
+        p
+        for p in policies
+        if p["version"] > 0 and p.get("activated_at") and p.get("status") != "rolled_back"
+    ]
+
+
+@dataclass(frozen=True)
+class PatchIndex:
+    """Para cada intento, las activaciones (versión, momento) de las políticas que lo cubren."""
+
+    by_attempt: Mapping[str, list[tuple[int, datetime]]]
+
+    @classmethod
+    def build(cls, findings: list[dict[str, Any]], policies: list[dict[str, Any]]) -> "PatchIndex":
+        by_finding: dict[str, list[tuple[int, datetime]]] = defaultdict(list)
+        for policy in _effective_policies(policies):
+            at = _parse(policy["activated_at"])
+            for finding_id in policy.get("finding_ids", []):
+                by_finding[finding_id].append((policy["version"], at))
+        by_attempt: dict[str, list[tuple[int, datetime]]] = defaultdict(list)
+        for finding in findings:
+            for attempt_id in finding.get("attempt_ids", []):
+                by_attempt[attempt_id].extend(by_finding.get(finding["id"], []))
+        return cls(by_attempt)
+
+    def patched_by(self, attempt: Attempt) -> LivePatch | None:
+        """El primer parche posterior a la violación que rige sobre una versión más nueva.
+
+        Un hallazgo reabierto acumula intentos posteriores al parche: esos no quedan "parcheados".
+        """
+        if attempt.outcome is not AttemptOutcome.CONFIRMED_VIOLATION:
+            return None
+        closed = _aware(attempt.updated_at)
+        candidates = [
+            (at, version)
+            for version, at in self.by_attempt.get(attempt.id, [])
+            if version > attempt.policy_version and at >= closed
+        ]
+        if not candidates:
+            return None
+        at, version = min(candidates)
+        return LivePatch(version=version, seconds_after=round((at - closed).total_seconds(), 3))
+
+
+@dataclass(frozen=True)
+class BoardData:
+    attempts: list[Attempt]
+    sessions: list[ArenaSession]
+    policies: list[dict[str, Any]]
+    findings: list[dict[str, Any]]
+    records: Iterable[CallRecord]
+    denials: Mapping[str, list[LiveDenial]] = field(default_factory=dict)
+    techniques: Mapping[str, LiveTechnique] = field(default_factory=dict)
+
+
+def _live_attempt(
+    number: int, attempt: Attempt, group: BoardGroup, data: BoardData, patches: PatchIndex
+) -> LiveAttempt:
+    common: dict[str, Any] = {
+        "id": attempt.id,
+        "number": number,
+        "status": attempt.status.value,
+        "policy_version": attempt.policy_version,
+        "messages": list(attempt.messages),
+        "created_at": _aware(attempt.created_at).isoformat(),
+        "updated_at": _aware(attempt.updated_at).isoformat(),
+    }
+    if group.concealed:
+        # Público antes de revelar: ni desenlace, ni ruta, ni respuesta viajan en la respuesta.
+        return LiveAttempt(
+            **common,
+            outcome=None,
+            route=None,
+            reply="",
+            denials=[],
+            violated_objectives=[],
+            patched_by=None,
+            technique=None,
+        )
+    view = attempt_view(attempt, operator=True)
+    route: RouteName = "honeypot" if attempt.route is Route.HONEYPOT else "protected"
+    return LiveAttempt(
+        **common,
+        outcome=view["outcome"],
+        route=route,
+        reply=view["reply"],
+        denials=list(data.denials.get(attempt.id, [])),
+        violated_objectives=_violated_objectives(attempt),
+        patched_by=patches.patched_by(attempt),
+        technique=data.techniques.get(attempt.id),
+    )
+
+
+def _count(attempts: Iterable[Attempt], outcome: AttemptOutcome) -> int:
+    return sum(a.outcome is outcome for a in attempts)
+
+
+def _live_session(group: BoardGroup, data: BoardData, patches: PatchIndex) -> LiveSession:
+    finished = group.finished
+    concealed = group.concealed
+    route: RouteName = "honeypot" if group.route is Route.HONEYPOT else "protected"
+    return LiveSession(
+        session_id=group.key,
+        alias=group.alias,
+        kind=group.kind,
+        concealed=concealed,
+        route=None if concealed else route,
+        customer_id=group.attempts[-1].customer_id,
+        last_activity=group.activity.isoformat(),
+        attempt_total=len(group.attempts),
+        contained_n=None if concealed else _count(finished, AttemptOutcome.CONTAINED_HONEYPOT),
+        prevented_n=None if concealed else _count(finished, AttemptOutcome.PREVENTED),
+        leaked_n=None if concealed else _count(finished, AttemptOutcome.CONFIRMED_VIOLATION),
+        attempts=[_live_attempt(n, a, group, data, patches) for n, a in group.sent()],
+    )
 
 
 def _token_part(records: list[CallRecord]) -> TokenPart:
@@ -101,111 +280,128 @@ def _tokens_kpi(
     )
 
 
-def _patches_kpi(policies: list[dict[str, Any]], findings: list[dict[str, Any]]) -> PatchesKpi:
-    created = {f["id"]: datetime.fromisoformat(f["created_at"]) for f in findings}
-    activated = [p for p in policies if p["version"] > 0 and p["activated_at"]]
+def _patches_kpi(
+    policies: list[dict[str, Any]], findings: list[dict[str, Any]], scoped: set[str]
+) -> PatchesKpi:
+    """Parches sobre los hallazgos con alcance: el Público sin revelar no mueve la cifra."""
+    visible = [f for f in findings if scoped.intersection(f.get("attempt_ids", []))]
+    effective = _effective_policies(policies)
     seconds: list[float] = []
-    for policy in activated:
-        at = datetime.fromisoformat(policy["activated_at"])
-        seconds.extend(
-            max(0.0, (at - created[finding_id]).total_seconds())
-            for finding_id in policy["finding_ids"]
-            if finding_id in created
-        )
+    covering: set[int] = set()
+    for finding in visible:
+        activations = [
+            (_parse(p["activated_at"]), p["version"])
+            for p in effective
+            if finding["id"] in p.get("finding_ids", [])
+        ]
+        if not activations:
+            continue
+        at, version = min(activations)
+        covering.add(version)
+        seconds.append(max(0.0, (at - _parse(finding["created_at"])).total_seconds()))
     current = next((p["version"] for p in policies if p["status"] == "active"), 0)
     return PatchesKpi(
-        n=len(activated),
-        activated=len(activated),
+        n=len(covering),
+        activated=len(covering),
         current_version=current,
         median_seconds_to_patch=round(median(seconds), 3) if seconds else None,
         findings_covered=len(seconds),
-        source="Versiones de política activadas sobre la base y hallazgos que cubren.",
+        findings_total=len(visible),
+        source="Versiones de política activadas (sin revertir) que cubren hallazgos con alcance; "
+        "mediana desde la creación del hallazgo.",
     )
 
 
-@dataclass(frozen=True)
-class BoardData:
-    attempts: list[Attempt]
-    sessions: list[ArenaSession]
-    policies: list[dict[str, Any]]
-    findings: list[dict[str, Any]]
-    records: Iterable[CallRecord]
-
-
-def build_board(
-    data: BoardData, *, revealed: bool, llm_mode: str, limit: int, now: datetime | None = None
+def build_board(  # noqa: PLR0913
+    data: BoardData,
+    *,
+    revealed: bool,
+    llm_mode: str,
+    limit: int,
+    accepting: bool = True,
+    now: datetime | None = None,
 ) -> LiveBoard:
-    attempts, sessions = data.attempts, data.sessions
-    kinds = {s.id: k for s in sessions if (k := session_kind(s)) is not None}
-    by_id = {s.id: s for s in sessions}
-    by_session: dict[str, list[Attempt]] = defaultdict(list)
-    for attempt in attempts:
-        if attempt.session_id in kinds:
-            by_session[attempt.session_id].append(attempt)
-
-    def activity(session_id: str) -> datetime:
-        return max(a.updated_at for a in by_session[session_id])
-
-    recent = sorted(by_session, key=activity, reverse=True)[:limit]
-    live_sessions = [
-        LiveSession(
-            session_id=sid,
-            alias=by_id[sid].alias,
-            kind=kinds[sid],
-            route=None if _concealed(kinds[sid], revealed) else by_id[sid].route.value,
-            customer_id=by_id[sid].customer_id,
-            last_activity=activity(sid).isoformat(),
-            attempt_total=len(by_session[sid]),
-            attempts=[
-                _live_attempt(a, kinds[sid], revealed)
-                for a in by_session[sid][-MAX_ATTEMPTS_PER_SESSION:]
-            ],
-        )
-        for sid in recent
-    ]
+    groups = board_groups(data.attempts, data.sessions, revealed=revealed)
+    patches = PatchIndex.build(data.findings, data.policies)
+    live_sessions = [_live_session(g, data, patches) for g in groups[:limit]]
 
     scope: Scope = "all" if revealed else "swarm_prober"
-    in_scope = {sid for sid, kind in kinds.items() if revealed or kind != "audience"}
-    scoped = [a for a in attempts if a.session_id in in_scope]
-    counts = Counter(kinds[a.session_id] for a in attempts if a.session_id in kinds)
+    scoped_groups = [g for g in groups if not g.concealed]
+    finished = [a for g in groups for a in g.finished]
+    scoped = [a for g in scoped_groups for a in g.finished]
+    counts = Counter(g.kind for g in groups for _ in g.finished)
     leaked = [a for a in scoped if a.outcome is AttemptOutcome.CONFIRMED_VIOLATION]
-    campaigns = {a.campaign_id for a in attempts if a.campaign_id and a.session_id in kinds}
+    by_objective = dict.fromkeys(OBJECTIVE_CONTROLS, 0)
+    for objective in (o for a in leaked for o in _violated_objectives(a)):
+        by_objective[objective] = by_objective.get(objective, 0) + 1
+    diverted = [g for g in scoped_groups if g.route is Route.HONEYPOT]
+    campaigns = {
+        a.campaign_id for g in groups if g.kind == "prober" for a in g.attempts if a.campaign_id
+    }
+    decoy_sessions = {s.id for g in scoped_groups for s in g.sessions}
+    scoped_ids = {a.id for g in scoped_groups for a in g.attempts}
 
     kpis = LiveKpis(
         attacks=AttackKpi(
-            n=sum(counts.values()),
+            n=len(finished),
             audience=counts["audience"],
             swarm=counts["swarm"],
             prober=counts["prober"],
-            source="Intentos de la ronda; excluye repeticiones del operador.",
+            in_flight=sum(len(g.attempts) - len(g.finished) for g in groups),
+            source="Intentos terminados de la ronda; excluye repeticiones del operador.",
         ),
         safe_space=SafeSpaceKpi(
-            n=len(in_scope),
-            diverted_sessions=sum(by_id[sid].route is Route.HONEYPOT for sid in in_scope),
-            contained_attempts=sum(a.outcome is AttemptOutcome.CONTAINED_HONEYPOT for a in scoped),
+            n=len(scoped_groups),
+            safe_sessions=sum(
+                any(a.outcome is AttemptOutcome.CONTAINED_HONEYPOT for a in g.finished)
+                for g in diverted
+            ),
+            diverted_sessions=len(diverted),
+            contained_attempts=_count(scoped, AttemptOutcome.CONTAINED_HONEYPOT),
             scope=scope,
             label=SCOPE_LABELS[scope],
-            source="Sesiones con ruta honeypot sobre las sesiones con alcance.",
+            source="Sesiones en ruta señuelo con al menos un intento contenido, sobre las "
+            "sesiones con alcance.",
         ),
         leaked=LeakedKpi(
             n=len(scoped),
             leaked=len(leaked),
-            by_objective=dict(Counter(o for a in leaked for o in _violated_objectives(a))),
+            by_objective=by_objective,
+            objective_sum=sum(by_objective.values()),
             scope=scope,
             label=SCOPE_LABELS[scope],
-            source="Intentos confirmed_violation sobre los intentos con alcance.",
+            source="Intentos confirmed_violation sobre los intentos terminados con alcance.",
         ),
-        attacker_tokens=_tokens_kpi(data.records, campaigns, in_scope, llm_mode),
-        patches=_patches_kpi(data.policies, data.findings),
+        attacker_tokens=_tokens_kpi(data.records, campaigns, decoy_sessions, llm_mode),
+        patches=_patches_kpi(data.policies, data.findings, scoped_ids),
     )
     return LiveBoard(
         revealed=revealed,
+        accepting=accepting,
         llm_mode=llm_mode,
         policy_version=kpis.patches.current_version,
+        sessions_total=len(groups),
         sessions=live_sessions,
         kpis=kpis,
         generated_at=(now or utc_now()).isoformat(),
     )
+
+
+def _denial(data: dict[str, Any]) -> LiveDenial:
+    validator = data.get("validator")
+    return LiveDenial(
+        tool=str(data.get("tool", "")),
+        reason=str(data.get("reason", "")),
+        validator=validator if isinstance(validator, str) else None,
+    )
+
+
+def _technique(case: dict[str, Any]) -> LiveTechnique | None:
+    family = case.get("family")
+    if not isinstance(family, str):
+        return None
+    mutator = case.get("mutator")
+    return LiveTechnique(family=family, mutator=mutator if isinstance(mutator, str) else None)
 
 
 class LiveBoardService:
@@ -215,18 +411,51 @@ class LiveBoardService:
 
     async def board(self, limit: int) -> LiveBoard:
         core = self._core
+        revealed = await core.attempts.revealed()
+        attempts = await core.attempts.all()
         async with core.fleet.database.sessions() as db:
             sessions = list(await db.scalars(select(ArenaSession)))
+            state = await db.get(ArenaState, 1)
+            groups = board_groups(attempts, sessions, revealed=revealed)[:limit]
+            shown = [g for g in groups if not g.concealed]
+            visible = [a.id for g in shown for _, a in g.sent()]
+            probed = [a.id for g in shown if g.kind == "prober" for _, a in g.sent()]
+            denials: dict[str, list[LiveDenial]] = defaultdict(list)
+            if visible:
+                rows = await db.scalars(
+                    select(EventRecord)
+                    .where(
+                        EventRecord.type == EventType.TOOL_DENIED,
+                        EventRecord.visibility == Visibility.OPERATOR,
+                        EventRecord.attempt_id.in_(visible),
+                    )
+                    .order_by(EventRecord.id)
+                )
+                for row in rows:
+                    if row.attempt_id:
+                        denials[row.attempt_id].append(_denial(row.data))
+            techniques: dict[str, LiveTechnique] = {}
+            if probed:
+                cases = await db.scalars(
+                    select(CampaignCaseRecord).where(CampaignCaseRecord.attempt_id.in_(probed))
+                )
+                for case in cases:
+                    technique = _technique(case.case_json)
+                    if case.attempt_id and technique:
+                        techniques[case.attempt_id] = technique
         data = BoardData(
-            attempts=await core.attempts.all(),
+            attempts=attempts,
             sessions=sessions,
             policies=await core.policies.all(),
             findings=await core.findings.all(),
             records=self._llm.ledger.records(),
+            denials=denials,
+            techniques=techniques,
         )
         return build_board(
             data,
-            revealed=await core.attempts.revealed(),
+            revealed=revealed,
             llm_mode=self._llm.mode.value,
             limit=limit,
+            accepting=state.accepting if state is not None else True,
         )

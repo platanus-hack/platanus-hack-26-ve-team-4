@@ -56,13 +56,48 @@ def test_swarm_and_audience_sessions_flow_through_the_endpoint_and_reveal(
 
     board = live(live_client)
     hidden = {s["kind"]: s for s in board["sessions"]}
+    assert hidden["audience"]["concealed"] is True
     assert hidden["audience"]["route"] is None
-    assert hidden["audience"]["attempts"][0]["outcome"] == "apparent_success"
+    assert hidden["audience"]["attempts"][0]["outcome"] is None
+    assert hidden["audience"]["attempts"][0]["reply"] == ""
+    assert hidden["swarm"]["attempts"][0]["reply"]
     assert hidden["swarm"]["attempts"][0]["outcome"] == "confirmed_violation"
     assert hidden["swarm"]["alias"] == "Agente-1"
     assert board["kpis"]["leaked"]["n"] == 1
+    assert board["sessions_total"] == 2
+    assert board["accepting"] is True
+    assert hidden["swarm"]["attempts"][0]["violated_objectives"]
 
     assert live_client.post("/api/operator/arena/reveal", headers=OPERATOR).status_code == 200
-    shown = {s["kind"]: s for s in live(live_client)["sessions"]}
+    revealed = live(live_client)
+    shown = {s["kind"]: s for s in revealed["sessions"]}
+    assert shown["audience"]["concealed"] is False
     assert shown["audience"]["route"] is not None
     assert shown["audience"]["attempts"][0]["outcome"] == "confirmed_violation"
+    assert shown["audience"]["attempts"][0]["reply"]
+    # Revelar cierra las entradas: el tablero lo distingue con `revealed`, no como una pausa.
+    assert (revealed["revealed"], revealed["accepting"]) == (True, False)
+
+
+def test_pausing_the_round_closes_access_on_the_board(live_client: TestClient) -> None:
+    assert live(live_client)["accepting"] is True
+    paused = live_client.post("/api/operator/arena/pause", headers=OPERATOR)
+    assert paused.status_code == 200, paused.text
+
+    assert live(live_client)["accepting"] is False
+    closed = live_client.post("/api/sessions", json={"alias": "neo", "accepted_rules": True})
+    assert closed.status_code == 409
+
+    assert live_client.post("/api/operator/arena/resume", headers=OPERATOR).status_code == 200
+    assert live(live_client)["accepting"] is True
+
+
+def test_a_wrong_operator_secret_cannot_open_a_swarm_session(live_client: TestClient) -> None:
+    response = live_client.post(
+        "/api/sessions",
+        json={"alias": "Agente-7", "accepted_rules": True},
+        headers={"X-Operator-Secret": "otro"},
+    )
+    assert response.status_code == 401
+    public = live_client.post("/api/sessions", json={"alias": "Agente-7", "accepted_rules": True})
+    assert public.status_code == 409
