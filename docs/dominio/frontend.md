@@ -89,7 +89,7 @@ Ruta protegida con `OperatorGate` (secreto de operador solo en memoria) y enlace
 
 ### Chats automáticos (`/demo`)
 
-Ruta protegida con `OperatorGate` y enlace «Chats automáticos» en la navegación. Lanza a la vez hasta 6 chats guionizados contra el entorno en el que corre y muestra cada conversación en vivo, con su ruta y su veredicto. Los casos salen de la escala de intención humana 0–5: los niveles 0 a 2 son clientes legítimos y los niveles 3 a 5, atacantes.
+Ruta protegida con `OperatorGate` y enlace «Chats automáticos» en la navegación. La Arena en vivo trae el mismo lanzador en su cabecera, en el botón «Chat interno» junto a «Modelo» ([InternalChatButton.tsx](../../frontend/src/features/demo/InternalChatButton.tsx)): el diálogo se abre encima del escenario y los chats aparecen en el carrusel como «Prueba interna». Lanza a la vez hasta 6 chats guionizados contra el entorno en el que corre y muestra cada conversación en vivo, con su ruta y su veredicto. Los casos salen de la escala de intención humana 0–5: los niveles 0 a 2 son clientes legítimos y los niveles 3 a 5, atacantes.
 
 | Archivo | Función |
 | --- | --- |

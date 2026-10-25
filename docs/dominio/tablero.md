@@ -151,7 +151,8 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 - **Cabecera.** Lleva:
   - La marca.
   - La píldora de estado: «En vivo», «Acceso cerrado» o «Ronda revelada».
-  - «Mostrando 3 de 8 chats · N sesiones».
+  - «3 de 8 chats · N sesiones».
+  - Botón «Chat interno», junto a «Modelo»: abre el diálogo de los chats automáticos y los lanza a la vez desde la Arena (ver [Frontend](./frontend.md)).
   - El modelo y el recuadro de revelación.
   - El QR (`JoinQr`).
   - «Cerrar acceso» o «Reabrir acceso», y «Salir».

@@ -65,3 +65,10 @@ Criterio de los 6 recomendados:
 ## Pendiente
 
 - Decidir si el bloqueo de Armor suma puntos de riesgo en vez de desviar al instante. Tocaría `routing/route_decision_service.py` y las pruebas que esperan el desvío con un solo mensaje.
+
+## Adenda: botón «Chat interno» en la Arena en vivo
+
+- **Qué cambió.** La cabecera de la Arena en vivo trae el botón «Chat interno», junto a la píldora «Modelo» (`demo/InternalChatButton.tsx`). Abre el mismo diálogo encima del escenario, con un portal a `body` y `z-index` por encima de la Arena. Los chats arrancan a la vez y entran al carrusel como «Prueba interna». Mientras corren, el botón pasa a «Detener chat interno (n)».
+- **Espacio en la cabecera.** La píldora pasó de «Mostrando 3 de 8 chats · N sesiones» a «3 de 8 chats · N sesiones». El espacio entre elementos bajó de 12 a 6 px. Así el botón cabe en la fila de 1856 px sin recortar «Público sin ruta ni violaciones»: se midió en Chrome, con `scrollWidth` igual a `clientWidth` y el subtítulo sin desbordar.
+- **Verificación.** Biome sin hallazgos (161 archivos), `tsc -b` sin errores y Vitest con 47 archivos y 230 pruebas en verde.
+- **Límite.** La Arena muestra 3 chats a la vez de un carrusel de 8 (`slots.ts`). Con 6 chats internos, la mitad queda fuera de pantalla hasta que se navega el carrusel.
