@@ -1,9 +1,9 @@
 ---
 fecha: 2026-10-24
-autor: "@usuario"
-rama: worktree-agent-a039333f4df15144b
-pr: pendiente
-estado: en revisión
+autor: "@CarSanoja"
+rama: main
+pr: ninguno  # push directo a main
+estado: integrado
 dominios: [infra]
 requisitos: []
 ---
