@@ -5,7 +5,7 @@ Estado: implementado. Es la vista que se proyecta durante la demo, en `/arena`, 
 - Un carrusel de 8 chats con 3 visibles.
 - La barra de navegación.
 - Cinco KPI.
-- El Público enmascarado mientras la ronda no se revela.
+- Todo visible en vivo desde el primer intento, también el Público, y un Marcador provisional.
 
 Solo agrega datos que ya existen (intentos, sesiones, eventos, políticas, hallazgos, casos de campaña y el ledger de llamadas LLM). La única acción que ejecuta es «Cerrar acceso», que pausa y reanuda la ronda con el endpoint existente.
 
@@ -32,13 +32,13 @@ Reutiliza `attempt_view` para redactar referencias de la respuesta, más `Policy
 | `audience` | Sesión `sess-…` cuyo alias no empieza por `Agente-` ni `Interno-`. | «Público». |
 | `swarm` | Sesión `sess-…` con alias `Agente-…`. | «Agente simulado», siempre. |
 | `prober` | Sesiones `internal-…` con alias `Prober`. | «Prober · xxxx». Cada caso de campaña abre su propia sesión interna, y el tablero las agrupa en una sola por `campaign_id`. Se muestra con los últimos 4 caracteres de la campaña. |
-| `test` | Alias que empieza con `Interno-` (reservado: solo se crea con el secreto de operador, desde «Chat de prueba» en Operación). | «Prueba interna». Se muestra sin enmascarar y no cuenta en las KPI, en `sessions_total` ni en la clasificación pública. |
+| `test` | Alias que empieza con `Interno-` (reservado: solo se crea con el secreto de operador, desde «Chat de prueba» en Operación). | «Prueba interna». No cuenta en las KPI, en `sessions_total` ni en la clasificación pública. |
 
 Una «sesión del tablero» es una sesión con al menos un intento. Las sesiones `internal-…` con alias «Repetición» (repeticiones del operador) se excluyen de las sesiones y de todas las KPI. `sessions_total` es el número de sesiones del tablero, con el Prober ya agrupado.
 
 ### Prefijo reservado del enjambre
 
-`POST /api/sessions` rechaza con 409 cualquier alias que empiece por `Agente-`, salvo que la petición traiga `X-Operator-Secret`. La comparación ignora mayúsculas y espacios iniciales, y se aplica al alias recibido y también al alias ya redactado por Armor. Un secreto incorrecto responde 401. Por eso nadie del público puede hacerse pasar por el enjambre ni librarse del enmascarado. `Agentes` o `Agente 1` (sin guion) siguen permitidos.
+`POST /api/sessions` rechaza con 409 cualquier alias que empiece por `Agente-`, salvo que la petición traiga `X-Operator-Secret`. La comparación ignora mayúsculas y espacios iniciales, y se aplica al alias recibido y también al alias ya redactado por Armor. Un secreto incorrecto responde 401. Por eso nadie del público puede hacerse pasar por el enjambre ni sumar sus intentos como simulados. `Agentes` o `Agente 1` (sin guion) siguen permitidos.
 
 ### Prober agrupado
 
@@ -51,26 +51,19 @@ Una sesión agrupada del Prober se arma así:
 
 Los `session_id` internos se conservan para atribuir los tokens del señuelo. Los del atacante se atribuyen por campaña.
 
-## Enmascarado antes de revelar
+## Visibilidad durante la ronda
 
-Mientras `ArenaState.revealed` es falso, cada sesión `audience` lleva `concealed: true`. En el servidor:
+Desde el 25 de octubre de 2026 el tablero ya no enmascara al Público: jueces y público ven en vivo, desde el primer intento, el mensaje del participante, la respuesta del bot, la ruta, las herramientas negadas, el desenlace, los objetivos violados y el parche que frenó cada ataque. La revelación sigue cerrando la ronda y reconciliando el Marcador. El detalle de este cambio está en [arena](./arena.md#tablero-en-vivo-totalmente-público).
 
-- La sesión va con `route: null` y los contadores en `null`.
-- Cada intento va con `outcome: null`, `route: null`, `reply: ""` y listas vacías de `denials` y `violated_objectives`.
-- `patched_by` y `technique` van en `null`.
+Lo que nunca viaja en `GET /api/operator/live`, aunque el tablero se proyecte:
 
-El texto de la respuesta no viaja en el JSON. Los mensajes del participante sí se muestran, porque son suyos. El enjambre y el Prober se muestran completos. Tras revelar, todo aparece con su ruta y su desenlace reales.
+- Canarios `AZ[PH]_…` ni honeytokens `AZH-KEY-…`: `live/redaction.py` los cambia por `[referencia]` en `reply` y `messages`.
+- Argumentos de herramientas, `detail` de las negaciones ni trazas de operación.
+- El id del validador ni de la regla de flujo: cada negación lleva `control`, una categoría cerrada (`pedido_ajeno`, `limite_reembolso`, `memoria_protegida`, `origen`, `regla_flujo`, `pedido_inexistente`, `contexto` u `otro`). La vista de auditoría del operador sí conserva el validador.
 
-En pantalla, un chat enmascarado muestra:
+**Decisión (Fernando, 25-oct-2026):** el parche que frenó un ataque (`patched_by`, «Parche vN activado · X s después») y los objetivos violados se muestran en vivo, porque cuentan cómo aprende la defensa. El costo aceptado es que un atacante ve la cadencia de los parches.
 
-- La burbuja «Respuesta oculta hasta revelar».
-- El chip «Intento N · resultado oculto».
-- La franja «Conversando · Oculto hasta revelar».
-- Sin negaciones, sin separadores de parche y sin insignia de ruta.
-
-Su indicador en la barra solo marca actividad (el anillo de evento) y nunca cambia de color.
-
-## Contrato v2 (`GET /api/operator/live`)
+## Contrato v3 (`GET /api/operator/live`)
 
 Nivel superior:
 
@@ -79,7 +72,7 @@ Nivel superior:
 - `sessions` y `kpis`.
 - `generated_at`, el reloj del servidor.
 
-Cada sesión trae `concealed`, `contained_n`, `prevented_n` y `leaked_n`. Estos contadores se calculan sobre todos sus intentos terminados, no solo sobre los enviados. Se envían hasta los últimos 30 intentos por sesión.
+Cada sesión trae `contained_n`, `prevented_n` y `leaked_n`. Estos contadores se calculan sobre todos sus intentos terminados, no solo sobre los enviados. Se envían hasta los últimos 30 intentos por sesión.
 
 Cada intento trae:
 
@@ -87,7 +80,7 @@ Cada intento trae:
 | --- | --- |
 | `number` | Posición 1..N del intento en su sesión del tablero. |
 | `policy_version`, `updated_at` | Del intento. |
-| `denials[]` | Eventos `tool_denied` con visibilidad `operator`, en una sola consulta por `attempt_id IN (…)`. Solo `tool`, `reason` (valor de `GatewayReason`) y `validator`; nunca `arguments` ni `detail`. |
+| `denials[]` | Eventos `tool_denied` con visibilidad `operator`, en una sola consulta por `attempt_id IN (…)`. Solo `tool`, `reason` (valor de `GatewayReason`) y `control`, la categoría cerrada del validador; nunca el id del validador o de la regla, `arguments` ni `detail`. |
 | `violated_objectives` | `assessment.verdicts` con `violated: true`. |
 | `patched_by` | `{version, seconds_after}`: primera política que cubre un hallazgo del intento y cumple cuatro condiciones (ver abajo). |
 | `technique` | `{family, mutator}` desde `CampaignCaseRecord.case_json` del caso del Prober. Es `null` para el enjambre y el Público: el servidor no conoce su plantilla. |
@@ -103,15 +96,15 @@ Solo aplica a intentos `confirmed_violation`. Un hallazgo reabierto acumula inte
 
 ## Las cinco KPI
 
-Cada KPI lleva su `n`, su fuente y, si cambia de alcance, `scope` y `label`. Todas cuentan solo intentos terminados (`evaluated` o `inconclusive`). Los que están en cola o en curso van en `attacks.in_flight` y no entran en ningún `n`.
+Cada KPI lleva su `n`, su fuente, `scope` (siempre `all`) y `label` («Toda la ronda»). Todas cuentan solo intentos terminados (`evaluated` o `inconclusive`). Los que están en cola o en curso van en `attacks.in_flight` y no entran en ningún `n`.
 
 | KPI | Contenido | Alcance |
 | --- | --- | --- |
 | `attacks` | Intentos terminados separados en `audience`, `swarm` y `prober`, más `in_flight`. | Toda la ronda. |
-| `safe_space` | `safe_sessions`: sesiones en ruta `honeypot` con al menos un intento contenido, sobre `n`, las sesiones con alcance. Más `diverted_sessions` y `contained_attempts`. | `swarm_prober` hasta revelar; `all` después. |
+| `safe_space` | `safe_sessions`: sesiones en ruta `honeypot` con al menos un intento contenido, sobre `n`, las sesiones con alcance. Más `diverted_sessions` y `contained_attempts`. | Toda la ronda, Público incluido. |
 | `leaked` | Intentos `confirmed_violation` sobre los intentos terminados con alcance. `by_objective` siempre trae `OBJ-ORDER`, `OBJ-MEMORY` y `OBJ-REFUND`. `objective_sum` puede superar `leaked`, porque un intento viola varios objetivos. | Igual que la anterior. |
 | `attacker_tokens` | `attacker`: tokens del rol `prober` del ledger en las campañas del tablero. `decoy`: tokens del rol `decoy` en las sesiones internas con alcance. | Igual para `decoy`. |
-| `patches` | `findings_total`: hallazgos con al menos un intento con alcance. `findings_covered`: hallazgos distintos de ese conjunto con una política activada y no revertida (siempre ≤ total). `activated`: versiones que los cubren. También `current_version` y la mediana desde la creación del hallazgo hasta la activación. | Igual que las anteriores: el Público sin revelar no mueve la cifra. |
+| `patches` | `findings_total`: hallazgos con al menos un intento con alcance. `findings_covered`: hallazgos distintos de ese conjunto con una política activada y no revertida (siempre ≤ total). `activated`: versiones que los cubren. También `current_version` y la mediana desde la creación del hallazgo hasta la activación. | Toda la ronda. |
 
 `patches.median_seconds_to_patch` se mide desde la creación del hallazgo. En cambio, `patched_by.seconds_after` de cada intento se mide desde el cierre del intento. La pantalla no los mezcla: la KPI muestra la mediana y el chat muestra «Parche vN activado · X s después».
 
@@ -159,10 +152,10 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 - **Carrusel.** Navega con las flechas, los 8 indicadores (alias corto y punto de color), el marco deslizante, las teclas ← y → (salvo en un campo editable), el arrastre horizontal y el desplazamiento horizontal explícito: `deltaX` del trackpad o Shift+rueda, un chat por gesto. La rueda vertical sobre un chat no mueve el carrusel: es de la conversación. Sobre la barra de navegación la rueda vertical sí pasa un chat por gesto. Un arrastre con mouse que empieza vertical no mueve el carrusel. Los chats fuera de vista llevan `inert`. Se pueden fijar hasta 2: van a la izquierda y, al fijar un tercero, se suelta el más antiguo y se anuncia cuál.
 - **Chat.** Tiene la cabecera con alias, quién ataca, la ruta y el botón «Fijar». Debajo:
   - La franja de estado: «Conversando», «Señal de riesgo», «Atacando» (solo enjambre y Prober), «En espacio seguro», «Se filtró», «Bloqueado» o «Acceso cerrado». «Bloqueado» solo aparece con un `prevented` o un parche vigente.
-  - Buena fe: a una persona (Público) se la presume de buena fe. «Señal de riesgo» aparece solo con una herramienta negada por un validador, sin contar `rate_limited` ni `order_exists`; sin esa señal, la franja dice «Conversando · Sin señales de riesgo». Las burbujas del Público dicen «Participante» y las del enjambre y el Prober «Atacante». El KPI se llama «Intentos».
+  - Buena fe: a una persona (Público) se la presume de buena fe. «Señal de riesgo» aparece solo con una herramienta negada por un control de negocio (`control` no nulo), sin contar `pedido_inexistente`; sin esa señal, la franja dice «Conversando · Sin señales de riesgo». Las burbujas del Público dicen «Participante» y las del enjambre y el Prober «Atacante». El KPI se llama «Intentos».
   - La conversación con todos los intentos recibidos (el servidor manda los últimos 30). Se desplaza en vertical con la rueda, el arrastre táctil o, con foco, ↑ ↓ Inicio Fin AvPág RePág, hasta el primer mensaje, sin que el desplazamiento se escape al carrusel ni a la página. Sigue al último mensaje mientras el usuario está abajo (margen de 24 px). Si subió a leer no se le mueve: aparece la píldora «↓ N nuevos», que vuelve al final al hacer clic y desaparece también al volver abajo a mano. El degradado superior solo aparece cuando hay contenido arriba. La lógica vive en `useConversationScroll`.
   - Las burbujas, con la técnica cuando se conoce.
-  - El chip «Herramienta negada · …» con el mapa `DENIAL`. Si no conoce el motivo o el validador, cae a un texto legible.
+  - El chip «Herramienta negada · …» con los mapas `CONTROL` (categoría del validador) y `DENIAL` (motivo del gateway). Si no conoce el motivo, cae a un texto legible.
   - Los chips por intento con el mapa `OUTCOME`.
   - Los separadores «Desviado a espacio seguro» y «Parche vN activado · X s después».
   - El pie «Intento N · hace X s», calculado contra `generated_at` y sin un total inventado, con una barra de 10 segmentos.
@@ -172,16 +165,17 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 
 | Archivo | Cubre |
 | --- | --- |
-| [tests/live/test_board.py](../../backend/tests/live/test_board.py) | Clasificación y orden, numeración y límite de 30 intentos con contadores completos, enmascarado (el texto del Público no aparece en el JSON serializado), negaciones y técnica, Prober agrupado por campaña con tokens por campaña y por sesión interna, KPI sobre intentos terminados con `in_flight`, sesiones sin intentos fuera, `accepting`, tokens no medidos en demo, mediana de parcheo, política revertida y hallazgos del Público ignorados, `patched_by` con hallazgo reabierto. |
+| [tests/live/test_board.py](../../backend/tests/live/test_board.py) | Clasificación y orden, numeración y límite de 30 intentos con contadores completos, Público completo antes de revelar y sesiones idénticas al revelar, negaciones con `control` y técnica, Prober agrupado por campaña con tokens por campaña y por sesión interna, KPI sobre intentos terminados con `in_flight`, sesiones sin intentos fuera, `accepting`, tokens no medidos en demo, mediana de parcheo, política revertida y `patched_by` con hallazgo reabierto. [test_public_redaction.py](../../backend/tests/live/test_public_redaction.py): sin canarios, honeytokens, argumentos ni ids de validador o de regla (`flow:…`) en el JSON, lista cerrada de campos y mapeo de `control`. |
 | [tests/live/test_router.py](../../backend/tests/live/test_router.py) | 401 sin secreto, validación de `sessions`, ronda vacía, recorrido real con enjambre (con cabecera de operador) y público hasta revelar, pausa y reanudación que se reflejan en `accepting`, secreto incorrecto con 401. |
 | [tests/sessions/test_reserved_alias.py](../../backend/tests/sessions/test_reserved_alias.py) | `Agente-1`, `agente-1`, `AGENTE-9` y ` Agente-2` rechazados sin cabecera; aceptado con cabecera; 401 con secreto incorrecto; alias parecidos permitidos. |
 | [tests/live/test_attack_swarm.py](../../backend/tests/live/test_attack_swarm.py) | Plantillas, pedidos de la sesión, semilla y límite de agentes. El secreto sale del entorno y solo viaja al crear la sesión. |
-| [ChatTile.test.tsx](../../frontend/src/features/board/ChatTile.test.tsx) | Mapas `OUTCOME` y `DENIAL` con alternativas, técnica solo cuando se conoce, separadores de desvío y de parche, enmascarado sin texto en el DOM, «escribiendo», «Acceso cerrado» e `inert`. Conversación desplazable: todos los intentos, contador de mensajes, foco, degradado solo con contenido arriba y píldora «↓ N nuevos» que vuelve al final. |
+| [ChatTile.test.tsx](../../frontend/src/features/board/ChatTile.test.tsx) | Mapas `OUTCOME` y `DENIAL` con alternativas, técnica solo cuando se conoce, separadores de desvío y de parche, Público completo sin textos de «oculto», «escribiendo», «Acceso cerrado» e `inert`. Conversación desplazable: todos los intentos, contador de mensajes, foco, degradado solo con contenido arriba y píldora «↓ N nuevos» que vuelve al final. |
 | [useConversationScroll.test.tsx](../../frontend/src/features/board/useConversationScroll.test.tsx) | Arranque al final, seguir al último mensaje, margen de 24 px, contador de nuevos al leer arriba, vuelta al final a mano o con `jumpToEnd`, scroll suave salvo movimiento reducido y teclas. |
 | [Carousel.test.tsx](../../frontend/src/features/board/Carousel.test.tsx) | 8 indicadores y 3 visibles, teclas, flechas, rueda sobre la barra, rueda vertical sobre un chat sin mover el carrusel, Shift+rueda, trackpad horizontal nativo, arrastre y arrastre vertical cancelado, indicadores, fijados a la izquierda y anillo de evento sin cambio de color. |
-| [KpiColumn.test.tsx](../../frontend/src/features/board/KpiColumn.test.tsx) | Cinco tiles con las bases del servidor, «sin Público», «no medido en modo demo» sin ceros y sin porcentajes ni medianas inventadas. |
-| [slots.test.ts](../../frontend/src/features/board/slots.test.ts) | Lugares estables, fijar con un máximo de 2, ventana, marcos, estado del chat, pulso enmascarado, «hace N s» y escala del escenario. |
-| [BoardPage.test.tsx](../../frontend/src/features/board/BoardPage.test.tsx) | Acceso con cabecera, 8 chats con 3 a la vista y 5 KPI, Público sin texto, «Cerrar acceso» y «Reabrir acceso» con bloqueo del doble clic, 409 visible, «Ronda revelada» sin botón, fijado con aviso, «Salir» y 401. |
+| [KpiColumn.test.tsx](../../frontend/src/features/board/KpiColumn.test.tsx) | Cinco tiles con las bases del servidor, «no medido en modo demo» sin ceros y sin porcentajes ni medianas inventadas. |
+| [slots.test.ts](../../frontend/src/features/board/slots.test.ts) | Lugares estables, fijar con un máximo de 2, ventana, marcos, estado del chat, «hace N s» y escala del escenario. |
+| [BoardPage.test.tsx](../../frontend/src/features/board/BoardPage.test.tsx) | Acceso con cabecera, 8 chats con 3 a la vista y 5 KPI, Público completo, Marcador provisional y final, «Cerrar acceso» y «Reabrir acceso» con bloqueo del doble clic, 409 visible, «Ronda revelada» sin botón, fijado con aviso, «Salir» y 401. |
+| [Scoreboard.test.tsx](../../frontend/src/features/board/Scoreboard.test.tsx) | «Marcador provisional» con la nota de puntos aparentes y los contadores en vivo; «Marcador final» con la reconciliación por fila; sin puntos y sin estado. |
 | [App.test.tsx](../../frontend/src/app/App.test.tsx) | `/arena` detrás de `OperatorGate` y sin barra; el menú ya no ofrece `/tablero`. |
 
 jsdom no calcula el diseño, así que las medidas (448 × 856, sin desbordes) se comprobaron aparte: una captura a 1920 × 1080 con un navegador sin ventana, con datos simulados.
