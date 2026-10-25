@@ -27,7 +27,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 | Ruta | Acceso y comportamiento |
 | --- | --- |
 | `GET /api/arena/state` | Pública: modo, ronda, inicio, cupo, conteos por estado/origen y `scores`. Tras revelar añade `confirmed_violations` y `contained_honeypot`. |
-| `POST /api/operator/arena/pause` | Operador: cierra admisión; los intentos aceptados continúan. |
+| `POST /api/operator/arena/pause` | Operador: cierra admisión; los intentos aceptados continúan. Es el botón «Cerrar acceso» de la [Arena en vivo](./tablero.md). |
 | `POST /api/operator/arena/resume` | Operador: abre una ronda no revelada ni en reset. |
 | `POST /api/operator/arena/reveal` | Operador: exige drenaje de intentos, detiene nuevas generaciones de campañas y cierra la ronda. |
 | `POST /api/operator/reset` | Operador: `{ "reason": "Nuevo ensayo" }`; archiva y devuelve estado nuevo más `archive_id`. Alias: `/api/operator/arena/reset`. |
@@ -74,7 +74,6 @@ uv run pytest tests/arena/test_round_reset.py tests/arena/test_core_cycle.py \
 | [test_round_reset.py](../../backend/tests/arena/test_round_reset.py) | Archiva efectos/evidencia, invalida tokens, resembra, rechaza intentos en curso y recupera una caída entre entornos/aplicación. Incluye más de tres participantes y asignadores concurrentes. |
 | [test_core_cycle.py](../../backend/tests/arena/test_core_cycle.py) | Resultado provisional, proyección privada/pública y permanencia en señuelo. |
 | [test_control_concurrency.py](../../backend/tests/arena/test_control_concurrency.py) | Admisión concurrente frente a activación/reversión y eventos recuperables. |
-| [ArenaPage.test.tsx](../../frontend/src/features/arena/ArenaPage.test.tsx) | Origen simulado visible, clasificación final con reconciliación y QR local. |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, exclusión de acciones y reset explícito con motivo. |
 
 La verificación previa aprobó el ejercicio Docker y un ensayo LIVE con reset archivado. Son registros históricos enlazados desde [evidencias](../pruebas/evidencias.md); esta revisión documental no repite llamadas al proveedor.

@@ -108,7 +108,7 @@ pnpm build
 | --- | --- |
 | [ParticipantPage.test.tsx](../../frontend/src/features/participant/ParticipantPage.test.tsx), [storage.test.ts](../../frontend/src/features/participant/storage.test.ts) | Recuperación de sesión, datos inválidos y reconciliación de historial. |
 | [AttemptChat.test.tsx](../../frontend/src/features/participant/AttemptChat.test.tsx) | De uno a cuatro turnos, respuesta perdida y reintento con la misma clave. |
-| [useArenaEvents.test.ts](../../frontend/src/features/arena/hooks/useArenaEvents.test.ts), [ArenaPage.test.tsx](../../frontend/src/features/arena/ArenaPage.test.tsx) | Eventos malformados/privados, reconexión, modo y cambio de ronda. |
+| [board/](../../frontend/src/features/board/), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo en `/arena`: acceso, carrusel, enmascarado del Público, mapas de desenlace y negación, KPI honestas y «Cerrar acceso». |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, exclusión de acciones, evaluación y reset. |
 | [http.test.ts](../../frontend/src/shared/api/http.test.ts), [usePolling.test.ts](../../frontend/src/shared/api/usePolling.test.ts) | Errores HTTP, credenciales antiguas, cancelación y ausencia de polls superpuestos. |
 

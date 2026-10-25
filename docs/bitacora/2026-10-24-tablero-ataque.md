@@ -4,11 +4,11 @@ autor: "@equipo-rojo"
 rama: feat/tablero-ataque
 pr: pendiente
 estado: en revisión
-dominios: [arena, attempts, llm, prober, frontend]
+dominios: [arena, attempts, llm, prober, sessions, frontend]
 requisitos: []
 ---
 
-# Tablero de ataque en vivo para la demo
+# Tablero de ataque en vivo para la demo, convertido en la Arena en vivo
 
 ## Qué cambió
 
@@ -35,7 +35,34 @@ Desde `backend/` (contenedor Linux): `uv run ruff check .`, `uv run ruff format 
 
 ## Riesgos y efectos en otros frentes
 
-- El tipo de sesión se deduce del alias: un participante que elija `Agente-…` se ve como agente simulado sin enmascarar.
-- Cada caso del Prober abre su propia sesión, así que una campaña ocupa varias casillas; fijar sesiones del enjambre evita que se desplacen.
 - La plantilla de cambio de dirección (D-04) no existe en `main`; el enjambre la usará cuando `campaign_case` la incluya.
 - El endpoint lee todos los intentos de la ronda en cada consulta (cada 1,5 s).
+
+## Segunda iteración: Arena en vivo en `/arena`
+
+### Qué cambió
+
+- **`GET /api/operator/live` v2.**
+  - Cada intento trae número, versión de política, negaciones (`tool_denied` con visibilidad `operator`, sin argumentos), objetivos violados, el parche que lo cubrió (`patched_by`) y la técnica del caso del Prober.
+  - El Público sin revelar viaja sin desenlace, ruta, respuesta ni negaciones, con `concealed: true`.
+  - El Prober se agrupa en una sesión por campaña.
+  - Las KPI cuentan solo intentos terminados (`in_flight` aparte) con la misma base de alcance. «Espacio seguro» cuenta sesiones en señuelo con al menos un intento contenido, y «Parches» ignora las políticas revertidas y los hallazgos del Público sin revelar.
+  - Se agregan `accepting` y `sessions_total`.
+- **Prefijo reservado.** `POST /api/sessions` reserva el prefijo `Agente-` para quien envía el secreto de operador (409 sin él, 401 si es incorrecto). `attack_swarm.py` lee el secreto de `AGENT_ZERO_OPERATOR_SECRET` y lo envía solo al crear la sesión. El tablero ya no depende de una heurística que el público pueda falsear.
+- **Frontend.** `/arena` pasa a ser la Arena en vivo de la maqueta aprobada, detrás de `OperatorGate`:
+  - Escenario de 1920 × 1080 y cabecera con QR, «Cerrar acceso» (pausa y reanuda la ronda) y «Salir».
+  - Carrusel de 8 chats con 3 a la vista y hasta 2 fijados.
+  - Chats con los mapas `OUTCOME` y `DENIAL`, y cinco KPI.
+- **Limpieza.** Se eliminaron la arena pública anterior (`ArenaPage`, co-evolución, clasificación, `useArenaEvents`) y la ruta `/tablero`. El backend público no cambió.
+
+### Cómo se verificó
+
+- **Backend**, en el contenedor `az-dev-tablero`: `ruff check`, `ruff format --check`, `mypy src` y `pytest` completo.
+- **Frontend**: `biome check`, `typecheck`, `vitest` y `build`.
+- **Revisión visual**: una captura a 1920 × 1080 con un navegador sin ventana y datos simulados, antes y después de revelar. Sirvió para ajustar la separación de la cabecera y el recorte de las negaciones.
+- **Pendiente**: la prueba de punta a punta contra el stack.
+
+### Riesgos
+
+- Tras revelar no se puede reabrir la ronda: la pantalla lo dice («Ronda revelada») y quita el botón.
+- El agregado lee todos los intentos en cada consulta (cada 1,5 s), más una consulta de eventos y una de casos de campaña por petición.
