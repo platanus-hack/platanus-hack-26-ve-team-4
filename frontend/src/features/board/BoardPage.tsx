@@ -1,12 +1,14 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { usePolling } from "../../shared/api/usePolling";
+import { useArenaState } from "../arena/hooks/useArenaState";
 import { OperatorGate } from "../operator/OperatorGate";
 import { loadBoard, setAccess } from "./api";
 import { BoardHeader } from "./BoardHeader";
 import { Carousel } from "./Carousel";
 import { ChatTile } from "./ChatTile";
 import { KpiColumn } from "./KpiColumn";
+import { Scoreboard } from "./Scoreboard";
 import { assignSlots, CHAT_COUNT, togglePin, VISIBLE } from "./slots";
 import { carouselItem } from "./status";
 import type { LiveSession } from "./types";
@@ -15,6 +17,7 @@ import "./stage.css";
 import "./carousel.css";
 import "./chat.css";
 import "./kpi.css";
+import "./scoreboard.css";
 
 const POLL_MS = 1500;
 
@@ -51,6 +54,8 @@ function LiveArena({
 }) {
   const load = useCallback((signal: AbortSignal) => loadBoard(secret, signal), [secret]);
   const { data, error, refresh } = usePolling(load, POLL_MS);
+  // Marcador: estado público de la ronda (sin secreto), con su propio sondeo.
+  const arenaState = useArenaState();
   const scale = useStageScale();
   // Mientras la Arena está montada con el secreto se proyecta: la limpieza devuelve la barra (Salir o 401).
   useEffect(() => {
@@ -181,7 +186,10 @@ function LiveArena({
                   );
                 }}
               />
-              <KpiColumn kpis={data.kpis} sessionsTotal={data.sessions_total} />
+              <div className="av-side">
+                <KpiColumn kpis={data.kpis} sessionsTotal={data.sessions_total} />
+                <Scoreboard arena={arenaState.data} />
+              </div>
             </>
           ) : (
             <p className="av-waiting">Conectando con la arena…</p>

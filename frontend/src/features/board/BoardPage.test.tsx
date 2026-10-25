@@ -1,6 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { arena } from "../../test/fixtures";
+import type { ArenaState } from "../arena/types";
 import { BoardPage } from "./BoardPage";
 import { audienceSession, board, liveAttempt, liveSession } from "./fixtures";
 import type { LiveBoard } from "./types";
@@ -11,9 +13,12 @@ const SECRET = "operator-secret-123";
 function serve(
   state: () => LiveBoard,
   actions: (path: string) => Response | undefined = () => undefined,
+  arenaState: () => ArenaState = () => arena,
 ) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const path = String(input);
+    // El estado público de la ronda (sin secreto) se atiende antes que las acciones de operador.
+    if (path.startsWith("/api/arena/state")) return Response.json(arenaState());
     return actions(path) ?? Response.json(state());
   });
 }
@@ -73,6 +78,27 @@ describe("Arena en vivo", () => {
     expect(within(chat).getByText("Aquí tienes el estado de tu pedido.")).toBeInTheDocument();
     expect(within(chat).getByText("Ruta: protegida")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/oculto|pendiente de revelación/i);
+  });
+
+  it("muestra el Marcador junto a las Analíticas sin quitar ninguna tile", async () => {
+    serve(
+      () => board([liveSession("1")]),
+      undefined,
+      () => ({
+        ...arena,
+        revealed: false,
+        provisional: true,
+        confirmed_violations: 1,
+        contained_honeypot: 2,
+        scores: [{ alias: "neo", score: 2 }],
+      }),
+    );
+    await login();
+
+    const panel = await screen.findByLabelText("Marcador");
+    expect(within(panel).getByText("Marcador provisional")).toBeInTheDocument();
+    expect(within(panel).getByText("2 puntos")).toBeInTheDocument();
+    expect(screen.getByLabelText("Analíticas").querySelectorAll(".av-tile")).toHaveLength(5);
   });
 
   it("Cerrar acceso pausa la ronda una sola vez y la píldora dice Acceso cerrado", async () => {

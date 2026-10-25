@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { board, liveSession } from "../features/board/fixtures";
+import { arena } from "../test/fixtures";
 import { App } from "./App";
 
 afterEach(() => {
@@ -22,8 +23,10 @@ describe("rutas", () => {
   });
 
   it("al entrar con el secreto la barra se oculta y al Salir vuelve", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
-      Response.json(board([liveSession("1")])),
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>
+      Response.json(
+        String(input).startsWith("/api/arena/state") ? arena : board([liveSession("1")]),
+      ),
     );
     window.history.pushState({}, "", "/arena");
     render(<App />);
