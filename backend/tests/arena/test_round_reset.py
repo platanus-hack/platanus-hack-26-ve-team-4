@@ -53,6 +53,7 @@ def test_reset_archives_effects_and_evidence_invalidates_tokens_and_reseeds(
     assert reset["session_count"] == 0
     assert reset["accepting"] is True
     assert reset["scores"] == []
+    assert (reset["confirmed_violations"], reset["contained_honeypot"]) == (0, 0)
     headers = {"Authorization": f"Bearer {session['token']}"}
     assert manual_client.get("/api/sessions/me", headers=headers).status_code == 401
     assert manual_client.get("/api/attempts", headers=headers).status_code == 401

@@ -1,0 +1,113 @@
+/* Columna derecha del tablero (440 px): Analíticas (790 px) y Marcador (115 px), separación de 15. */
+.av-side {
+  display: grid;
+  grid-template-rows: 790px 115px;
+  row-gap: 15px;
+  width: 440px;
+  height: 920px;
+  min-width: 0;
+}
+
+/* Marcador en vivo (440 × 115): 8 + 26 (título) + 22 (contadores) + 2 × 22 (top 2) + 8, con
+   separaciones de 2. Mismas variables que el resto del escenario, sin colores nuevos. */
+.av-score {
+  height: 115px;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.av-score h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+.av-score-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 26px;
+  min-width: 0;
+}
+.av-score-flag {
+  padding: 0 10px;
+  border: 1px dashed var(--sim);
+  border-radius: 999px;
+  color: var(--sim);
+  font-size: 16px;
+  line-height: 22px;
+  white-space: nowrap;
+  cursor: help;
+}
+.av-score-counts {
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  height: 22px;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--muted);
+}
+.av-score-counts div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.av-score-counts dt {
+  white-space: nowrap;
+}
+.av-score-counts dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+.av-score-rank {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--text);
+}
+.av-score-rank li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  height: 22px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.av-score-rank .alias {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-score-rank strong {
+  font-weight: 800;
+}
+.av-score-rank small {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  color: var(--muted);
+}
+.av-score-empty {
+  margin: 0;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--muted);
+}

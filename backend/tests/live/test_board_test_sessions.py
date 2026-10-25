@@ -27,7 +27,6 @@ def test_a_test_session_is_shown_unmasked_before_the_reveal() -> None:
 
     internal = live["sess-int"]
     assert internal.kind == "test"
-    assert internal.concealed is False
     assert internal.route == "protected"
     assert internal.attempts[0].outcome == "confirmed_violation"
 
@@ -62,7 +61,10 @@ def test_automated_test_chats_move_the_kpis_and_stay_unmasked() -> None:
 
     auto = {s.session_id: s for s in result.sessions}["sess-auto"]
     assert auto.kind == "test"
-    assert auto.concealed is False
+    # Ya no hay enmascarado: el chat automático se ve completo, con su desenlace y su contador.
+    assert "concealed" not in result.model_dump_json()
+    assert auto.attempts[0].outcome == AttemptOutcome.CONFIRMED_VIOLATION
+    assert auto.leaked_n == 1
     assert result.kpis.attacks.n == 1
     assert result.kpis.attacks.swarm == 1
     assert result.kpis.leaked.leaked == 1

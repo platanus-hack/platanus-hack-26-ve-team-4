@@ -27,7 +27,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 
 | Ruta | Acceso y comportamiento |
 | --- | --- |
-| `GET /api/arena/state` | Pública: modo, ronda, inicio, cupo, conteos por estado/origen y `scores`. Tras revelar añade `confirmed_violations` y `contained_honeypot`. |
+| `GET /api/arena/state` | Pública: modo, ronda, inicio, cupo, conteos por estado/origen y `scores`. Incluye `confirmed_violations` y `contained_honeypot` en vivo, desde el primer intento (también con `revealed` falso). |
 | `POST /api/operator/arena/pause` | Operador: cierra admisión; los intentos aceptados continúan. Es el botón «Cerrar acceso» de la [Arena en vivo](./tablero.md). |
 | `POST /api/operator/arena/resume` | Operador: abre una ronda no revelada ni en reset. |
 | `POST /api/operator/arena/reveal` | Operador: exige drenaje de intentos, detiene nuevas generaciones de campañas y cierra la ronda. |
@@ -98,3 +98,13 @@ La verificación previa aprobó el ejercicio Docker y un ensayo LIVE con reset a
 La UI muestra el `archive_id` al resetear, pero todavía no lista `/operator/rounds` ni descarga snapshots de rondas: esas operaciones se hacen por API. Añadir esa navegación debe mantener la autorización y la verificación del hash.
 
 El mantenimiento detiene workers locales; los demás procesos observan el estado durable y las reservas de escritura de la base. No sustituye un coordinador distribuido ni una prueba de carga. Para añadir una tabla del producto, revisar `ROUND_TABLES`, captura, borrado, recuperación y pruebas de reset en el mismo cambio. Para ampliar puntuación, modificar primero el cálculo del servidor y probar la fase provisional/final por separado.
+
+## Tablero en vivo totalmente público
+
+Durante la ronda el tablero `/arena` ya no enmascara al Público. Información nueva que ve el público desde el primer intento: ruta (protegida o señuelo) y desenlace de cada intento, mensaje del participante, respuesta del bot, herramientas negadas con su motivo, marcador provisional y contadores en vivo (`confirmed_violations`, `contained_honeypot`, prevenidos y filtrados por sesión).
+
+- `GET /api/operator/live` (contrato v3): `LiveSession.route`, `contained_n`, `prevented_n` y `leaked_n` ya no son nulos; se eliminó `concealed`. `LiveAttempt.outcome` es `None` sólo mientras el intento no termina. Los KPI incluyen al Público desde la primera sesión y `scope` es siempre `all` ("Toda la ronda"). Los chats de prueba siguen visibles y fuera de los KPI.
+- Redacción pública: `live/redaction.py` sustituye por `[referencia]` los canarios `AZ[PH]_…` (vía `public_reply`) y los honeytokens `AZH-KEY-…` en `reply` y `messages`. Nunca viajan argumentos de herramientas, trazas ni rutas internas distintas de la etiqueta de ruta. Las negaciones no llevan el id del validador ni de la regla de flujo: llevan `control`, una categoría cerrada (`pedido_ajeno`, `regla_flujo`…). `PUBLIC_FIELDS` de `events/public_projection.py` no cambia.
+- Marcador: antes de revelar muestra puntos aparentes (incluyen intentos contenidos en el señuelo) con el cálculo provisional de siempre; tras revelar, `scores` reconcilia con `apparent`, `score` y `contained`. `arena/scoring.py` y `POST /api/operator/arena/reveal` no cambian; la revelación sigue cerrando la ronda.
+- Decisión (Fernando, 25-oct-2026): el parche que frenó un ataque (`patched_by`) y los objetivos violados también se muestran en vivo; cuentan cómo aprende la defensa, a costa de mostrar la cadencia de los parches.
+- Las vistas de operador no cambian. [SUPUESTO] la redacción de honeytokens sólo se probó con valores de prueba, no con honeytokens reales de producción.

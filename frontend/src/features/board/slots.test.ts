@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { concealedSession, liveAttempt, liveSession, NOW } from "./fixtures";
+import { audienceSession, liveAttempt, liveSession, NOW } from "./fixtures";
 import { assignSlots, focusIndex, frames, togglePin, windowOf } from "./slots";
 import { ago, carouselItem, chatStatus } from "./status";
 import type { LiveSession } from "./types";
@@ -89,11 +89,13 @@ describe("estado del chat", () => {
     });
   });
 
-  it("el Público enmascarado no cambia de color ni de pulso por su desenlace", () => {
-    const hidden = concealedSession("1");
-    expect(chatStatus(hidden, true, false).tone).toBe("neutral");
-    const item = carouselItem(hidden, true, false);
-    expect(item.pulseKey).toBe("1:evaluated");
+  it("el pulso del carrusel incluye el tono: un cambio de desenlace del Público se nota", () => {
+    const audience = audienceSession("1", {
+      attempts: [liveAttempt({ outcome: "confirmed_violation" })],
+    });
+    const item = carouselItem(audience, true, false);
+    expect(item.tone).toBe("leak");
+    expect(item.pulseKey).toBe("leak:1:evaluated");
     expect(item.short).toBe("Visitante-1");
   });
 

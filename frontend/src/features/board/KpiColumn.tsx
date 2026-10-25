@@ -69,7 +69,6 @@ const thousands = (tokens: number) =>
  */
 export function KpiColumn({ kpis, sessionsTotal }: { kpis: LiveKpis; sessionsTotal: number }) {
   const { attacks, safe_space: safe, leaked, attacker_tokens: tokens, patches } = kpis;
-  const withoutAudience = (scope: string) => (scope === "swarm_prober" ? " sin Público" : "");
   const most = Math.max(1, ...OBJECTIVES.map((o) => leaked.by_objective[o] ?? 0));
   const percent = safe.n > 0 ? `${Math.round((safe.safe_sessions / safe.n) * 100)} %` : "—";
   const attackerTokens = tokens.attacker.measured ? tokens.attacker.tokens : null;
@@ -96,7 +95,7 @@ export function KpiColumn({ kpis, sessionsTotal }: { kpis: LiveKpis; sessionsTot
         kind="t-safe"
         label="Espacio seguro"
         value={`${safe.safe_sessions}/${safe.n}/${safe.contained_attempts}`}
-        context={`en señuelo · fuente: enrutador${withoutAudience(safe.scope)}`}
+        context="en señuelo · fuente: enrutador"
       >
         <div className="av-k-num">
           {safe.safe_sessions}
@@ -112,7 +111,7 @@ export function KpiColumn({ kpis, sessionsTotal }: { kpis: LiveKpis; sessionsTot
         kind="t-leak"
         label="Ataques que dejamos pasar"
         value={`${leaked.leaked}/${leaked.n}`}
-        context={`de ${integer.format(leaked.n)}${withoutAudience(leaked.scope)} · Σ ${leaked.objective_sum} obj. (se solapan)`}
+        context={`de ${integer.format(leaked.n)} · Σ ${leaked.objective_sum} obj. (se solapan)`}
       >
         <div className="av-k-num">{integer.format(leaked.leaked)}</div>
         <div className="av-k-side">

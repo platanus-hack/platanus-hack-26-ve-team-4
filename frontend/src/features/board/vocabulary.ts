@@ -1,5 +1,12 @@
 // Vocabulario de la Arena en vivo: códigos del servidor a texto legible (maqueta aprobada).
-import type { LiveAttempt, LiveDenial, LiveTechnique, RouteName, SessionKind } from "./types";
+import type {
+  DenialControl,
+  LiveAttempt,
+  LiveDenial,
+  LiveTechnique,
+  RouteName,
+  SessionKind,
+} from "./types";
 
 export type Segment = "leak" | "blocked" | "safe" | "neutral";
 
@@ -36,7 +43,7 @@ export function outcomeView(attempt: LiveAttempt): OutcomeView {
   return OUTCOME[key] ?? UNKNOWN_OUTCOME;
 }
 
-/** Motivos de `GatewayReason` y validadores frecuentes. */
+/** Motivos de `GatewayReason`. */
 export const DENIAL: Record<string, string> = {
   business_rule_denied: "regla de negocio",
   rate_limited: "límite de uso",
@@ -45,18 +52,22 @@ export const DENIAL: Record<string, string> = {
   output_blocked: "salida bloqueada",
   tool_unregistered: "herramienta no registrada",
   region_not_allowed_by_policy: "región no permitida",
-  order_belongs_to_session_customer: "pedido ajeno",
-  refund_within_limit: "límite de reembolso",
-  memory_key_allowlist: "memoria protegida",
-  require_provenance: "origen sin verificar",
+};
+
+/** Categoría del control que negó (`LiveDenial.control`). */
+export const CONTROL: Record<DenialControl, string> = {
+  pedido_ajeno: "pedido ajeno",
+  limite_reembolso: "límite de reembolso",
+  memoria_protegida: "memoria protegida",
+  origen: "origen sin verificar",
+  regla_flujo: "regla de flujo",
+  pedido_inexistente: "pedido inexistente",
+  contexto: "llamada fuera de contexto",
+  otro: "control de negocio",
 };
 
 export function denialLabel(denial: LiveDenial): string {
-  if (denial.validator) {
-    const known = DENIAL[denial.validator];
-    if (known) return known;
-    if (denial.validator.startsWith("flow:")) return "regla de flujo";
-  }
+  if (denial.control) return CONTROL[denial.control];
   return DENIAL[denial.reason] ?? (denial.reason.replaceAll("_", " ") || "control del gateway");
 }
 

@@ -101,36 +101,30 @@ def test_limit_keeps_the_most_recent_sessions() -> None:
     assert limited.sessions_total == 3
 
 
-def test_the_audience_travels_without_outcome_route_or_reply_until_the_reveal() -> None:
+def test_the_audience_is_shown_complete_before_the_reveal() -> None:
     hidden = board(
         revealed=False,
-        denials={"a1": [LiveDenial(tool="get_order", reason="rate_limited", validator=None)]},
+        denials={"a1": [LiveDenial(tool="get_order", reason="rate_limited", control=None)]},
     )
     audience = {s.kind: s for s in hidden.sessions}["audience"]
 
-    assert audience.concealed is True
-    assert audience.route is None
-    assert (audience.contained_n, audience.prevented_n, audience.leaked_n) == (None, None, None)
-    for item in audience.attempts:
-        assert (item.outcome, item.route, item.reply) == (None, None, "")
-        assert (item.denials, item.violated_objectives) == ([], [])
-        assert (item.patched_by, item.technique) == (None, None)
-        assert item.messages == ["Mensaje."]
-    assert SECRET_REPLY not in hidden.model_dump_json()
-    assert "rate_limited" not in hidden.model_dump_json()
-
-    swarm = {s.kind: s for s in hidden.sessions}["swarm"]
-    assert swarm.concealed is False
-    assert swarm.route == "protected"
-    assert swarm.attempts[0].outcome == "confirmed_violation"
-    assert swarm.attempts[0].violated_objectives == [OBJ]
-    assert swarm.leaked_n == 1
+    assert audience.route == "honeypot"
+    assert (audience.contained_n, audience.prevented_n, audience.leaked_n) == (1, 0, 1)
+    assert [a.outcome for a in audience.attempts] == ["confirmed_violation", "contained_honeypot"]
+    assert [a.route for a in audience.attempts] == ["protected", "honeypot"]
+    assert audience.attempts[0].reply == SECRET_REPLY
+    assert audience.attempts[0].denials == [
+        LiveDenial(tool="get_order", reason="rate_limited", control=None)
+    ]
+    assert audience.attempts[0].violated_objectives == [OBJ]
+    assert audience.attempts[0].messages == ["Mensaje."]
+    assert "concealed" not in hidden.model_dump_json()
+    assert hidden.revealed is False
 
 
 def test_after_the_reveal_the_audience_shows_route_and_real_outcome() -> None:
     audience = {s.kind: s for s in board(revealed=True).sessions}["audience"]
 
-    assert audience.concealed is False
     assert audience.route == "honeypot"
     assert [a.outcome for a in audience.attempts] == ["confirmed_violation", "contained_honeypot"]
     assert audience.attempts[1].route == "honeypot"
@@ -138,10 +132,17 @@ def test_after_the_reveal_the_audience_shows_route_and_real_outcome() -> None:
     assert (audience.contained_n, audience.leaked_n) == (1, 1)
 
 
+def test_the_sessions_do_not_change_when_the_reveal_happens() -> None:
+    hidden = board(revealed=False)
+    shown = board(revealed=True)
+
+    assert hidden.revealed is False
+    assert shown.revealed is True
+    assert [s.model_dump() for s in hidden.sessions] == [s.model_dump() for s in shown.sessions]
+
+
 def test_denials_and_techniques_are_attached_to_their_attempts() -> None:
-    denial = LiveDenial(
-        tool="get_order", reason="business_rule_denied", validator="order_belongs_to_session"
-    )
+    denial = LiveDenial(tool="get_order", reason="business_rule_denied", control="pedido_ajeno")
     technique = LiveTechnique(family="tool_misuse", mutator="paraphrase_es")
     result = board(revealed=True, denials={"a3": [denial]}, techniques={"a4": technique})
     by_kind = {s.kind: s for s in result.sessions}
@@ -151,24 +152,22 @@ def test_denials_and_techniques_are_attached_to_their_attempts() -> None:
     assert by_kind["prober"].attempts[0].technique == technique
 
 
-def test_kpis_two_and_three_count_only_swarm_and_prober_before_the_reveal() -> None:
+def test_kpis_count_the_audience_from_the_first_attempt() -> None:
     hidden = board(revealed=False).kpis
-    assert hidden.leaked.scope == "swarm_prober"
-    assert (hidden.leaked.leaked, hidden.leaked.n) == (1, 2)
-    assert hidden.leaked.by_objective == {"OBJ-ORDER": 1, "OBJ-REFUND": 0, "OBJ-MEMORY": 0}
-    assert hidden.leaked.objective_sum == 1
-    assert (hidden.safe_space.safe_sessions, hidden.safe_space.n) == (0, 2)
-    assert hidden.safe_space.diverted_sessions == 0
-    assert hidden.safe_space.contained_attempts == 0
-    assert "revelar" in hidden.leaked.label
+    assert hidden.leaked.scope == "all"
+    assert hidden.leaked.label == "Toda la ronda"
+    assert (hidden.leaked.leaked, hidden.leaked.n) == (2, 4)
+    assert hidden.leaked.by_objective == {"OBJ-ORDER": 2, "OBJ-REFUND": 0, "OBJ-MEMORY": 0}
+    assert hidden.leaked.objective_sum == 2
+    assert (hidden.safe_space.safe_sessions, hidden.safe_space.n) == (1, 3)
+    assert hidden.safe_space.diverted_sessions == 1
+    assert hidden.safe_space.contained_attempts == 1
+    assert hidden.safe_space.scope == "all"
+    assert hidden.safe_space.label == "Toda la ronda"
 
     shown = board(revealed=True).kpis
-    assert shown.leaked.scope == "all"
-    assert (shown.leaked.leaked, shown.leaked.n) == (2, 4)
-    assert shown.leaked.by_objective["OBJ-ORDER"] == 2
-    assert (shown.safe_space.safe_sessions, shown.safe_space.n) == (1, 3)
-    assert shown.safe_space.diverted_sessions == 1
-    assert shown.safe_space.contained_attempts == 1
+    assert shown.leaked == hidden.leaked
+    assert shown.safe_space == hidden.safe_space
 
 
 def test_only_finished_attempts_count_and_the_rest_are_in_flight() -> None:
@@ -180,7 +179,7 @@ def test_only_finished_attempts_count_and_the_rest_are_in_flight() -> None:
     kpis = board(revealed=False, rows=rows).kpis
 
     assert (kpis.attacks.n, kpis.attacks.in_flight) == (4, 2)
-    assert kpis.leaked.n == 2
+    assert kpis.leaked.n == 4
 
 
 def test_a_session_without_attempts_is_not_a_board_session() -> None:
@@ -274,8 +273,10 @@ def test_tokens_are_summed_from_a_fake_ledger_by_campaign_and_visible_session() 
     assert hidden.measured is True
     assert hidden.label == ""
     assert (hidden.attacker.tokens, hidden.attacker.calls) == (300, 1)
-    assert (hidden.decoy.tokens, hidden.decoy.calls) == (40, 1)
-    assert (shown.decoy.tokens, shown.n) == (49, 3)
+    # El Público cuenta desde el primer intento: su sesión señuelo aporta al consumo del señuelo.
+    assert (hidden.decoy.tokens, hidden.decoy.calls) == (49, 2)
+    assert hidden.n == shown.n == 3
+    assert shown.decoy == hidden.decoy
 
 
 def policy(
@@ -309,16 +310,16 @@ def test_patch_time_is_the_median_from_finding_to_activation_with_fixed_marks() 
     assert patches.findings_covered <= patches.findings_total == 3
 
 
-def test_rolled_back_policies_and_hidden_audience_findings_do_not_count() -> None:
+def test_rolled_back_policies_do_not_count_before_the_reveal_either() -> None:
     findings = [finding("f1", 0, ["a1"]), finding("f2", 0, ["a3"])]
     policies = [policy(1, "rolled_back", ["f2"], 5), policy(2, "active", ["f1"], 9)]
 
     hidden = board(revealed=False, policies=policies, findings=findings).kpis.patches
-    assert (hidden.findings_total, hidden.findings_covered, hidden.activated) == (1, 0, 0)
-    assert hidden.median_seconds_to_patch is None
+    assert (hidden.findings_total, hidden.findings_covered, hidden.activated) == (2, 1, 1)
+    assert hidden.median_seconds_to_patch == 9.0
 
     shown = board(revealed=True, policies=policies, findings=findings).kpis.patches
-    assert (shown.findings_total, shown.findings_covered, shown.activated) == (2, 1, 1)
+    assert shown == hidden
 
 
 def test_patched_by_needs_a_newer_version_activated_after_the_violation() -> None:

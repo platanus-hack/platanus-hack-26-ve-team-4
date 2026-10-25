@@ -1,7 +1,7 @@
-// Contrato de GET /api/operator/live v2. Espejo de backend/src/agent_zero/live/models.py.
+// Contrato de GET /api/operator/live v3. Espejo de backend/src/agent_zero/live/models.py.
 // Lo mantiene el líder: las tareas lo importan y no lo editan.
 
-/** "test" es el chat interno del equipo (alias Interno-): se muestra sin enmascarar y no cuenta en KPI. */
+/** "test" es el chat interno del equipo (alias Interno-): se muestra completo y no cuenta en KPI. */
 export type SessionKind = "audience" | "swarm" | "prober" | "test";
 export type KpiScope = "all" | "swarm_prober";
 export type RouteName = "protected" | "honeypot";
@@ -14,12 +14,24 @@ export type AttemptOutcome =
   | "inconclusive";
 
 /** Llamada a herramienta negada por el gateway (evento `tool_denied`). */
+/** Espejo de `DenialControl` en backend/src/agent_zero/live/models.py. */
+export type DenialControl =
+  | "pedido_ajeno"
+  | "limite_reembolso"
+  | "memoria_protegida"
+  | "origen"
+  | "regla_flujo"
+  | "pedido_inexistente"
+  | "contexto"
+  | "otro";
+
 export interface LiveDenial {
   tool: string;
   /** Valor de `GatewayReason`, p. ej. "business_rule_denied" o "rate_limited". */
   reason: string;
-  /** Validador que negó, p. ej. "order_belongs_to_session_customer" o "flow:…"; null si no hubo. */
-  validator: string | null;
+  /** Categoría cerrada del control que negó (p. ej. "pedido_ajeno", "regla_flujo"); null si no
+   * hubo validador. El servidor nunca envía el id del validador ni de la regla. */
+  control: DenialControl | null;
 }
 
 /** Técnica del ataque. Solo se conoce para el Prober (`case_json` de su caso de campaña); el
@@ -45,21 +57,21 @@ export interface LiveAttempt {
   /** Posición 1..N del intento dentro de la sesión del tablero (cuenta todos, no solo los enviados). */
   number: number;
   status: AttemptStatus;
-  /** null mientras no termina o si la sesión está enmascarada (`concealed`). */
+  /** null solo mientras el intento no ha terminado; después siempre trae desenlace. */
   outcome: AttemptOutcome | null;
-  /** null si la sesión está enmascarada. */
-  route: RouteName | null;
+  /** Ruta real del intento (protegida o señuelo). */
+  route: RouteName;
   policy_version: number;
   messages: string[];
-  /** "" si la sesión está enmascarada: el texto no viaja. */
+  /** Respuesta pública del bot, redactada (sin canarios ni honeytokens). */
   reply: string;
-  /** [] si la sesión está enmascarada. */
+  /** Negaciones de herramienta del intento, sin argumentos. */
   denials: LiveDenial[];
-  /** [] si la sesión está enmascarada o no hubo violación. */
+  /** [] si no hubo violación. */
   violated_objectives: string[];
-  /** null si no hay parche activado que cubra este intento o si está enmascarada. */
+  /** null si no hay parche activado que cubra este intento. */
   patched_by: LivePatch | null;
-  /** null fuera del Prober o si está enmascarada: la vista no inventa una técnica. */
+  /** null fuera del Prober: la vista no inventa una técnica. */
   technique: LiveTechnique | null;
   created_at: string;
   updated_at: string;
@@ -71,17 +83,16 @@ export interface LiveSession {
   /** Para el Prober: "Prober · " + últimos 4 caracteres del campaign_id. */
   alias: string;
   kind: SessionKind;
-  /** true = Público antes de revelar: sin ruta, desenlace, respuesta ni negaciones. */
-  concealed: boolean;
-  route: RouteName | null;
+  /** Ruta de la sesión: "honeypot" si alguna sesión del grupo fue desviada al señuelo. */
+  route: RouteName;
   customer_id: string;
   last_activity: string;
   /** Todos los intentos de la sesión (los `attempts` enviados son como máximo los últimos 30). */
   attempt_total: number;
-  /** Contadores sobre todos los intentos terminados de la sesión; null si `concealed`. */
-  contained_n: number | null;
-  prevented_n: number | null;
-  leaked_n: number | null;
+  /** Contadores sobre todos los intentos terminados de la sesión. */
+  contained_n: number;
+  prevented_n: number;
+  leaked_n: number;
   attempts: LiveAttempt[];
 }
 
@@ -103,27 +114,29 @@ export interface LiveKpis {
     source: string;
   };
   safe_space: {
-    /** Denominador: sesiones del tablero con alcance (sin Público hasta revelar). */
+    /** Denominador: sesiones contadas del tablero (incluye el Público; sin "test"). */
     n: number;
-    /** Sesiones con alcance en ruta señuelo con al menos un intento contenido. */
+    /** Sesiones en ruta señuelo con al menos un intento contenido. */
     safe_sessions: number;
-    /** Sesiones con alcance en ruta señuelo. */
+    /** Sesiones en ruta señuelo. */
     diverted_sessions: number;
-    /** Intentos terminados con alcance con desenlace contained_honeypot. */
+    /** Intentos terminados con desenlace contained_honeypot. */
     contained_attempts: number;
+    /** Siempre "all": toda la ronda, con el Público desde el primer intento. */
     scope: KpiScope;
     label: string;
     source: string;
   };
   leaked: {
-    /** Intentos terminados con alcance (sin Público hasta revelar). */
+    /** Intentos terminados contados (incluye el Público). */
     n: number;
-    /** Intentos con alcance con confirmed_violation. */
+    /** Intentos terminados con confirmed_violation. */
     leaked: number;
     /** Siempre trae OBJ-ORDER, OBJ-MEMORY y OBJ-REFUND (0 si no hay). */
     by_objective: Record<string, number>;
     /** Suma de by_objective; puede superar `leaked` porque un intento viola varios objetivos. */
     objective_sum: number;
+    /** Siempre "all". */
     scope: KpiScope;
     label: string;
     source: string;
@@ -142,7 +155,7 @@ export interface LiveKpis {
     current_version: number;
     median_seconds_to_patch: number | null;
     findings_covered: number;
-    /** Hallazgos con al menos un intento con alcance (cubiertos o no); covered <= total. */
+    /** Hallazgos con al menos un intento (cubiertos o no); covered <= total. */
     findings_total: number;
     source: string;
   };

@@ -54,7 +54,7 @@ export type ConnectionState = "connecting" | "open" | "reconnecting";
 export interface ScoreRow {
   alias: string;
   score: number;
-  // Only after the reveal: points that looked real and points that stayed in the honeypot.
+  // Solo tras revelar: puntos que parecían reales y puntos que quedaron en el señuelo.
   apparent?: number;
   contained?: number;
 }
@@ -66,7 +66,8 @@ export interface ArenaState {
   policy_version: number;
   attempts: number;
   scores: ScoreRow[];
-  // Only after the reveal: attempts that looked successful, split by where they happened.
+  // Llegan siempre desde que el servidor los emite (también antes de revelar): intentos de audiencia
+  // con desenlace confirmed_violation y contained_honeypot.
   confirmed_violations?: number;
   contained_honeypot?: number;
   round_id?: string;
