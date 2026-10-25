@@ -135,7 +135,7 @@ No escribe textos propios:
 - Aplica los mutadores `paraphrase_es`, `paraphrase_en` y `split_turns`.
 - Cambia los pedidos de la plantilla por los de la sesión.
 
-Solo viajan casos de superficie mensaje o memoria. El espaciado mínimo es de 5,2 s por sesión, bajo el cupo de 12 intentos por minuto.
+Solo viajan casos de superficie mensaje o memoria. El espaciado mínimo es de 5,2 s por sesión, muy por debajo del cupo de 240 intentos por minuto.
 
 ```bash
 cd backend

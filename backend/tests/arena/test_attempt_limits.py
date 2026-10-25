@@ -136,9 +136,12 @@ def test_a_full_round_queue_gets_429_with_retry_after(settings: Settings) -> Non
 def test_the_per_minute_limit_slides_and_reports_when_the_oldest_attempt_leaves(
     settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Only the pending-per-session limit is lifted so queued attempts do not mask the
-    # per-minute limit, which keeps its configured default.
-    with client_with(settings, arena_session_queue_limit=50) as client:
+    # The test fixes 12 so its clock marks (4 s apart in a 60 s window) keep their
+    # meaning; the default of 240 is checked by its own test. Only the pending-per-session
+    # limit is lifted so queued attempts do not mask the per-minute limit.
+    with client_with(
+        settings, arena_session_queue_limit=50, arena_attempts_per_minute=12
+    ) as client:
         assert core_of(client).fleet.settings.arena_attempts_per_minute == 12
         hold_queue(client)
         core = core_of(client)
@@ -179,3 +182,20 @@ def test_the_per_minute_limit_slides_and_reports_when_the_oldest_attempt_leaves(
         # Full again: the next to leave is the attempt from `start + 4 s`.
         assert limited(timedelta(seconds=60, milliseconds=1)) == "4"
         assert attempt_count(client) == 13
+
+
+def test_the_default_per_minute_limit_is_240_and_reaches_the_participant(
+    settings: Settings,
+) -> None:
+    assert Settings.model_fields["arena_attempts_per_minute"].default == 240
+    with client_with(settings) as client:
+        assert join(client)["limits"]["attempts_per_minute"] == 240
+
+
+def test_related_limits_leave_room_for_240_attempts_without_raising_the_daily_caps() -> None:
+    defaults = {name: field.default for name, field in Settings.model_fields.items()}
+    assert defaults["llm_session_call_limit"] == 400
+    assert defaults["gateway_rate_limit_per_minute"] == 480
+    assert defaults["arena_session_queue_limit"] == 1
+    assert defaults["llm_daily_usd_limit"] == 2.0
+    assert defaults["llm_daily_call_limit"] == 2000

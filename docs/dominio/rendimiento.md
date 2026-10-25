@@ -25,9 +25,9 @@ Valores base de [Settings](../../backend/src/agent_zero/config.py), salvo que se
 | Worker de runs | Concurrencia 2, polling 0,5 segundos; configurable. |
 | Validación de candidato | Semáforo de hasta 8 casos; comparten un run de validación. |
 | Participantes | 100 identidades por ronda, máximo configurable 500. Sesiones vencidas conservan plaza hasta reset. |
-| Cola de intentos | Límite 40, límite por sesión 1 y 12 envíos por minuto; ver separación de orígenes en `attempts`. |
-| Herramientas | 60 llamadas por minuto por agente en el limiter del proceso. |
-| LLM del ejemplo | 5000 llamadas por día y 1200 por campaña en `.env.example`; los valores base de Settings son 2000 y 300. |
+| Cola de intentos | Límite 40, límite por sesión 1 y 240 envíos por minuto; ver separación de orígenes en `attempts`. |
+| Herramientas | 480 llamadas por minuto por agente (por agente y sesión con contexto de arena) en el limiter del proceso. |
+| LLM del ejemplo | 5000 llamadas por día y 1200 por campaña en `.env.example`; los valores base de Settings son 2000 y 300. Tope por sesión de 400 llamadas, sin ventana (base de Settings y ejemplo). |
 | Tokens y dinero | Ejemplo: 1.500.000 tokens por campaña y US$2 diarios estimados. No es un límite duro de facturación del proveedor. |
 
 Tener 100 identidades no demuestra que el sistema sostenga 100 llamadas simultáneas. Las pruebas de asignación concurrente y varios workers verifican integridad, no capacidad ni tiempos bajo carga real.

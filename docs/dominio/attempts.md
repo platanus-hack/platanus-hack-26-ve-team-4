@@ -60,7 +60,7 @@ La fila guarda `session_id`, `origin`, `campaign_id`, `customer_id`, `policy_ver
 5. Pedir la ruta, leer la versión activa y crear intento, run y eventos en una sola transacción.
 6. Después de commit, despachar el outbox. Un fallo de publicación no convierte la admisión en una segunda operación.
 
-Defaults de [Settings](../../backend/src/agent_zero/config.py): cola 40 por origen, una ejecución pendiente por sesión y 12 intentos/minuto/sesión. Audiencia y autonomía tienen contadores de cola separados; no son prioridades de CPU independientes.
+Defaults de [Settings](../../backend/src/agent_zero/config.py): cola 40 por origen, una ejecución pendiente por sesión y 240 intentos/minuto/sesión. Audiencia y autonomía tienen contadores de cola separados; no son prioridades de CPU independientes.
 
 ## Ejecución y recuperación
 
