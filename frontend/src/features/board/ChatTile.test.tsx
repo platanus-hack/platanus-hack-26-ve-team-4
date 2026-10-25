@@ -148,7 +148,7 @@ describe("ChatTile", () => {
     expect(within(chat).queryByText(/Herramienta negada/)).not.toBeInTheDocument();
     expect(within(chat).queryByText(/Ruta:/)).not.toBeInTheDocument();
     expect(within(chat).getByText("Oculto hasta revelar")).toBeInTheDocument();
-    expect(chat).toHaveAttribute("data-tone", "attacking");
+    expect(chat).toHaveAttribute("data-tone", "neutral");
     expect(chat.querySelectorAll(".av-seg.done")).toHaveLength(1);
   });
 
@@ -206,6 +206,19 @@ describe("ChatTile", () => {
     );
     expect(screen.getByLabelText("Chat 1 de 8: Agente-1")).toHaveAttribute("inert");
     expect(screen.getByText("Fijado").closest("button")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("a una persona del Público se la rotula Participante y al enjambre Atacante", () => {
+    const { unmount } = tile(liveSession("1", { kind: "audience", alias: "neo" }));
+    const audience = screen.getByLabelText(/^Chat 1 de 8/);
+    expect(within(audience).getByText("Participante")).toBeInTheDocument();
+    expect(within(audience).queryByText("Atacante")).not.toBeInTheDocument();
+    unmount();
+
+    tile(liveSession("2"));
+    const swarm = screen.getByLabelText(/^Chat 1 de 8/);
+    expect(within(swarm).getByText("Atacante")).toBeInTheDocument();
+    expect(within(swarm).queryByText("Participante")).not.toBeInTheDocument();
   });
 
   describe("conversación desplazable", () => {

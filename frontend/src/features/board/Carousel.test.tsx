@@ -6,7 +6,7 @@ import { STEP } from "./slots";
 import type { CarouselItem, ChatTone } from "./types";
 
 const ids = ["1", "2", "3", "4", "5", "6", "7", "8"];
-function item(id: string, tone: ChatTone = "attacking", pulseKey = "0"): CarouselItem {
+function item(id: string, tone: ChatTone = "neutral", pulseKey = "0"): CarouselItem {
   return { id, label: `Agente-${id}`, short: `A-${id}`, tone, title: `Agente-${id}`, pulseKey };
 }
 
@@ -158,7 +158,7 @@ describe("Carousel", () => {
       />,
     );
     const indicator = screen.getByRole("button", { name: "Ir al chat 2: Agente-2" });
-    expect(indicator).toHaveClass("evt", "st-attacking");
+    expect(indicator).toHaveClass("evt", "st-neutral");
     act(() => vi.advanceTimersByTime(4000));
     expect(indicator).not.toHaveClass("evt");
   });

@@ -1,14 +1,38 @@
-import type { CarouselItem, ChatStatus, LiveAttempt, LiveSession } from "./types";
+import type {
+  CarouselItem,
+  ChatStatus,
+  LiveAttempt,
+  LiveDenial,
+  LiveSession,
+  SessionKind,
+} from "./types";
+import { denialLabel } from "./vocabulary";
 
 export const TERMINAL = new Set(["evaluated", "inconclusive"]);
 export const isPending = (attempt: LiveAttempt) => !TERMINAL.has(attempt.status);
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
+const ATTACK_AGENTS = new Set<SessionKind>(["swarm", "prober"]);
+
+/** Autor de las burbujas: el enjambre y el Prober atacan por diseño; a una persona se la presume de buena fe. */
+export function speakerLabel(kind: SessionKind): string {
+  return ATTACK_AGENTS.has(kind) ? "Atacante" : "Participante";
+}
+
+/**
+ * Señal del sistema: una herramienta negada por un validador. "rate_limited" (validator null) y
+ * "order_exists" (puede ser un pedido mal escrito) no cuentan. Es una aproximación de vista a
+ * routing/session_risk.py: el tablero no sabe si un pedido inexistente es un error de tipeo.
+ */
+const isRiskDenial = (d: LiveDenial) => d.validator !== null && d.validator !== "order_exists";
+
 /**
  * Estado del chat (franja bajo la cabecera), con la regla de la maqueta:
  * "Bloqueado" solo con un `prevented` o un parche vigente; "No logrado" e "Inconcluso" no son
  * mérito de la defensa. Un chat enmascarado nunca revela su resultado.
+ * Buena fe: a una persona (Público) se la presume de buena fe; "Atacando" solo describe al
+ * enjambre y al Prober, y el Público pasa a "Señal de riesgo" únicamente con una negación de validador.
  */
 export function chatStatus(
   session: LiveSession,
@@ -18,9 +42,9 @@ export function chatStatus(
   const { attempts } = session;
   const busy = attempts.some(isPending);
   if (session.kind !== "prober" && !accepting && !revealed && !busy)
-    return { tone: "attacking", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
+    return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
   if (session.concealed)
-    return { tone: "attacking", label: "Atacando", detail: "Oculto hasta revelar" };
+    return { tone: "neutral", label: "Conversando", detail: "Oculto hasta revelar" };
   const done = attempts.filter((attempt) => !isPending(attempt));
   const leak = [...done].reverse().find((a) => a.outcome === "confirmed_violation");
   if (leak && !leak.patched_by) {
@@ -42,8 +66,12 @@ export function chatStatus(
   const patch = [...done].reverse().find((a) => a.patched_by)?.patched_by;
   if (patch)
     return { tone: "blocked", label: "Bloqueado", detail: `Parche v${patch.version} vigente` };
+  const agent = ATTACK_AGENTS.has(session.kind);
   const last = done.at(-1);
-  if (!last) return { tone: "attacking", label: "Atacando", detail: "Primer intento" };
+  if (!last)
+    return agent
+      ? { tone: "neutral", label: "Atacando", detail: "Primer intento" }
+      : { tone: "neutral", label: "Conversando", detail: "Primer mensaje" };
   if (last.outcome === "prevented") {
     const prevented = session.prevented_n ?? 1;
     return {
@@ -52,13 +80,24 @@ export function chatStatus(
       detail: plural(prevented, "frenado", "frenados"),
     };
   }
+  if (!agent) {
+    const signal = [...done].reverse().find((a) => a.denials.some(isRiskDenial));
+    const denial = signal?.denials.find(isRiskDenial);
+    if (signal && denial)
+      return {
+        tone: "neutral",
+        label: "Señal de riesgo",
+        detail: `${denialLabel(denial)} · intento ${signal.number}`,
+      };
+    return { tone: "neutral", label: "Conversando", detail: "Sin señales de riesgo" };
+  }
   const word =
     last.outcome === "not_achieved"
       ? "no logrado"
       : last.outcome === "contained_honeypot"
         ? "contenido"
         : "inconcluso";
-  return { tone: "attacking", label: "Atacando", detail: `Último: ${word}` };
+  return { tone: "neutral", label: "Atacando", detail: `Último: ${word}` };
 }
 
 /** Alias corto para el indicador de la barra (el Prober se distingue por el final de su id). */
