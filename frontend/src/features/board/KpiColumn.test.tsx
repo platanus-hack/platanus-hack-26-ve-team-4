@@ -17,11 +17,12 @@ describe("KpiColumn", () => {
     const safe = screen.getByLabelText("Espacio seguro");
     expect(safe.querySelector(".av-k-num")).toHaveTextContent("6/15");
     expect(within(safe).getByText("40 %")).toBeInTheDocument();
-    expect(within(safe).getByText(/sin Público/)).toBeInTheDocument();
+    expect(within(safe).getByText("en señuelo · fuente: enrutador")).toBeInTheDocument();
+    expect(within(safe).queryByText(/sin Público/)).not.toBeInTheDocument();
 
     const leaked = screen.getByLabelText("Ataques que dejamos pasar");
     expect(leaked.querySelector(".av-k-num")).toHaveTextContent("7");
-    expect(within(leaked).getByText("de 66 sin Público · Σ 10 obj. (se solapan)")).toBeVisible();
+    expect(within(leaked).getByText("de 66 · Σ 10 obj. (se solapan)")).toBeVisible();
 
     const patches = screen.getByLabelText("Parches que aprendió la defensa");
     expect(within(patches).getByText("v2")).toBeInTheDocument();

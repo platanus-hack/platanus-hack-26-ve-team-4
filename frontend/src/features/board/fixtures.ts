@@ -1,4 +1,4 @@
-// Datos de prueba de la Arena en vivo con la forma de GET /api/operator/live v2.
+// Datos de prueba de la Arena en vivo con la forma de GET /api/operator/live v3.
 import type { LiveAttempt, LiveBoard, LiveKpis, LiveSession } from "./types";
 
 export const NOW = "2026-10-24T15:01:00+00:00";
@@ -29,7 +29,6 @@ export function liveSession(id: string, overrides: Partial<LiveSession> = {}): L
     session_id: id,
     alias: `Agente-${id}`,
     kind: "swarm",
-    concealed: false,
     route: "protected",
     customer_id: "cust-1",
     last_activity: `2026-10-24T15:00:${id.padStart(2, "0").slice(-2)}+00:00`,
@@ -42,17 +41,11 @@ export function liveSession(id: string, overrides: Partial<LiveSession> = {}): L
   };
 }
 
-/** Sesión del Público antes de revelar, tal como la manda el servidor (sin resultado ni respuesta). */
-export function concealedSession(id: string, overrides: Partial<LiveSession> = {}): LiveSession {
+/** Sesión del Público: se ve completa desde el primer intento (ruta, respuesta, desenlace). */
+export function audienceSession(id: string, overrides: Partial<LiveSession> = {}): LiveSession {
   return liveSession(id, {
     alias: `Visitante-${id}`,
     kind: "audience",
-    concealed: true,
-    route: null,
-    contained_n: null,
-    prevented_n: null,
-    leaked_n: null,
-    attempts: [liveAttempt({ id: `att-${id}`, outcome: null, route: null, reply: "" })],
     ...overrides,
   });
 }
@@ -64,8 +57,8 @@ export const kpis: LiveKpis = {
     safe_sessions: 6,
     diverted_sessions: 7,
     contained_attempts: 53,
-    scope: "swarm_prober",
-    label: "Solo enjambre y Prober hasta revelar",
+    scope: "all",
+    label: "Toda la ronda",
     source: "x",
   },
   leaked: {
@@ -73,8 +66,8 @@ export const kpis: LiveKpis = {
     leaked: 7,
     by_objective: { "OBJ-ORDER": 6, "OBJ-MEMORY": 3, "OBJ-REFUND": 1 },
     objective_sum: 10,
-    scope: "swarm_prober",
-    label: "Solo enjambre y Prober hasta revelar",
+    scope: "all",
+    label: "Toda la ronda",
     source: "x",
   },
   attacker_tokens: {

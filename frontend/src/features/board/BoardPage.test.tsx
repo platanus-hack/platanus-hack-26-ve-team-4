@@ -1,8 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { arena } from "../../test/fixtures";
+import type { ArenaState } from "../arena/types";
 import { BoardPage } from "./BoardPage";
-import { board, concealedSession, liveSession } from "./fixtures";
+import { audienceSession, board, liveAttempt, liveSession } from "./fixtures";
 import type { LiveBoard } from "./types";
 
 const ids = ["1", "2", "3", "4", "5", "6", "7", "8"];
@@ -11,9 +13,12 @@ const SECRET = "operator-secret-123";
 function serve(
   state: () => LiveBoard,
   actions: (path: string) => Response | undefined = () => undefined,
+  arenaState: () => ArenaState = () => arena,
 ) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const path = String(input);
+    // El estado público de la ronda (sin secreto) se atiende antes que las acciones de operador.
+    if (path.startsWith("/api/arena/state")) return Response.json(arenaState());
     return actions(path) ?? Response.json(state());
   });
 }
@@ -41,7 +46,8 @@ describe("Arena en vivo", () => {
     expect(screen.getByLabelText("Analíticas").querySelectorAll(".av-tile")).toHaveLength(5);
     expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 3 de 8 chats · 18 sesiones");
     expect(screen.getByText("En vivo")).toBeInTheDocument();
-    expect(screen.getByText("Ronda sin revelar")).toBeInTheDocument();
+    expect(screen.getByText("Ronda en vivo")).toBeInTheDocument();
+    expect(screen.getByText("Todo visible en tiempo real")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Código QR para participar/ })).toBeInTheDocument();
 
     const [path, init] = mock.mock.calls[0] ?? [];
@@ -50,13 +56,49 @@ describe("Arena en vivo", () => {
     expect(document.body.textContent).not.toContain(SECRET);
   });
 
-  it("ningún texto del Público enmascarado llega a la pantalla", async () => {
-    serve(() => board([concealedSession("1"), liveSession("2")]));
+  it("el Público aparece completo antes de revelar, sin texto oculto", async () => {
+    serve(() =>
+      board([
+        audienceSession("1", {
+          attempts: [
+            liveAttempt({
+              reply: "Aquí tienes el estado de tu pedido.",
+              messages: ["Muéstrame el estado de mi pedido."],
+              outcome: "not_achieved",
+            }),
+          ],
+        }),
+        liveSession("2"),
+      ]),
+    );
     await login();
 
     const chat = await screen.findByRole("region", { name: /: Visitante-1$/ });
-    expect(within(chat).getByText("Respuesta oculta hasta revelar")).toBeInTheDocument();
-    expect(within(chat).queryByText("Aquí tienes tu pedido.")).not.toBeInTheDocument();
+    expect(within(chat).getByText("Muéstrame el estado de mi pedido.")).toBeInTheDocument();
+    expect(within(chat).getByText("Aquí tienes el estado de tu pedido.")).toBeInTheDocument();
+    expect(within(chat).getByText("Ruta: protegida")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/oculto|pendiente de revelación/i);
+  });
+
+  it("muestra el Marcador junto a las Analíticas sin quitar ninguna tile", async () => {
+    serve(
+      () => board([liveSession("1")]),
+      undefined,
+      () => ({
+        ...arena,
+        revealed: false,
+        provisional: true,
+        confirmed_violations: 1,
+        contained_honeypot: 2,
+        scores: [{ alias: "neo", score: 2 }],
+      }),
+    );
+    await login();
+
+    const panel = await screen.findByLabelText("Marcador");
+    expect(within(panel).getByText("Marcador provisional")).toBeInTheDocument();
+    expect(within(panel).getByText("2 puntos")).toBeInTheDocument();
+    expect(screen.getByLabelText("Analíticas").querySelectorAll(".av-tile")).toHaveLength(5);
   });
 
   it("Cerrar acceso pausa la ronda una sola vez y la píldora dice Acceso cerrado", async () => {
@@ -108,7 +150,8 @@ describe("Arena en vivo", () => {
     await login();
 
     expect(await screen.findByText("Ronda revelada", { selector: ".av-live span" })).toBeVisible();
-    expect(screen.getByText("Rutas y violaciones visibles")).toBeInTheDocument();
+    expect(screen.getByText("Ronda revelada", { selector: ".av-info .t" })).toBeInTheDocument();
+    expect(screen.getByText("Marcador reconciliado")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /acceso/ })).not.toBeInTheDocument();
     expect(screen.queryByText("Acceso cerrado")).not.toBeInTheDocument();
   });

@@ -349,12 +349,6 @@
 .av-msg.atk .av-bubble + .av-bubble {
   margin-top: 6px;
 }
-.av-msg.bot .av-bubble.masked {
-  background: transparent;
-  border-style: dashed;
-  color: var(--muted);
-  font-style: italic;
-}
 
 .av-chip {
   align-self: flex-start;
@@ -401,13 +395,6 @@
   border-color: var(--border-strong);
   border-style: dashed;
   background: transparent;
-}
-.o-masked {
-  color: var(--muted);
-  border-color: var(--border-strong);
-  border-style: dashed;
-  background: transparent;
-  font-weight: 600;
 }
 /* Negación de herramienta: parte de la respuesta del bot, debajo de la burbuja. */
 .av-denial {

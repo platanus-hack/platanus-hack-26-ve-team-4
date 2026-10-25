@@ -1,0 +1,115 @@
+/* Columna derecha del tablero (440 px): Analíticas (760 px) y Marcador (145 px), separación de 15. */
+.av-side {
+  display: grid;
+  grid-template-rows: 760px 145px;
+  row-gap: 15px;
+  width: 440px;
+  height: 920px;
+  min-width: 0;
+}
+
+/* Marcador en vivo: mismas variables que el resto del escenario, sin colores nuevos. */
+.av-score {
+  height: 145px;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.av-score h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+.av-score-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 22px;
+  min-width: 0;
+}
+.av-score-flag {
+  padding: 0 8px;
+  border: 1px dashed var(--sim);
+  border-radius: 999px;
+  color: var(--sim);
+  font-size: 12px;
+  line-height: 18px;
+}
+.av-score-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-score-counts {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  height: 22px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--muted);
+}
+.av-score-counts div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.av-score-counts dt {
+  white-space: nowrap;
+}
+.av-score-counts dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+.av-score-rank {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  line-height: 19px;
+  color: var(--text);
+}
+.av-score-rank li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  height: 19px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.av-score-rank .alias {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-score-rank strong {
+  font-weight: 800;
+}
+.av-score-rank small {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.av-score-empty {
+  margin: 0;
+  font-size: 14px;
+  line-height: 19px;
+  color: var(--muted);
+}

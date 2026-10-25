@@ -1,9 +1,10 @@
-/* Columna KPI 440 × 920: 5 tiles de 172 + 4 separaciones de 15. */
+/* Columna de Analíticas (440 px): 5 tiles de 140 + 4 separaciones de 15 = 760 px.
+   El Marcador ocupa el resto de la columna (ver scoreboard.css). */
 .av-kpis {
   display: grid;
-  grid-template-rows: repeat(5, 172px);
+  grid-template-rows: repeat(5, 140px);
   row-gap: 15px;
-  height: 920px;
+  height: 760px;
 }
 .av-tile {
   --c: var(--neutral);
@@ -12,7 +13,7 @@
   min-width: 0;
   display: grid;
   grid-template-rows: 26px 1fr 26px;
-  padding: 16px 20px 16px 30px;
+  padding: 10px 20px 10px 30px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;

@@ -73,18 +73,15 @@ interface Props {
 
 function Turn({
   attempt,
-  masked,
   previous,
   speaker,
 }: {
   attempt: LiveAttempt;
-  masked: boolean;
   previous?: LiveAttempt;
   speaker: string;
 }) {
-  const technique = masked ? null : techniqueLabel(attempt.technique);
+  const technique = techniqueLabel(attempt.technique);
   const diverted =
-    !masked &&
     attempt.route === "honeypot" &&
     (previous ? previous.route !== "honeypot" : attempt.number === 1);
   const pending = isPending(attempt);
@@ -117,29 +114,22 @@ function Turn({
         </li>
       ) : (
         <>
-          {masked ? (
+          {(attempt.reply || attempt.denials.length > 0) && (
             <li className="av-msg bot">
-              <p className="av-bubble masked">Respuesta oculta hasta revelar</p>
+              {attempt.reply && <p className="av-bubble">{attempt.reply}</p>}
+              {attempt.denials.map((denial, n) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: las negaciones de un intento no cambian.
+                <span className="av-denial" key={n}>
+                  <LockIcon />
+                  <span>Herramienta negada · {denialLabel(denial)}</span>
+                </span>
+              ))}
             </li>
-          ) : (
-            (attempt.reply || attempt.denials.length > 0) && (
-              <li className="av-msg bot">
-                {attempt.reply && <p className="av-bubble">{attempt.reply}</p>}
-                {attempt.denials.map((denial, n) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: las negaciones de un intento no cambian.
-                  <span className="av-denial" key={n}>
-                    <LockIcon />
-                    <span>Herramienta negada · {denialLabel(denial)}</span>
-                  </span>
-                ))}
-              </li>
-            )
           )}
-          <li className={`av-chip ${masked ? "o-masked" : outcome.cls}`}>
-            <span className="n">Intento {attempt.number} ·</span>
-            {masked ? " resultado oculto" : ` ${outcome.text(attempt)}`}
+          <li className={`av-chip ${outcome.cls}`}>
+            <span className="n">Intento {attempt.number} ·</span> {outcome.text(attempt)}
           </li>
-          {!masked && attempt.patched_by && (
+          {attempt.patched_by && (
             <li className="av-sys">
               Parche v{attempt.patched_by.version} activado ·{" "}
               {Math.round(attempt.patched_by.seconds_after)} s después
@@ -163,9 +153,8 @@ export function ChatTile({
   onTogglePin,
 }: Props) {
   const status = chatStatus(session, accepting, revealed);
-  const masked = session.concealed;
   const kind = KIND[session.kind];
-  const route = !masked && session.route ? ROUTE[session.route] : null;
+  const route = ROUTE[session.route];
   const last = session.attempts.at(-1);
   const conv = useConversationScroll<HTMLOListElement>(conversationCount(session.attempts));
   const fresh = conv.unread === 1 ? "1 nuevo" : `${conv.unread} nuevos`;
@@ -207,7 +196,7 @@ export function ChatTile({
             <i />
             {kind.label}
           </span>
-          {route && <span className={`av-badge ${route.cls}`}>{route.label}</span>}
+          <span className={`av-badge ${route.cls}`}>{route.label}</span>
         </div>
       </div>
       <div className="av-status">
@@ -230,7 +219,6 @@ export function ChatTile({
           <Fragment key={attempt.id}>
             <Turn
               attempt={attempt}
-              masked={masked}
               previous={session.attempts[n - 1]}
               speaker={speakerLabel(session.kind)}
             />
@@ -264,9 +252,7 @@ export function ChatTile({
               ? ""
               : isPending(attempt)
                 ? "run"
-                : masked
-                  ? "done"
-                  : (outcomeView(attempt) ?? UNKNOWN_OUTCOME).seg;
+                : (outcomeView(attempt) ?? UNKNOWN_OUTCOME).seg;
             // biome-ignore lint/suspicious/noArrayIndexKey: los segmentos son posiciones fijas.
             return <i key={k} className={`av-seg${cls ? ` ${cls}` : ""}`} />;
           })}
