@@ -29,9 +29,10 @@ Reutiliza `attempt_view` para redactar referencias de la respuesta, más `Policy
 
 | `kind` | Criterio | Cómo se muestra |
 | --- | --- | --- |
-| `audience` | Sesión `sess-…` cuyo alias no empieza por `Agente-`. | «Público». |
+| `audience` | Sesión `sess-…` cuyo alias no empieza por `Agente-` ni `Interno-`. | «Público». |
 | `swarm` | Sesión `sess-…` con alias `Agente-…`. | «Agente simulado», siempre. |
 | `prober` | Sesiones `internal-…` con alias `Prober`. | «Prober · xxxx». Cada caso de campaña abre su propia sesión interna, y el tablero las agrupa en una sola por `campaign_id`. Se muestra con los últimos 4 caracteres de la campaña. |
+| `test` | Alias que empieza con `Interno-` (reservado: solo se crea con el secreto de operador, desde «Chat de prueba» en Operación). | «Prueba interna». Se muestra sin enmascarar y no cuenta en las KPI, en `sessions_total` ni en la clasificación pública. |
 
 Una «sesión del tablero» es una sesión con al menos un intento. Las sesiones `internal-…` con alias «Repetición» (repeticiones del operador) se excluyen de las sesiones y de todas las KPI. `sessions_total` es el número de sesiones del tablero, con el Prober ya agrupado.
 
