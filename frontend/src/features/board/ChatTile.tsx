@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { richText } from "../participant/richText";
 import { ago, chatStatus, isPending, speakerLabel } from "./status";
 import type { LiveAttempt, LiveSession } from "./types";
 import { useConversationScroll } from "./useConversationScroll";
@@ -124,7 +125,7 @@ function Turn({
           ) : (
             (attempt.reply || attempt.denials.length > 0) && (
               <li className="av-msg bot">
-                {attempt.reply && <p className="av-bubble">{attempt.reply}</p>}
+                {attempt.reply && <p className="av-bubble">{richText(attempt.reply)}</p>}
                 {attempt.denials.map((denial, n) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: las negaciones de un intento no cambian.
                   <span className="av-denial" key={n}>

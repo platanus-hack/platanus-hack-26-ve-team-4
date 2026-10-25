@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { errorMessage, requestJson } from "../../shared/api/http";
 import type { Replay } from "../arena/replay/types";
 import { operatorRequest } from "../operator/api";
+import { richText } from "../participant/richText";
 import { AttemptReplay } from "./AttemptReplay";
 import { clock, familyOf, NUMBER, ORIGINS, outcomeOf, patchDelay, tokensText } from "./labels";
 import type { AttemptDetail, MonitorAttempt } from "./types";
@@ -94,7 +95,7 @@ export function AttemptDetailPanel({
             {message}
           </p>
         ))}
-        {detail?.reply && <p className="monitor-bubble is-bot">{detail.reply}</p>}
+        {detail?.reply && <p className="monitor-bubble is-bot">{richText(detail.reply)}</p>}
       </div>
       {error !== null && <p role="alert">{errorMessage(error)}</p>}
       {detail && <AttemptReplay attempt={attempt} graph={detail.graph} replay={replay} />}
