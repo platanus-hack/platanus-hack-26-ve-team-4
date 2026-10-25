@@ -163,7 +163,7 @@ export interface LiveBoard {
 // ---- Tipos compartidos de la vista (no vienen del servidor) ----
 
 /** Tono del estado de un chat. Clase CSS: `st-${tone}`. */
-export type ChatTone = "attacking" | "safe" | "leak" | "blocked";
+export type ChatTone = "neutral" | "safe" | "leak" | "blocked";
 
 export interface ChatStatus {
   tone: ChatTone;

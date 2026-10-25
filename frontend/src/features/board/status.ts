@@ -18,9 +18,9 @@ export function chatStatus(
   const { attempts } = session;
   const busy = attempts.some(isPending);
   if (session.kind !== "prober" && !accepting && !revealed && !busy)
-    return { tone: "attacking", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
+    return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
   if (session.concealed)
-    return { tone: "attacking", label: "Atacando", detail: "Oculto hasta revelar" };
+    return { tone: "neutral", label: "Atacando", detail: "Oculto hasta revelar" };
   const done = attempts.filter((attempt) => !isPending(attempt));
   const leak = [...done].reverse().find((a) => a.outcome === "confirmed_violation");
   if (leak && !leak.patched_by) {
@@ -43,7 +43,7 @@ export function chatStatus(
   if (patch)
     return { tone: "blocked", label: "Bloqueado", detail: `Parche v${patch.version} vigente` };
   const last = done.at(-1);
-  if (!last) return { tone: "attacking", label: "Atacando", detail: "Primer intento" };
+  if (!last) return { tone: "neutral", label: "Atacando", detail: "Primer intento" };
   if (last.outcome === "prevented") {
     const prevented = session.prevented_n ?? 1;
     return {
@@ -58,7 +58,7 @@ export function chatStatus(
       : last.outcome === "contained_honeypot"
         ? "contenido"
         : "inconcluso";
-  return { tone: "attacking", label: "Atacando", detail: `Último: ${word}` };
+  return { tone: "neutral", label: "Atacando", detail: `Último: ${word}` };
 }
 
 /** Alias corto para el indicador de la barra (el Prober se distingue por el final de su id). */

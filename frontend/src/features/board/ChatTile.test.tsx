@@ -148,7 +148,7 @@ describe("ChatTile", () => {
     expect(within(chat).queryByText(/Herramienta negada/)).not.toBeInTheDocument();
     expect(within(chat).queryByText(/Ruta:/)).not.toBeInTheDocument();
     expect(within(chat).getByText("Oculto hasta revelar")).toBeInTheDocument();
-    expect(chat).toHaveAttribute("data-tone", "attacking");
+    expect(chat).toHaveAttribute("data-tone", "neutral");
     expect(chat.querySelectorAll(".av-seg.done")).toHaveLength(1);
   });
 
