@@ -24,3 +24,13 @@ def test_postgres_keeps_each_store_in_its_own_database(tmp_path: Path) -> None:
     assert settings.environment_database_url("honeypot") == f"{POSTGRES}_honeypot"
     assert is_postgres(settings.environment_database_url("honeypot"))
     assert "s3cret" not in repr(settings)
+
+
+def test_a_hosted_postgres_url_uses_the_async_driver(tmp_path: Path) -> None:
+    for scheme in ("postgres", "postgresql"):
+        hosted = f"{scheme}://agent_zero:s3cret@dpg-internal/agent_zero"
+        settings = Settings(data_dir=tmp_path, database_url=SecretStr(hosted))
+
+        assert settings.app_database_url == (
+            "postgresql+asyncpg://agent_zero:s3cret@dpg-internal/agent_zero"
+        )

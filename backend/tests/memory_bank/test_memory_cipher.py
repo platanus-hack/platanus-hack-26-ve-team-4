@@ -57,3 +57,15 @@ def test_invalid_key_fails(tmp_path: Path) -> None:
     settings = Settings(data_dir=tmp_path, memory_encryption_key=SecretStr("corta"))
     with pytest.raises(MemoryConfigError, match="Fernet"):
         MemoryCipher.from_settings(settings)
+
+
+@pytest.mark.requirement("MEM-03")
+def test_a_long_generated_secret_is_derived_into_a_key(tmp_path: Path) -> None:
+    generated = SecretStr("Zm9vYmFyYmF6+/quxquuxcorgegraultgarplywaldo=")
+    first = MemoryCipher.from_settings(
+        Settings(data_dir=tmp_path, environment="production", memory_encryption_key=generated)
+    )
+    second = MemoryCipher.from_settings(
+        Settings(data_dir=tmp_path, environment="production", memory_encryption_key=generated)
+    )
+    assert second.decrypt(first.encrypt("hola")) == "hola"

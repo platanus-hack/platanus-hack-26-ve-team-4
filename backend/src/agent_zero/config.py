@@ -78,7 +78,15 @@ class Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def _blank_database_url_means_sqlite(cls, value: object) -> object:
-        return None if value == "" else value
+        if isinstance(value, SecretStr):
+            value = value.get_secret_value()
+        if value == "":
+            return None
+        if isinstance(value, str):
+            for scheme in ("postgres://", "postgresql://"):
+                if value.startswith(scheme):
+                    return "postgresql+asyncpg://" + value.removeprefix(scheme)
+        return value
 
     @property
     def app_database_url(self) -> str:
