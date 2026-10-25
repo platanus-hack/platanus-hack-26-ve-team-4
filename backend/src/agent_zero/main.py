@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from agent_zero.arena.audit_router import router as audit_router
 from agent_zero.arena.core import ProductCore
 from agent_zero.arena.monitor_router import router as monitor_router
 from agent_zero.arena.operator_router import router as operator_router
@@ -97,6 +98,7 @@ def create_app(
     app.include_router(reset_router)
     app.include_router(operator_router)
     app.include_router(monitor_router)
+    app.include_router(audit_router)
     app.include_router(evaluations_router)
     app.include_router(decoy_router)
     app.include_router(live_router)
