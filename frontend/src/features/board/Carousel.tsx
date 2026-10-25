@@ -229,7 +229,7 @@ export function Carousel({ items, pinned, scale, renderChat }: Props) {
           }}
         >
           {free.length === 0 && items.length === 0 ? (
-            <p className="av-cempty">Esperando atacantes…</p>
+            <p className="av-cempty">Esperando participantes…</p>
           ) : (
             free.map((id) => renderChat(id, shown.has(id)))
           )}

@@ -58,13 +58,13 @@ Mientras `ArenaState.revealed` es falso, cada sesión `audience` lleva `conceale
 - Cada intento va con `outcome: null`, `route: null`, `reply: ""` y listas vacías de `denials` y `violated_objectives`.
 - `patched_by` y `technique` van en `null`.
 
-El texto de la respuesta no viaja en el JSON. Los mensajes del atacante sí se muestran, porque son del propio participante. El enjambre y el Prober se muestran completos. Tras revelar, todo aparece con su ruta y su desenlace reales.
+El texto de la respuesta no viaja en el JSON. Los mensajes del participante sí se muestran, porque son suyos. El enjambre y el Prober se muestran completos. Tras revelar, todo aparece con su ruta y su desenlace reales.
 
 En pantalla, un chat enmascarado muestra:
 
 - La burbuja «Respuesta oculta hasta revelar».
 - El chip «Intento N · resultado oculto».
-- La franja «Atacando · Oculto hasta revelar».
+- La franja «Conversando · Oculto hasta revelar».
 - Sin negaciones, sin separadores de parche y sin insignia de ruta.
 
 Su indicador en la barra solo marca actividad (el anillo de evento) y nunca cambia de color.
@@ -135,7 +135,7 @@ No escribe textos propios:
 - Aplica los mutadores `paraphrase_es`, `paraphrase_en` y `split_turns`.
 - Cambia los pedidos de la plantilla por los de la sesión.
 
-Solo viajan casos de superficie mensaje o memoria. El espaciado mínimo es de 5,2 s por sesión, bajo el cupo de 12 intentos por minuto.
+Solo viajan casos de superficie mensaje o memoria. El espaciado mínimo es de 5,2 s por sesión, muy por debajo del cupo de 240 intentos por minuto.
 
 ```bash
 cd backend
@@ -144,7 +144,7 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 
 ## Frontend
 
-- **Ruta y acceso.** `/arena` monta `BoardPage` dentro de `OperatorGate`. El secreto vive solo en memoria y la barra de navegación se oculta para proyectar. La ruta `/tablero` y la arena pública anterior ya no existen. El backend público (`/api/arena/state`, `/events`, `/coevolution`) no cambió.
+- **Ruta y acceso.** `/arena` monta `BoardPage` dentro de `OperatorGate`. El secreto vive solo en memoria. La barra de navegación se oculta solo mientras la Arena está abierta con el secreto (para proyectar); en el acceso y después de «Salir» vuelve a aparecer para ir a Participar, Monitor u Operación. La ruta `/tablero` y la arena pública anterior ya no existen. El backend público (`/api/arena/state`, `/events`, `/coevolution`) no cambió.
 - **Escenario.** `useStageScale` escala el escenario de 1920 × 1080 por `min(w/1920, h/1080)`.
 - **Consulta.** Se repite cada 1,5 s y pide 12 sesiones. `assignSlots` mantiene cada sesión en su lugar entre los 8 chats.
 - **Cabecera.** Lleva:
@@ -157,7 +157,8 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 - **Cerrar acceso.** Llama a `POST /api/operator/arena/pause|resume`. El botón queda bloqueado hasta que el tablero refleja el cambio, para evitar el doble clic, y un 409 del servidor se muestra en el margen inferior. Tras revelar, el servidor no permite reabrir: el botón desaparece y la píldora dice «Ronda revelada», no «Acceso cerrado».
 - **Carrusel.** Navega con las flechas, los 8 indicadores (alias corto y punto de color), el marco deslizante, las teclas ← y → (salvo en un campo editable), el arrastre horizontal y el desplazamiento horizontal explícito: `deltaX` del trackpad o Shift+rueda, un chat por gesto. La rueda vertical sobre un chat no mueve el carrusel: es de la conversación. Sobre la barra de navegación la rueda vertical sí pasa un chat por gesto. Un arrastre con mouse que empieza vertical no mueve el carrusel. Los chats fuera de vista llevan `inert`. Se pueden fijar hasta 2: van a la izquierda y, al fijar un tercero, se suelta el más antiguo y se anuncia cuál.
 - **Chat.** Tiene la cabecera con alias, quién ataca, la ruta y el botón «Fijar». Debajo:
-  - La franja de estado: «Atacando», «En espacio seguro», «Se filtró», «Bloqueado» o «Acceso cerrado». «Bloqueado» solo aparece con un `prevented` o un parche vigente.
+  - La franja de estado: «Conversando», «Señal de riesgo», «Atacando» (solo enjambre y Prober), «En espacio seguro», «Se filtró», «Bloqueado» o «Acceso cerrado». «Bloqueado» solo aparece con un `prevented` o un parche vigente.
+  - Buena fe: a una persona (Público) se la presume de buena fe. «Señal de riesgo» aparece solo con una herramienta negada por un validador, sin contar `rate_limited` ni `order_exists`; sin esa señal, la franja dice «Conversando · Sin señales de riesgo». Las burbujas del Público dicen «Participante» y las del enjambre y el Prober «Atacante». El KPI se llama «Intentos».
   - La conversación con todos los intentos recibidos (el servidor manda los últimos 30). Se desplaza en vertical con la rueda, el arrastre táctil o, con foco, ↑ ↓ Inicio Fin AvPág RePág, hasta el primer mensaje, sin que el desplazamiento se escape al carrusel ni a la página. Sigue al último mensaje mientras el usuario está abajo (margen de 24 px). Si subió a leer no se le mueve: aparece la píldora «↓ N nuevos», que vuelve al final al hacer clic y desaparece también al volver abajo a mano. El degradado superior solo aparece cuando hay contenido arriba. La lógica vive en `useConversationScroll`.
   - Las burbujas, con la técnica cuando se conoce.
   - El chip «Herramienta negada · …» con el mapa `DENIAL`. Si no conoce el motivo o el validador, cae a un texto legible.

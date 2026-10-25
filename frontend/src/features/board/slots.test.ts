@@ -71,7 +71,7 @@ describe("estado del chat", () => {
     });
     const failed = liveSession("1", { attempts: [liveAttempt({ outcome: "not_achieved" })] });
     expect(chatStatus(failed, true, false)).toMatchObject({
-      tone: "attacking",
+      tone: "neutral",
       detail: "Último: no logrado",
     });
     const patched = liveSession("1", {
@@ -91,7 +91,7 @@ describe("estado del chat", () => {
 
   it("el Público enmascarado no cambia de color ni de pulso por su desenlace", () => {
     const hidden = concealedSession("1");
-    expect(chatStatus(hidden, true, false).tone).toBe("attacking");
+    expect(chatStatus(hidden, true, false).tone).toBe("neutral");
     const item = carouselItem(hidden, true, false);
     expect(item.pulseKey).toBe("1:evaluated");
     expect(item.short).toBe("Visitante-1");

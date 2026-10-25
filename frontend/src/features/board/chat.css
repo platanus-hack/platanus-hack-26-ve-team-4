@@ -20,7 +20,7 @@
   pointer-events: none;
   border: 1px solid color-mix(in srgb, var(--st) 45%, var(--border));
 }
-.av-chat.st-attacking {
+.av-chat.st-neutral {
   --st: var(--neutral);
 }
 .av-chat.st-safe {

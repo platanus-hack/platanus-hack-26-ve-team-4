@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { ago, chatStatus, isPending } from "./status";
+import { ago, chatStatus, isPending, speakerLabel } from "./status";
 import type { LiveAttempt, LiveSession } from "./types";
 import { useConversationScroll } from "./useConversationScroll";
 import {
@@ -16,7 +16,7 @@ const PROGRESS = 10;
 const EVENT_MS = 4000;
 
 /**
- * Contador monótono de mensajes: cada intento suma 2 (el del atacante al empezar y el
+ * Contador monótono de mensajes: cada intento suma 2 (el del participante al empezar y el
  * desenlace al terminar). No depende de cuántos intentos manda el servidor (los últimos 30).
  */
 export function conversationCount(attempts: LiveAttempt[]): number {
@@ -75,10 +75,12 @@ function Turn({
   attempt,
   masked,
   previous,
+  speaker,
 }: {
   attempt: LiveAttempt;
   masked: boolean;
   previous?: LiveAttempt;
+  speaker: string;
 }) {
   const technique = masked ? null : techniqueLabel(attempt.technique);
   const diverted =
@@ -94,7 +96,7 @@ function Turn({
       )}
       <li className="av-msg atk">
         <div className="av-meta">
-          <span>Atacante</span>
+          <span>{speaker}</span>
           {technique && <span className="av-tech">{technique}</span>}
         </div>
         {attempt.messages.map((message, turn) => (
@@ -226,7 +228,12 @@ export function ChatTile({
       >
         {session.attempts.map((attempt, n) => (
           <Fragment key={attempt.id}>
-            <Turn attempt={attempt} masked={masked} previous={session.attempts[n - 1]} />
+            <Turn
+              attempt={attempt}
+              masked={masked}
+              previous={session.attempts[n - 1]}
+              speaker={speakerLabel(session.kind)}
+            />
           </Fragment>
         ))}
       </ol>
