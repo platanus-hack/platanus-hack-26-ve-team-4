@@ -9,7 +9,7 @@ export const OUTCOMES: Record<Outcome | "pending", { label: string; tone: string
   pending: { label: "En curso", tone: "muted" },
 };
 
-const FAMILIES: Record<string, string> = {
+export const FAMILIES: Record<string, string> = {
   direct_injection: "Inyección directa",
   indirect_injection: "Inyección indirecta",
   goal_hijacking: "Secuestro de objetivos",
