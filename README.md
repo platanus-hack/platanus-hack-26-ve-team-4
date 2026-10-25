@@ -6,6 +6,14 @@
 
 **Track:** AI Security · **Evento:** Platanus Hack 26: Caracas ft. Yummy · **Equipo:** team-4.
 
+**En vivo:** [agent-zero-yt2m.onrender.com](https://agent-zero-yt2m.onrender.com)
+
+| Página | Para quién |
+| --- | --- |
+| [Participar](https://agent-zero-yt2m.onrender.com/) | Cualquiera: entra con un alias e intenta romper al asistente desde el teléfono. |
+| [Arena en vivo](https://agent-zero-yt2m.onrender.com/arena) | Pantalla del evento: chats de los atacantes y defensas activadas en vivo. |
+| [Monitor](https://agent-zero-yt2m.onrender.com/monitor) y [Operación](https://agent-zero-yt2m.onrender.com/operator) | Equipo: piden el secreto de operador. |
+
 ## El problema
 
 Las empresas ya ponen en producción agentes con herramientas reales: consultan pedidos, mueven dinero, leen historias clínicas, guardan memoria. Cada herramienta es una puerta. Un mensaje bien escrito, un correo o un documento envenenado bastan para que el agente reembolse, transfiera o lea datos de otra persona.
@@ -168,7 +176,7 @@ Empezar por [continuidad y traspaso](./docs/continuidad.md). El [índice documen
 | Comparación LIVE | 270 ejecuciones con `claude-haiku-5-5` y 683 llamadas de evaluación con coste medido (US$0.064237; US$0.075079 con la campaña); 59/90 → 0/90 violaciones, utilidad 45/45 en ambas versiones, cero inconclusos. La línea base viola menos que en el DEMO. |
 | Ciclo LIVE | Once comprobaciones, 93 llamadas de cinco roles; parche, repetición protegida, señuelo, Prober, reversión y archivo. Coste estimado US$0.0101596 desde tokens y tarifas configuradas. |
 
-La [guía de pruebas](./docs/pruebas/README.md) distingue resultados históricos, comandos y comprobaciones documentales. Los [artefactos y hashes](./docs/pruebas/evidencias.md) conservan procedencia. La revisión visual, la prueba de carga y el despliegue público siguen pendientes. Las tasas DEMO no son métricas de eficacia de un LLM real; las LIVE valen para este escenario sintético y un modelo, sin semilla.
+La [guía de pruebas](./docs/pruebas/README.md) distingue resultados históricos, comandos y comprobaciones documentales. Los [artefactos y hashes](./docs/pruebas/evidencias.md) conservan procedencia. El despliegue público corre en Render (Virginia) desde `render.yaml`; ver [despliegue](./docs/despliegue.md#render). Las tasas DEMO no son métricas de eficacia de un LLM real; las LIVE valen para este escenario sintético y un modelo, sin semilla.
 
 ## Arranque con Docker
 
@@ -235,4 +243,4 @@ La propuesta del producto está en [project-description.md](./project-descriptio
 - Fernando Molina Siavato ([@FernandoSiavato](https://github.com/FernandoSiavato)).
 - Francisco Bastardo ([@franbastardo](https://github.com/franbastardo)).
 
-[CODEOWNERS](./.github/CODEOWNERS) es la referencia de revisión por ruta. Los metadatos del evento están en [platanus-hack-project.jsonc](./platanus-hack-project.jsonc). `deploy-url` debe contener una URL pública verificada cuando exista; no se incluye una dirección de ejemplo como despliegue realizado.
+[CODEOWNERS](./.github/CODEOWNERS) es la referencia de revisión por ruta. Los metadatos del evento están en [platanus-hack-project.jsonc](./platanus-hack-project.jsonc). `deploy-url` apunta al despliegue público verificado: https://agent-zero-yt2m.onrender.com.

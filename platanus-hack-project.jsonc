@@ -8,7 +8,6 @@
   // Descripción breve para la página de votación; expresa el alcance propuesto.
   "project-description-spanish": "Agent Zero propone un ciclo continuo de ataque, análisis y defensa para agentes de IA. Un red team autónomo y los participantes de una arena pública intentan vulnerar un asistente con datos sintéticos. El sistema analiza la evidencia, genera políticas, las valida y activa bloqueos o desvíos a un honeypot aislado, mostrando el antes y después del mismo ataque en vivo.",
 
-  // PENDIENTE DE DESPLIEGUE: sustituir por una URL pública válida y verificada.
-  // El campo vacío evita inventar una dirección; la entrega requiere completarlo.
-  "deploy-url": ""
+  // Despliegue público en Render, verificado con infra/scripts/smoke.py.
+  "deploy-url": "https://agent-zero-yt2m.onrender.com"
 }
