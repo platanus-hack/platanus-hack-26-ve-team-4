@@ -18,21 +18,45 @@ import "./kpi.css";
 
 const POLL_MS = 1500;
 
-export function BoardPage() {
+export function BoardPage({
+  onProjectingChange,
+}: {
+  onProjectingChange?: (projecting: boolean) => void;
+} = {}) {
   return (
     <main className="page board-login">
       <h1>Arena en vivo</h1>
       <OperatorGate>
-        {(secret, logout) => <LiveArena key={secret} secret={secret} logout={logout} />}
+        {(secret, logout) => (
+          <LiveArena
+            key={secret}
+            secret={secret}
+            logout={logout}
+            onProjectingChange={onProjectingChange}
+          />
+        )}
       </OperatorGate>
     </main>
   );
 }
 
-function LiveArena({ secret, logout }: { secret: string; logout: (message?: string) => void }) {
+function LiveArena({
+  secret,
+  logout,
+  onProjectingChange,
+}: {
+  secret: string;
+  logout: (message?: string) => void;
+  onProjectingChange?: (projecting: boolean) => void;
+}) {
   const load = useCallback((signal: AbortSignal) => loadBoard(secret, signal), [secret]);
   const { data, error, refresh } = usePolling(load, POLL_MS);
   const scale = useStageScale();
+  // Mientras la Arena está montada con el secreto se proyecta: la limpieza devuelve la barra (Salir o 401).
+  useEffect(() => {
+    onProjectingChange?.(true);
+    return () => onProjectingChange?.(false);
+  }, [onProjectingChange]);
   const [pins, setPins] = useState<string[]>([]);
   const [slots, setSlots] = useState<string[]>([]);
   const [announcement, setAnnouncement] = useState("");
