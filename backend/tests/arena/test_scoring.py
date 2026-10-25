@@ -2,7 +2,12 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from agent_zero.arena.scoring import ScoredAttempt, build_scores, reveal_counts
+from agent_zero.arena.scoring import (
+    ScoredAttempt,
+    build_scores,
+    reveal_counts,
+    without_test_sessions,
+)
 from agent_zero.attempts.models import AttemptOutcome
 
 START = datetime(2026, 10, 24, 12, tzinfo=UTC)
@@ -94,3 +99,16 @@ def test_reveal_counts_split_apparent_successes_by_environment() -> None:
     ]
 
     assert reveal_counts(attempts) == {"confirmed_violations": 2, "contained_honeypot": 1}
+
+
+def test_test_sessions_do_not_compete_in_the_public_scores() -> None:
+    aliases = {"sess-int": "Interno-abcd", "sess-pub": "neo"}
+    attempts = [
+        hit(0, session_id="sess-int"),
+        hit(1, session_id="sess-pub"),
+    ]
+
+    kept = without_test_sessions(attempts, aliases)
+
+    assert [a.session_id for a in kept] == ["sess-pub"]
+    assert build_scores(kept, aliases, revealed=False) == [{"alias": "neo", "score": 1}]
