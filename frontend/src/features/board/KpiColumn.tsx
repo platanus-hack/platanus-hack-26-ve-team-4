@@ -1,96 +1,189 @@
-import { formatDuration } from "../participant/RevealCard";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { LiveKpis } from "./types";
 
-const number = new Intl.NumberFormat("es");
+const integer = new Intl.NumberFormat("es-CL");
+const OBJECTIVES = ["OBJ-ORDER", "OBJ-MEMORY", "OBJ-REFUND"];
+const EVENT_MS = 4000;
+
+/** Resalta el tile 4 s cuando su cifra principal cambia (no en la primera carga). */
+function useBump(value: string): boolean {
+  const previous = useRef(value);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (previous.current === value) return;
+    previous.current = value;
+    setOn(true);
+    const timer = setTimeout(() => setOn(false), EVENT_MS);
+    return () => clearTimeout(timer);
+  }, [value]);
+  return on;
+}
 
 function Tile({
-  title,
+  kind,
+  label,
   value,
+  children,
   context,
-  n,
-  source,
-  note,
 }: {
-  title: string;
+  kind: string;
+  label: string;
   value: string;
-  context: string;
-  n: number;
-  source: string;
-  note?: string;
+  children: ReactNode;
+  context: ReactNode;
 }) {
+  const bump = useBump(value);
   return (
-    <section className="kpi" aria-label={title}>
-      <h2 className="kpi-title">{title}</h2>
-      <p className="kpi-value">{value}</p>
-      <p className="kpi-context">{context}</p>
-      {note && <p className="kpi-note">{note}</p>}
-      <p className="kpi-source">
-        n = {number.format(n)} · {source}
-      </p>
-    </section>
+    <article className={`av-tile ${kind}${bump ? " evt" : ""}`} aria-label={label}>
+      <h2 className="av-k-label">{label}</h2>
+      <div className="av-k-body">{children}</div>
+      <p className="av-k-ctx">{context}</p>
+    </article>
   );
 }
 
-export function KpiColumn({ kpis }: { kpis: LiveKpis }) {
+const Row = ({ label, value, dot }: { label: string; value: string; dot?: string }) => (
+  <div className="av-k-row">
+    <span>
+      {dot && <i className={`av-kd ${dot}`} />}
+      {label}
+    </span>
+    <b>{value}</b>
+  </div>
+);
+
+export function formatSeconds(seconds: number | null): string {
+  if (seconds === null) return "—";
+  if (seconds < 60) return `${Math.round(seconds)} s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return rest ? `${minutes} min ${rest} s` : `${minutes} min`;
+}
+
+const thousands = (tokens: number) =>
+  (tokens / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+
+/**
+ * Los 5 KPI de la maqueta. Todas las cifras y sus bases ({k, n}, alcance) vienen del servidor;
+ * aquí solo se formatean.
+ */
+export function KpiColumn({ kpis, sessionsTotal }: { kpis: LiveKpis; sessionsTotal: number }) {
   const { attacks, safe_space: safe, leaked, attacker_tokens: tokens, patches } = kpis;
-  const objectives = Object.entries(leaked.by_objective)
-    .map(([objective, count]) => `${objective} ${count}`)
-    .join(" · ");
+  const withoutAudience = (scope: string) => (scope === "swarm_prober" ? " sin Público" : "");
+  const most = Math.max(1, ...OBJECTIVES.map((o) => leaked.by_objective[o] ?? 0));
+  const percent = safe.n > 0 ? `${Math.round((safe.safe_sessions / safe.n) * 100)} %` : "—";
+  const attackerTokens = tokens.attacker.measured ? tokens.attacker.tokens : null;
+  const decoyTokens = tokens.decoy.measured ? tokens.decoy.tokens : null;
   return (
-    <aside className="kpis" aria-label="Analíticas">
+    <aside className="av-kpis" aria-label="Analíticas">
       <Tile
-        title="Ataques"
-        value={number.format(attacks.n)}
-        context={`Público ${attacks.audience} · Agentes simulados ${attacks.swarm} · Prober ${attacks.prober}`}
-        n={attacks.n}
-        source="intentos de la ronda"
-      />
+        kind="t-att"
+        label="Ataques"
+        value={String(attacks.n)}
+        context={`n = ${integer.format(attacks.n)} intentos · ${sessionsTotal} sesiones${
+          attacks.in_flight ? ` · ${attacks.in_flight} en curso` : ""
+        }`}
+      >
+        <div className="av-k-num">{integer.format(attacks.n)}</div>
+        <div className="av-k-side">
+          <Row dot="aud" label="Público" value={integer.format(attacks.audience)} />
+          <Row dot="sim" label="Agentes simulados" value={integer.format(attacks.swarm)} />
+          <Row dot="pro" label="Prober" value={integer.format(attacks.prober)} />
+        </div>
+      </Tile>
+
       <Tile
-        title="Espacio seguro"
-        value={`${safe.diverted_sessions}/${safe.n}`}
-        context={`sesiones llevadas al señuelo · ${safe.contained_attempts} intentos contenidos`}
-        note={safe.label}
-        n={safe.n}
-        source="sesiones con alcance"
-      />
+        kind="t-safe"
+        label="Espacio seguro"
+        value={`${safe.safe_sessions}/${safe.n}/${safe.contained_attempts}`}
+        context={`en señuelo · fuente: enrutador${withoutAudience(safe.scope)}`}
+      >
+        <div className="av-k-num">
+          {safe.safe_sessions}
+          <small>/{safe.n}</small>
+        </div>
+        <div className="av-k-side">
+          <Row label="Intentos contenidos" value={integer.format(safe.contained_attempts)} />
+          <Row label="De las sesiones" value={percent} />
+        </div>
+      </Tile>
+
       <Tile
-        title="Ataques que dejamos pasar"
-        value={String(leaked.leaked)}
-        context={objectives ? `por objetivo: ${objectives}` : "violaciones confirmadas"}
-        note={leaked.label}
-        n={leaked.n}
-        source="intentos con alcance"
-      />
+        kind="t-leak"
+        label="Ataques que dejamos pasar"
+        value={`${leaked.leaked}/${leaked.n}`}
+        context={`de ${integer.format(leaked.n)}${withoutAudience(leaked.scope)} · Σ ${leaked.objective_sum} obj. (se solapan)`}
+      >
+        <div className="av-k-num">{integer.format(leaked.leaked)}</div>
+        <div className="av-k-side">
+          {OBJECTIVES.map((objective) => {
+            const count = leaked.by_objective[objective] ?? 0;
+            return (
+              <div className="av-k-row obj" key={objective}>
+                <span>{objective}</span>
+                <span className="av-bar">
+                  <i style={{ width: `${(count / most) * 100}%` }} />
+                </span>
+                <b>{count}</b>
+              </div>
+            );
+          })}
+        </div>
+      </Tile>
+
       <Tile
-        title="Tokens que gasta el atacante"
-        value={
-          tokens.attacker.measured && tokens.attacker.tokens !== null
-            ? number.format(tokens.attacker.tokens)
-            : "No medido"
-        }
+        kind="t-tok"
+        label="Tokens: atacante y señuelo"
+        value={`${attackerTokens ?? "-"}/${decoyTokens ?? "-"}`}
         context={
           tokens.measured
-            ? `${tokens.attacker.measured ? "" : "Tokens del atacante: no medido · "}Sostener el señuelo: ${
-                tokens.decoy.measured && tokens.decoy.tokens !== null
-                  ? `${number.format(tokens.decoy.tokens)} tokens`
-                  : "no medido"
-              }`
-            : tokens.label
+            ? `n = ${integer.format(tokens.n)} llamadas · señuelo: nuestro`
+            : `n = ${integer.format(attacks.prober)} Prober · sin medir`
         }
-        n={tokens.n}
-        source="llamadas medidas en el ledger"
-      />
+      >
+        {tokens.measured ? (
+          <>
+            <div className="av-k-num">
+              {attackerTokens === null ? "—" : thousands(attackerTokens)}
+              {attackerTokens !== null && <small>k</small>}
+            </div>
+            <div className="av-k-side">
+              <Row
+                label="Prober"
+                value={attackerTokens === null ? "no medido" : integer.format(attackerTokens)}
+              />
+              <Row
+                label="Señuelo"
+                value={decoyTokens === null ? "no medido" : integer.format(decoyTokens)}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="av-k-num nm">—</div>
+            <div className="av-k-side av-k-nm">
+              <b className="av-k-nm-t">No medido</b>
+              <span className="av-k-nm-s" aria-hidden="true">
+                {tokens.label === "no medido en modo demo" ? "(modo demo)" : tokens.label}
+              </span>
+              <span className="av-sr">{tokens.label}</span>
+            </div>
+          </>
+        )}
+      </Tile>
+
       <Tile
-        title="Parches que aprendió la defensa"
-        value={String(patches.activated)}
-        context={
-          patches.median_seconds_to_patch === null
-            ? `política vigente v${patches.current_version} · sin hallazgos cubiertos`
-            : `política vigente v${patches.current_version} · mediana hallazgo a parche ${formatDuration(patches.median_seconds_to_patch)} sobre ${patches.findings_covered} hallazgos`
-        }
-        n={patches.n}
-        source="versiones de política activadas"
-      />
+        kind="t-pat"
+        label="Parches que aprendió la defensa"
+        value={`${patches.activated}/${patches.current_version}`}
+        context={`n = ${patches.findings_total} hallazgos · ${patches.findings_covered} cubiertos · mediana`}
+      >
+        <div className="av-k-num">{integer.format(patches.activated)}</div>
+        <div className="av-k-side">
+          <Row label="Versión vigente" value={`v${patches.current_version}`} />
+          <Row label="Hallazgo → parche" value={formatSeconds(patches.median_seconds_to_patch)} />
+        </div>
+      </Tile>
     </aside>
   );
 }

@@ -1,0 +1,174 @@
+/* Área de chats 1392 × 920: ventana de 3 chats (856) + 16 + barra de navegación (48). */
+.av-carea {
+  display: grid;
+  grid-template-rows: 856px 16px 48px;
+  width: 1392px;
+  height: 920px;
+  min-width: 0;
+}
+.av-cwin {
+  grid-row: 1;
+  display: flex;
+  gap: 24px;
+  height: 856px;
+  min-width: 0;
+}
+.av-cpinned {
+  display: flex;
+  gap: 24px;
+  flex: none;
+}
+/* Snap por chat. Margen -8 / padding 8 deja sitio al anillo de evento sin mover los chats. */
+.av-cview {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 24px;
+  margin: -8px;
+  padding: 8px;
+  scroll-padding: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  cursor: grab;
+}
+.av-cview::-webkit-scrollbar {
+  display: none;
+}
+.av-cview.drag {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+.av-cview.nosnap {
+  scroll-snap-type: none;
+}
+.av-cview > .av-chat {
+  scroll-snap-align: start;
+}
+.av-cempty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  font-size: 24px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+
+/* Barra 1392 × 48: flechas 48 × 48 + 8 indicadores de 153 (alias corto + punto de estado). */
+.av-cnav {
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  gap: 8px;
+  height: 48px;
+  min-width: 0;
+}
+.av-cnav-btn {
+  height: 48px;
+  padding: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.av-cnav-btn:disabled {
+  color: var(--border-strong);
+  cursor: default;
+  opacity: 1;
+}
+.av-cdots {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.av-ci {
+  --st: var(--neutral);
+  position: relative;
+  z-index: 1;
+  height: 48px;
+  min-width: 0;
+  padding: 0 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.av-ci .ca {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-ci > i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--st);
+  flex: none;
+}
+.av-ci .pg {
+  display: none;
+  flex: none;
+  color: var(--muted);
+}
+.av-ci.pinned {
+  gap: 6px;
+  padding: 0 6px;
+}
+.av-ci.pinned .pg {
+  display: block;
+}
+.av-ci.in {
+  background: var(--surface-3);
+  border-color: transparent;
+  color: var(--text);
+}
+.av-ci.st-attacking {
+  --st: var(--neutral);
+}
+.av-ci.st-safe {
+  --st: var(--safe);
+}
+.av-ci.st-leak {
+  --st: var(--danger);
+}
+.av-ci.st-blocked {
+  --st: var(--accent);
+}
+.av-ci.evt {
+  border-color: var(--st);
+  box-shadow: inset 0 0 0 1px var(--st);
+}
+/* Marco de la ventana visible: se desliza sobre los indicadores. */
+.av-cframe {
+  position: absolute;
+  top: 0;
+  height: 48px;
+  z-index: 2;
+  pointer-events: none;
+  border: 2px solid var(--muted);
+  border-radius: 12px;
+  transition:
+    left 0.25s ease-out,
+    width 0.25s ease-out;
+}
+.av-cnav-btn:focus-visible,
+.av-ci:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

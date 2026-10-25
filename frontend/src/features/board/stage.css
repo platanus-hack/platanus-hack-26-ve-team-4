@@ -1,0 +1,281 @@
+/* Arena en vivo: escenario fijo de 1920 × 1080 escalado y cabecera (maqueta aprobada).
+   Las clases llevan el prefijo av- para no chocar con los estilos globales. */
+.av-shell {
+  --bg: #0b1015;
+  --surface: #131e27;
+  --surface-2: #0e171f;
+  --surface-3: #1b2833;
+  --text: #edf3f7;
+  --muted: #adbac6;
+  --accent: #80e3b3; /* verde: bloqueado, parches */
+  --danger: #ffaaa2; /* rojo: se filtró */
+  --border: #344651;
+  --border-strong: #5b6f7c;
+  --safe: #7cb8ff; /* azul: espacio seguro */
+  --sim: #f4c86a; /* ámbar: agente simulado, tokens */
+  --prober: #c3a6ff; /* violeta: Prober */
+  --neutral: #c9d4dd; /* neutro: atacando, ataques */
+  --atk-bubble: #2c3f4d;
+  --bot-bubble: #24333f;
+  --track: #24323c;
+
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  background: #000;
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.av-shell *,
+.av-shell *::before,
+.av-shell *::after {
+  box-sizing: border-box;
+}
+.av-shell button {
+  font-family: inherit;
+  margin: 0;
+  min-height: 0;
+  box-shadow: none;
+  transform: none;
+}
+.av-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.av-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  padding: 32px;
+  background: var(--bg);
+  transform-origin: 50% 50%;
+  transform: translate(-50%, -50%) scale(var(--s, 1));
+  display: grid;
+  grid-template-rows: 72px 920px;
+  row-gap: 24px;
+  overflow: hidden;
+}
+.av-content {
+  display: grid;
+  grid-template-columns: 1392px 440px;
+  column-gap: 24px;
+  height: 920px;
+}
+
+/* ---------- Cabecera (72 px) ---------- */
+.av-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 72px;
+  min-width: 0;
+}
+.av-top > * {
+  flex: none;
+}
+.av-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  margin: 0;
+}
+.av-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(128, 227, 179, 0.1);
+  border: 1px solid rgba(128, 227, 179, 0.45);
+  color: var(--accent);
+}
+.av-az {
+  color: var(--accent);
+}
+.av-pill {
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 20px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.av-pill b {
+  color: var(--text);
+  font-weight: 800;
+}
+.av-pill.av-live {
+  color: var(--text);
+  font-weight: 800;
+  border-color: rgba(255, 170, 162, 0.55);
+}
+.av-pill.av-live.closed,
+.av-pill.av-live.revealed {
+  border-color: var(--border);
+}
+.av-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: av-pulse 1.6s ease-out infinite;
+}
+.av-live.closed .av-dot,
+.av-live.revealed .av-dot {
+  background: var(--muted);
+  animation: none;
+}
+@keyframes av-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 170, 162, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 11px rgba(255, 170, 162, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 170, 162, 0);
+  }
+}
+.av-top > .av-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.av-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+.av-top > .av-info {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.av-info > div {
+  min-width: 0;
+}
+.av-info svg {
+  flex: none;
+  color: var(--muted);
+}
+.av-info .t {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.av-info .s {
+  font-size: 20px;
+  color: var(--muted);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-info.revealed {
+  border-color: rgba(128, 227, 179, 0.55);
+}
+.av-info.revealed svg,
+.av-info.revealed .t {
+  color: var(--accent);
+}
+.av-qr {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: block;
+}
+.av-btn-close {
+  height: 52px;
+  padding: 0 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 170, 162, 0.6);
+  background: rgba(255, 170, 162, 0.08);
+  color: var(--danger);
+  font-size: 20px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.av-btn-close.closed {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-3);
+}
+.av-btn-close:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.av-exit {
+  height: 52px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.av-btn-close:focus-visible,
+.av-exit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Avisos (conexión, 409 del servidor): margen inferior del escenario, fuera del área útil. */
+.av-shell .av-alert {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  left: 32px;
+  right: 32px;
+  bottom: 4px;
+  height: 24px;
+  margin: 0;
+  font-size: 20px;
+  line-height: 24px;
+  color: var(--danger);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-waiting {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 24px;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .av-shell *,
+  .av-shell *::before,
+  .av-shell *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: el movimiento reducido manda sobre cualquier animación. */
+    animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: idem. */
+    transition: none !important;
+  }
+}
