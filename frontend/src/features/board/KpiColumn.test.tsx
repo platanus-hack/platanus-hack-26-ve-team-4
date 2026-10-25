@@ -11,7 +11,9 @@ describe("KpiColumn", () => {
     expect(column.querySelectorAll(".av-tile")).toHaveLength(5);
 
     const attacks = screen.getByLabelText("Interacciones");
-    expect(within(attacks).getByText("n = 72 interacciones · 18 sesiones · 2 en curso")).toBeVisible();
+    expect(
+      within(attacks).getByText("n = 72 interacciones · 18 sesiones · 2 en curso"),
+    ).toBeVisible();
     expect(within(attacks).getByText("Agentes simulados").nextSibling).toHaveTextContent("60");
 
     const safe = screen.getByLabelText("Espacio seguro");
