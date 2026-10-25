@@ -29,7 +29,7 @@ const isRiskDenial = (d: LiveDenial) => d.validator !== null && d.validator !== 
 
 /**
  * Estado del chat (franja bajo la cabecera), con la regla de la maqueta:
- * "Bloqueado" solo con un `prevented` o un parche vigente; "No logrado" e "Inconcluso" no son
+ * "Bloqueado" solo con un `prevented` o un parche vigente; "Sin hallazgos" e "Inconcluso" no son
  * mérito de la defensa. Un chat enmascarado nunca revela su resultado.
  * Buena fe: a una persona (Público) se la presume de buena fe; "Atacando" solo describe al
  * enjambre y al Prober, y el Público pasa a "Señal de riesgo" únicamente con una negación de validador.

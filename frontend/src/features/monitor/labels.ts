@@ -4,7 +4,7 @@ export const OUTCOMES: Record<Outcome | "pending", { label: string; tone: string
   confirmed_violation: { label: "Violación", tone: "danger" },
   prevented: { label: "Impedido", tone: "accent" },
   contained_honeypot: { label: "Señuelo", tone: "decoy" },
-  not_achieved: { label: "No logrado", tone: "muted" },
+  not_achieved: { label: "Sin hallazgos", tone: "muted" },
   inconclusive: { label: "Inconcluso", tone: "warn" },
   pending: { label: "En curso", tone: "muted" },
 };

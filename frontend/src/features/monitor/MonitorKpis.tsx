@@ -21,7 +21,7 @@ export function MonitorKpis({ monitor }: { monitor: Monitor }) {
     [NUMBER.format(count("confirmed_violation")), "Violaciones confirmadas", "danger"],
     [NUMBER.format(count("prevented")), "Impedidos por política", "accent"],
     [NUMBER.format(count("contained_honeypot")), "Contenidos en señuelo", "decoy"],
-    [NUMBER.format(count("not_achieved")), "No logrados", "muted"],
+    [NUMBER.format(count("not_achieved")), "Sin hallazgos", "muted"],
     [NUMBER.format(count("inconclusive")), "Inconclusos", "warn"],
     [patchRange(monitor), "Tiempo de parcheo", "accent"],
     [
