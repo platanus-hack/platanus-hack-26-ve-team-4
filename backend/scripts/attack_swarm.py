@@ -3,13 +3,19 @@
 Crea K sesiones llamadas Agente-1..K con la API publica y envia intentos en paralelo desde las
 plantillas del Prober (`prober/playbooks.py` y `prober/mutators.py`). No escribe textos propios:
 solo adapta los pedidos de cada plantilla a los de la sesion. El tablero los rotula siempre como
-"Agente simulado". Solo apunta a la arena propia; no usa el secreto de operador.
+"Agente simulado". Solo apunta a la arena propia.
 
-    uv run python scripts/attack_swarm.py --base-url http://localhost:8000 --agents 5
+El prefijo de alias `Agente-` esta reservado: el servidor solo crea esas sesiones con el secreto de
+operador. El script lo lee de la variable de entorno AGENT_ZERO_OPERATOR_SECRET (nunca de la linea
+de comandos), no lo imprime y lo envia solo al crear la sesion (`POST /api/sessions`); los intentos
+viajan con el token de participante, como los del publico.
+
+    AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --agents 5
 """
 
 import argparse
 import json
+import os
 import random
 import sys
 import threading
@@ -31,6 +37,7 @@ CASES = 30
 SAFE_MIN_WAIT = 5.2
 MUTATORS = (None, "paraphrase_es", "paraphrase_en", "split_turns")
 TERMINAL = {"evaluated", "inconclusive"}
+SECRET_ENV = "AGENT_ZERO_OPERATOR_SECRET"
 SWAP = {"owned": "\u0001", "foreign": "\u0002", "stranger": "\u0004"}
 
 
@@ -99,15 +106,33 @@ def plan_for(
 
 
 class Api:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, operator_secret: str = "") -> None:
         self.base_url = base_url.rstrip("/")
+        self._operator_secret = operator_secret
+
+    def join(self, alias: str) -> tuple[int, Any, str | None]:
+        """Crea la sesion del agente: es la unica peticion que lleva el secreto de operador."""
+        return self.call(
+            "POST",
+            "/api/sessions",
+            {"alias": alias, "accepted_rules": True},
+            operator=True,
+        )
 
     def call(
-        self, method: str, path: str, body: dict[str, Any] | None = None, token: str | None = None
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+        token: str | None = None,
+        *,
+        operator: bool = False,
     ) -> tuple[int, Any, str | None]:
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
+        if operator:
+            headers["X-Operator-Secret"] = self._operator_secret
         data = None if body is None else json.dumps(body).encode()
         request = urllib.request.Request(
             self.base_url + path, data=data, headers=headers, method=method
@@ -125,7 +150,7 @@ class Api:
 
 def run_agent(api: Api, number: int, args: argparse.Namespace, rng: random.Random) -> None:
     name = f"Agente-{number}"
-    status, session, _ = api.call("POST", "/api/sessions", {"alias": name, "accepted_rules": True})
+    status, session, _ = api.join(name)
     if status != 201:
         print(f"[{name}] no se pudo crear la sesion: {status} {session}", flush=True)
         return
@@ -188,11 +213,23 @@ def parse(argv: list[str]) -> argparse.Namespace:
     return args
 
 
+def operator_secret(environ: dict[str, str] | None = None) -> str:
+    """Secreto de operador desde el entorno; sin el, el servidor rechazaria cada sesion."""
+    secret = (os.environ if environ is None else environ).get(SECRET_ENV, "").strip()
+    if not secret:
+        raise SystemExit(
+            f"Falta {SECRET_ENV} en el entorno: el prefijo Agente- esta reservado y el servidor "
+            "solo crea esas sesiones con el secreto de operador."
+        )
+    return secret
+
+
 def main(argv: list[str]) -> int:
     args = parse(argv)
+    secret = operator_secret()
     seed = args.seed if args.seed is not None else random.SystemRandom().randrange(2**32)
     print(f"Enjambre simulado: {args.agents} agentes, semilla {seed}", flush=True)
-    api = Api(args.base_url)
+    api = Api(args.base_url, secret)
     threads = [
         threading.Thread(
             target=run_agent,

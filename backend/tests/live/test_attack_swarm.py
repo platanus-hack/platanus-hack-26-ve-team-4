@@ -55,3 +55,44 @@ def test_agent_count_is_limited_to_four_through_six(swarm: ModuleType) -> None:
         with pytest.raises(SystemExit):
             swarm.parse(agents)
     assert swarm.parse(["--agents", "5"]).agents == 5
+
+
+def test_the_operator_secret_comes_only_from_the_environment(swarm: ModuleType) -> None:
+    assert swarm.operator_secret({swarm.SECRET_ENV: " s3creto "}) == "s3creto"
+    with pytest.raises(SystemExit, match=swarm.SECRET_ENV):
+        swarm.operator_secret({})
+    with pytest.raises(SystemExit):
+        swarm.parse(["--operator-secret", "x"])
+
+
+def test_the_secret_travels_only_when_the_session_is_created(
+    swarm: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sent: list[tuple[str, dict[str, str]]] = []
+
+    class Response:
+        status = 201
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *_: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b"{}"
+
+    def fake_open(request: object, timeout: float) -> Response:
+        sent.append((request.full_url, dict(request.header_items())))  # type: ignore[attr-defined]
+        return Response()
+
+    monkeypatch.setattr(swarm.urllib.request, "urlopen", fake_open)
+    api = swarm.Api("http://arena", "s3creto")
+    api.join("Agente-1")
+    api.call("POST", "/api/attempts", {"messages": ["hola"]}, "token")
+
+    (join_url, join_headers), (attempt_url, attempt_headers) = sent
+    assert join_url.endswith("/api/sessions")
+    assert join_headers["X-operator-secret"] == "s3creto"
+    assert attempt_url.endswith("/api/attempts")
+    assert "X-operator-secret" not in attempt_headers

@@ -2,7 +2,19 @@ from typing import Any
 
 from fastapi.testclient import TestClient
 
-from tests.arena.support import OPERATOR, foreign_order, join, send, wait_attempt
+from agent_zero.sessions.reserved_alias import is_reserved_alias
+from tests.arena.support import OPERATOR, foreign_order, send, wait_attempt
+
+
+def join(client: TestClient, alias: str) -> dict[str, Any]:
+    """Crea la sesion; el prefijo del enjambre solo se acepta con el secreto de operador."""
+    headers = OPERATOR if is_reserved_alias(alias) else {}
+    response = client.post(
+        "/api/sessions", json={"alias": alias, "accepted_rules": True}, headers=headers
+    )
+    assert response.status_code == 201, response.text
+    session: dict[str, Any] = response.json()
+    return session
 
 
 def live(client: TestClient, **params: int) -> dict[str, Any]:
