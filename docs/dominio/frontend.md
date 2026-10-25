@@ -99,7 +99,7 @@ pnpm exec vitest run src/features/board src/shared/api
 | [AttemptChat.test.tsx](../../frontend/src/features/participant/AttemptChat.test.tsx), [AttemptChat.compose.test.tsx](../../frontend/src/features/participant/AttemptChat.compose.test.tsx) | Respuesta perdida, recarga, reconciliación sin duplicar, cuatro turnos, doble envío, frecuencia, revelación sin filtrar ruta y redacción mientras Yummy responde. |
 | [AttemptChat.batch.test.tsx](../../frontend/src/features/participant/AttemptChat.batch.test.tsx), [batch.test.ts](../../frontend/src/features/participant/batch.test.ts) | Envío directo sin contador, cola mientras Yummy responde, tope de 10 mensajes, agrupación por largo y recarga con la cola pendiente. |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, secreto no persistido, acciones seriales, evidencia, reset y evaluación explícita. |
-| [board/](../../frontend/src/features/board/) (`BoardPage`, `ChatTile`, `Carousel`, `KpiColumn`, `slots`), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo: acceso, carrusel, enmascarado, mapas de desenlace y negación, KPI honestas, «Cerrar acceso» y la ruta `/arena`. |
+| [board/](../../frontend/src/features/board/) (`BoardPage`, `ChatTile`, `Carousel`, `KpiColumn`, `slots`), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo: acceso, carrusel, Público completo en vivo, Marcador provisional/final, mapas de desenlace y negación, KPI honestas, «Cerrar acceso» y la ruta `/arena`. |
 | [AuditPage.test.tsx](../../frontend/src/features/audit/AuditPage.test.tsx) | Auditoría: acceso, filtros y búsqueda, historial con veredicto, traza y aviso de desvío, enlace directo a un chat y cambio a una ronda archivada. |
 | [http.test.ts](../../frontend/src/shared/api/http.test.ts), [usePolling.test.ts](../../frontend/src/shared/api/usePolling.test.ts) | Timeout/cancelación, `Retry-After`, datos previos, ausencia de solapamiento y respuestas antiguas. |
 
@@ -108,3 +108,11 @@ La ejecución previa aprobó 47 pruebas, lint, TypeScript y build. El proxy y el
 ## Qué completar después
 
 La UI de reset muestra el `archive_id`; listar y descargar archivos de rondas previas sigue siendo una operación de API. Falta revisión visual y de accesibilidad en móvil/navegador, además de QR desde un teléfono contra un despliegue publicado. Al ampliar un flujo, mantener el estado de recuperación, la idempotencia y los tests de respuestas tardías antes de modificar la presentación.
+
+## Arena en vivo sin enmascarado
+
+`ChatTile` muestra las sesiones de audiencia completas desde el primer intento: mensaje, respuesta del bot, etiqueta de ruta (protegida o señuelo), negaciones con su motivo y chip de desenlace por intento. Ya no existen los textos «Oculto hasta revelar», «Respuesta oculta hasta revelar» ni el chip de resultado oculto. El componente `board/Scoreboard.tsx`, alimentado por `useArenaState` sobre `/api/arena/state`, muestra «Marcador provisional» (puntos aparentes, incluidos los del señuelo) antes de revelar y «Marcador final» con «N aparentes · S confirmados · C en el señuelo» después. `KpiColumn` ya no añade « sin Público» y muestra «Violaciones confirmadas» y «Contenidos en el señuelo» en vivo. Las sesiones «Prueba interna» y las de enjambre no cambian.
+
+- Tipos: `LiveSession` sin `concealed`, con `route: RouteName` y contadores numéricos; `LiveAttempt.route: RouteName`.
+- [SUPUESTO] El layout no se verificó visualmente en 1920x1080 salvo lo indicado en el informe de verificación: las tiles de Analíticas (140 px) y el Marcador (145 px) podrían recortar alias largos.
+- Mientras `/api/arena/state` no responde, el Marcador muestra «Marcador no disponible».
