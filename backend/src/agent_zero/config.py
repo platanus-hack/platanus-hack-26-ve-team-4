@@ -52,6 +52,7 @@ class Settings(BaseSettings):
 
     runtime_worker_concurrency: int = Field(default=2, ge=1)
     runtime_poll_seconds: float = Field(default=0.5, gt=0)
+    runtime_priority_handlers: list[str] = ["validate_patch", "finding_analysis"]
     runtime_max_attempts: int = Field(default=3, ge=1)
 
     gateway_rate_limit_per_minute: int = Field(default=60, ge=1)

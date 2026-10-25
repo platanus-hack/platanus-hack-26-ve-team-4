@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, case, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_zero.runtime.models import Run, RunEvent, RunEventKind, RunStatus
@@ -22,13 +22,25 @@ class RunRepository:
         result = await self._db.execute(select(Run).where(Run.idempotency_key == key))
         return result.scalar_one_or_none()
 
-    async def ready_ids(self, now: datetime, in_flight: frozenset[str], limit: int) -> list[str]:
+    async def ready_ids(
+        self,
+        now: datetime,
+        in_flight: frozenset[str],
+        limit: int,
+        priority: frozenset[str] = frozenset(),
+    ) -> list[str]:
         due = or_(
             Run.status == RunStatus.QUEUED,
             and_(Run.status == RunStatus.WAITING, Run.resume_at <= now),
             Run.status == RunStatus.RUNNING,
         )
-        query = select(Run.run_id).where(due).order_by(Run.created_at).limit(limit + len(in_flight))
+        rank = case((Run.handler.in_(priority), 0), else_=1) if priority else literal(1)
+        query = (
+            select(Run.run_id)
+            .where(due)
+            .order_by(rank, Run.created_at)
+            .limit(limit + len(in_flight))
+        )
         result = await self._db.execute(query)
         return [run_id for run_id in result.scalars() if run_id not in in_flight][:limit]
 

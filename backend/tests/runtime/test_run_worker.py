@@ -300,3 +300,38 @@ async def test_concurrency_bounds_runs_per_pass(
         await enqueue(database, registry, clock, handler)
     worker: RunWorker = new_worker(database, registry, admission, runtime_settings, clock)
     assert await worker.run_once() == runtime_settings.runtime_worker_concurrency
+
+
+@pytest.mark.requirement("RUN-01")
+async def test_a_slow_run_does_not_hold_back_the_other_slot(
+    database: Database,
+    registry: HandlerRegistry,
+    admission: FakeAdmission,
+    runtime_settings: Settings,
+    clock: FakeClock,
+) -> None:
+    release = asyncio.Event()
+
+    async def slow(_: StepContext) -> StepResult:
+        await release.wait()
+        return Complete(output={"slow": True})
+
+    slow_id = await enqueue(database, registry, clock, ScriptedHandler("lento", [slow]))
+    quick_ids = [
+        await enqueue(database, registry, clock, ScriptedHandler(f"rapido-{index}", [finish]))
+        for index in range(3)
+    ]
+    worker = new_worker(database, registry, admission, runtime_settings, clock)
+    worker.start()
+    try:
+        for _ in range(300):
+            states = {await status_of(database, run_id) for run_id in quick_ids}
+            if states == {RunStatus.SUCCEEDED}:
+                break
+            await asyncio.sleep(0.01)
+        assert states == {RunStatus.SUCCEEDED}
+        assert await status_of(database, slow_id) is not RunStatus.SUCCEEDED
+    finally:
+        release.set()
+        await worker.stop()
+    assert await status_of(database, slow_id) is RunStatus.SUCCEEDED

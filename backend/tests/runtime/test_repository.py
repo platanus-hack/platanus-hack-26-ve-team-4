@@ -58,3 +58,18 @@ async def test_get_by_key_and_events(database: Database, clock: FakeClock) -> No
             RunEventKind.QUEUED,
             RunEventKind.RETRY,
         ]
+
+
+async def test_priority_handlers_jump_the_queue(database: Database, clock: FakeClock) -> None:
+    now = clock()
+    async with database.sessions() as db:
+        repository = RunRepository(db)
+        for index in range(3):
+            await repository.add(make_run(f"attempt-{index}", RunStatus.QUEUED, now))
+        urgent = make_run("patch", RunStatus.QUEUED, now + timedelta(seconds=5))
+        urgent.handler = "validate_patch"
+        await repository.add(urgent)
+        await db.commit()
+        assert await repository.ready_ids(now, frozenset(), 1) == ["attempt-0"]
+        prioritized = await repository.ready_ids(now, frozenset(), 2, frozenset({"validate_patch"}))
+        assert prioritized == ["patch", "attempt-0"]
