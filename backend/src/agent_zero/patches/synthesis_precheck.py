@@ -42,9 +42,10 @@ def violating_calls(assessment: Assessment, evidence: list[ToolEvidence]) -> lis
 
 
 def recorded_owner(item: ToolEvidence) -> str | None:
-    owner = item.output.get("customer_id")
-    if owner:
-        return str(owner)
+    for source in (item.effect, item.output):
+        owner = source.get("owner_customer_id") or source.get("customer_id")
+        if owner:
+            return str(owner)
     order = ORDERS.get(str(item.arguments.get("order_id", "")))
     return order.customer_id if order is not None else None
 
