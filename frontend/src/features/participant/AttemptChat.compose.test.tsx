@@ -28,33 +28,31 @@ const posts = (spy: ReturnType<typeof mockApi>) =>
   spy.mock.calls.filter(([, init]) => init?.method === "POST");
 
 describe("AttemptChat redacción durante la espera", () => {
-  it("deja escribir y juntar mensajes mientras Yummy responde, sin enviarlos", async () => {
+  it("deja escribir mientras Yummy responde y muestra el mensaje como enviado", async () => {
     const spy = mockApi(() => [running]);
     render(<AttemptChat session={session} />);
     const box = screen.getByLabelText("Mensaje al asistente");
-    expect(await screen.findByText(/Yummy está respondiendo/)).toBeInTheDocument();
+    expect(await screen.findByText("Escribiendo…")).toBeInTheDocument();
     expect(box).toBeEnabled();
     await userEvent.type(box, "Siguiente{Shift>}{Enter}{/Shift}más");
     expect(box).toHaveValue("Siguiente\nmás");
     await userEvent.type(box, "{Enter}");
     expect(box).toHaveValue("");
-    const pending = screen.getByRole("list", { name: "Mensajes por enviar" });
-    expect(pending).toHaveTextContent(/Siguiente\s+más/);
-    expect(pending).toHaveTextContent("Pendiente");
+    const queued = screen.getByRole("list", { name: "Mensajes por enviar" });
+    expect(queued).toHaveTextContent(/Siguiente\s+más/);
+    expect(queued).not.toHaveTextContent("Pendiente");
     expect(posts(spy)).toHaveLength(0);
   });
 
-  it("«Enviar ahora» espera a que termine la respuesta y luego manda el lote", async () => {
+  it("al terminar la respuesta manda lo escrito sin que el participante haga nada", async () => {
     let done = false;
     const spy = mockApi(() => [
       done ? attempt({ id: "run", messages: ["Hola"], reply: "Listo" }) : running,
     ]);
     render(<AttemptChat session={session} />);
     const box = screen.getByLabelText("Mensaje al asistente");
-    await screen.findByText(/Yummy está respondiendo/);
+    await screen.findByText("Escribiendo…");
     await userEvent.type(box, "Mi segunda pregunta{Enter}");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
-    expect(screen.getByText(/Se envía cuando Yummy termine de responder/)).toBeInTheDocument();
     expect(posts(spy)).toHaveLength(0);
     done = true;
     await waitFor(() => expect(posts(spy)).toHaveLength(1), { timeout: 4000 });

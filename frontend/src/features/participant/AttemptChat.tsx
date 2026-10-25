@@ -8,8 +8,7 @@ import {
 } from "react";
 import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { useArenaState } from "../arena/hooks/useArenaState";
-import { BatchBar, PendingBubbles } from "./BatchPreview";
-import { BATCH_MAX_MESSAGES } from "./batch";
+import { PendingBubbles } from "./BatchPreview";
 import { LabPanel } from "./LabPanel";
 import type { ArenaSession, ConversationEntry } from "./types";
 import { useBatch } from "./useBatch";
@@ -60,12 +59,7 @@ export function AttemptChat({
   const chat = useConversation(session, onExpired);
   const { data: arena } = useArenaState();
   const closed = arena?.accepting === false;
-  const batch = useBatch(
-    session.id,
-    chat.submit,
-    chat.idle && !closed,
-    Math.min(BATCH_MAX_MESSAGES, session.limits?.max_messages ?? BATCH_MAX_MESSAGES),
-  );
+  const batch = useBatch(session.id, chat.submit, chat.idle && !closed);
   const end = useRef<HTMLDivElement>(null);
   const waiting = chat.pending || chat.running;
   const disabled = closed || !chat.history.data;
@@ -197,7 +191,6 @@ export function AttemptChat({
             ))}
           </div>
         )}
-        <BatchBar batch={batch} idle={chat.idle} closed={closed} />
         <form className="chat-composer" onSubmit={submit} aria-label="Nuevo mensaje">
           <label htmlFor="chat-message" className="visually-hidden">
             Mensaje al asistente
@@ -217,11 +210,7 @@ export function AttemptChat({
             Enviar
           </button>
           <p className="chat-composer-status" role="status" aria-live="polite">
-            {batch.full
-              ? "Ya juntaste el máximo de mensajes; se envían juntos en cuanto se pueda."
-              : waiting
-                ? "Yummy está respondiendo. Lo que escribas se envía cuando termine."
-                : ""}
+            {batch.full ? "Espera unos segundos a que Yummy responda para seguir escribiendo." : ""}
           </p>
         </form>
       </section>

@@ -1,19 +1,14 @@
-// Lote de mensajes del participante: una ráfaga se junta y viaja en un solo intento.
+// Cola de mensajes del participante: lo que escribe mientras Yummy responde sale junto en el
+// intento siguiente. Para el participante es un envío normal: no ve espera ni contador.
 
-/** Espera sin mensajes nuevos antes de enviar el lote; cada mensaje la reinicia. */
-export const BATCH_IDLE_MS = 10_000;
-/** Tope desde el primer mensaje del lote, aunque se siga escribiendo. */
-export const BATCH_MAX_WAIT_MS = 20_000;
-/** Mensajes que cierran el lote; coincide con `max_messages` del intento. */
-export const BATCH_MAX_MESSAGES = 4;
+/** Mensajes sin respuesta que admite la cola; al llegar, el chat pide esperar a Yummy. */
+export const QUEUE_MAX = 10;
 
 export interface PendingBatch {
   texts: string[];
   /** Instantes (ms epoch) del primer y del último mensaje. */
   first: number;
   last: number;
-  /** «Enviar ahora»: no espera el contador. */
-  now?: boolean;
 }
 
 export function addToBatch(batch: PendingBatch | null, text: string, at: number): PendingBatch {
@@ -21,18 +16,16 @@ export function addToBatch(batch: PendingBatch | null, text: string, at: number)
   return { ...batch, texts: [...batch.texts, text], last: at };
 }
 
-export function dueAt(batch: PendingBatch): number {
-  return Math.min(batch.last + BATCH_IDLE_MS, batch.first + BATCH_MAX_WAIT_MS);
-}
-
-export function isDue(batch: PendingBatch, now: number, max = BATCH_MAX_MESSAGES): boolean {
-  return Boolean(batch.now) || batch.texts.length >= max || now >= dueAt(batch);
-}
-
-/** Un solo mensaje unido con saltos de línea; si supera el largo máximo, uno por mensaje. */
+/** Un solo mensaje unido con saltos de línea; si no cabe, grupos que respetan el largo máximo. */
 export function packBatch(texts: string[], maxLength: number): string[] {
-  const joined = texts.join("\n");
-  return joined.length <= maxLength ? [joined] : [...texts];
+  const packed: string[] = [];
+  for (const text of texts) {
+    const last = packed.at(-1);
+    if (last !== undefined && last.length + 1 + text.length <= maxLength) {
+      packed[packed.length - 1] = `${last}\n${text}`;
+    } else packed.push(text);
+  }
+  return packed;
 }
 
 export function isBatch(value: unknown): value is PendingBatch {
@@ -41,10 +34,9 @@ export function isBatch(value: unknown): value is PendingBatch {
     batch &&
       Array.isArray(batch.texts) &&
       batch.texts.length > 0 &&
-      batch.texts.length <= BATCH_MAX_MESSAGES &&
+      batch.texts.length <= QUEUE_MAX &&
       batch.texts.every((text) => typeof text === "string" && text.trim() !== "") &&
       Number.isFinite(batch.first) &&
-      Number.isFinite(batch.last) &&
-      (batch.now === undefined || typeof batch.now === "boolean"),
+      Number.isFinite(batch.last),
   );
 }

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { arena, attempt, session } from "../../test/fixtures";
 import { AttemptChat } from "./AttemptChat";
 import { loadBatch } from "./storage";
-import type { ArenaSession, Attempt } from "./types";
+import type { Attempt } from "./types";
 
 function mockApi(history: () => Attempt[] = () => []) {
   let number = 0;
@@ -28,8 +28,8 @@ async function advance(ms: number) {
     await vi.advanceTimersByTimeAsync(ms);
   });
 }
-async function open(value: ArenaSession = session) {
-  const view = render(<AttemptChat session={value} />);
+async function open() {
+  const view = render(<AttemptChat session={session} />);
   await advance(0);
   await advance(0);
   return view;
@@ -38,10 +38,12 @@ function write(text: string) {
   fireEvent.change(screen.getByLabelText("Mensaje al asistente"), { target: { value: text } });
   fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
 }
-const pending = () => screen.queryByRole("list", { name: "Mensajes por enviar" });
-const countdown = () => screen.getByRole("timer");
+const queued = () => screen.queryByRole("list", { name: "Mensajes por enviar" });
+const running = () =>
+  attempt({ id: "run", status: "running", outcome: null, reply: "", messages: ["Hola"] });
+const answered = () => attempt({ id: "run", messages: ["Hola"], reply: "Listo" });
 
-describe("AttemptChat lote de mensajes", () => {
+describe("AttemptChat envío directo", () => {
   beforeEach(() => {
     vi.useFakeTimers({
       toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"],
@@ -52,130 +54,59 @@ describe("AttemptChat lote de mensajes", () => {
     vi.useRealTimers();
   });
 
-  it("muestra el mensaje como pendiente y espera 10 s; cada mensaje nuevo reinicia la espera", async () => {
+  it("envía el mensaje en el momento, sin contador ni marca de pendiente", async () => {
     const spy = mockApi();
     await open();
     write("uno");
-    expect(within(pending() as HTMLElement).getByText("uno")).toBeInTheDocument();
-    expect(pending()).toHaveTextContent("Pendiente");
-    expect(screen.getByLabelText("Mensaje al asistente")).toHaveValue("");
-    expect(countdown()).toHaveTextContent("1 mensaje pendiente. Se envía en 10 s");
-    await advance(9_000);
-    expect(countdown()).toHaveTextContent("Se envía en 1 s");
-    write("dos");
-    expect(countdown()).toHaveTextContent("2 mensajes pendientes. Se envía en 10 s");
-    await advance(9_000);
-    expect(bodies(spy)).toHaveLength(0);
-    await advance(1_000);
-    expect(bodies(spy)).toHaveLength(1);
-    expect(bodies(spy)[0]).toMatchObject({ messages: ["uno\ndos"], continues: null });
-    expect(pending()).toBeNull();
-    expect(loadBatch(session.id)).toBeNull();
-    // En el chat siguen siendo dos burbujas, aunque viajaron como un solo mensaje.
-    const thread = screen.getByRole("list", { name: "Conversación" });
-    expect(within(thread).getByText("uno")).toBeInTheDocument();
-    expect(within(thread).getByText("dos")).toBeInTheDocument();
-  });
-
-  it("envía a los 20 s del primer mensaje aunque se siga escribiendo", async () => {
-    const spy = mockApi();
-    await open();
-    write("uno");
-    await advance(8_000);
-    write("dos");
-    await advance(8_000);
-    write("tres");
-    expect(countdown()).toHaveTextContent("Se envía en 4 s");
-    await advance(3_900);
-    expect(bodies(spy)).toHaveLength(0);
-    await advance(100);
-    expect(bodies(spy).map((body) => body.messages)).toEqual([["uno\ndos\ntres"]]);
-  });
-
-  it("envía al juntar el cuarto mensaje sin esperar el contador", async () => {
-    const spy = mockApi();
-    await open();
-    for (const text of ["uno", "dos", "tres"]) write(text);
     await advance(0);
-    expect(bodies(spy)).toHaveLength(0);
-    write("cuatro");
-    await advance(0);
-    expect(bodies(spy).map((body) => body.messages)).toEqual([["uno\ndos\ntres\ncuatro"]]);
-  });
-
-  it("«Enviar ahora» manda el lote en el momento", async () => {
-    const spy = mockApi();
-    await open();
-    write("uno");
-    write("dos");
-    fireEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
-    await advance(0);
-    expect(bodies(spy).map((body) => body.messages)).toEqual([["uno\ndos"]]);
+    expect(bodies(spy)).toEqual([expect.objectContaining({ messages: ["uno"], continues: null })]);
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(screen.queryByText("Pendiente")).toBeNull();
     expect(screen.queryByRole("button", { name: "Enviar ahora" })).toBeNull();
+    expect(loadBatch(session.id)).toBeNull();
   });
 
-  it("si unidos superan el largo máximo, los envía como lista de mensajes", async () => {
-    const spy = mockApi();
-    await open({
-      ...session,
-      limits: { attempts_per_minute: 12, max_messages: 4, message_max_length: 10 },
-    });
-    write("123456");
-    write("abcdef");
-    fireEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
-    await advance(0);
-    expect(bodies(spy).map((body) => body.messages)).toEqual([["123456", "abcdef"]]);
-  });
-
-  it("mientras Yummy responde, los mensajes arman el lote siguiente y esperan su turno", async () => {
+  it("mientras Yummy responde, los mensajes se ven enviados y salen juntos al terminar", async () => {
     let done = false;
-    const spy = mockApi(() => [
-      attempt(
-        done
-          ? { id: "run", messages: ["Hola"], reply: "Listo" }
-          : { id: "run", status: "running", outcome: null, reply: "", messages: ["Hola"] },
-      ),
-    ]);
+    const spy = mockApi(() => [done ? answered() : running()]);
     await open();
-    expect(screen.getByText(/Yummy está respondiendo/)).toBeInTheDocument();
+    expect(screen.queryByText(/Yummy está respondiendo/)).toBeNull();
     write("sigo");
     write("escribiendo");
     await advance(10_000);
     expect(bodies(spy)).toHaveLength(0);
-    expect(countdown()).toHaveTextContent("Se envía cuando Yummy termine de responder");
-    expect(screen.getByRole("button", { name: "Enviar ahora" })).toBeDisabled();
+    expect(within(queued() as HTMLElement).getByText("sigo")).toBeInTheDocument();
+    expect(queued()).not.toHaveTextContent("Pendiente");
     done = true;
     await advance(1_500);
     await advance(0);
     expect(bodies(spy)).toEqual([
       expect.objectContaining({ messages: ["sigo\nescribiendo"], continues: "run" }),
     ]);
+    expect(queued()).toBeNull();
   });
 
-  it("con el lote lleno mientras Yummy responde, no admite un quinto mensaje", async () => {
-    const spy = mockApi(() => [
-      attempt({ id: "run", status: "running", outcome: null, reply: "", messages: ["Hola"] }),
-    ]);
+  it("con 10 mensajes sin respuesta pide esperar a Yummy y no admite el siguiente", async () => {
+    const spy = mockApi(() => [running()]);
     await open();
-    for (const text of ["uno", "dos", "tres", "cuatro", "cinco"]) write(text);
-    expect(within(pending() as HTMLElement).getAllByRole("listitem")).toHaveLength(4);
-    expect(screen.getByLabelText("Mensaje al asistente")).toHaveValue("cinco");
+    for (let n = 1; n <= 11; n += 1) write(`mensaje ${n}`);
+    expect(within(queued() as HTMLElement).getAllByRole("listitem")).toHaveLength(10);
+    expect(screen.getByLabelText("Mensaje al asistente")).toHaveValue("mensaje 11");
     expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
-    expect(screen.getByText(/Ya juntaste el máximo de mensajes/)).toBeInTheDocument();
+    expect(screen.getByText(/Espera unos segundos a que Yummy responda/)).toBeInTheDocument();
     expect(bodies(spy)).toHaveLength(0);
   });
 
-  it("un lote sin enviar sobrevive a una recarga y sale al vencer", async () => {
-    const spy = mockApi();
+  it("una cola sin enviar sobrevive a una recarga y sale al recuperar la sesión", async () => {
+    let done = false;
+    const spy = mockApi(() => [done ? answered() : running()]);
     const first = await open();
     write("antes de recargar");
     first.unmount();
     expect(loadBatch(session.id)?.texts).toEqual(["antes de recargar"]);
-    await advance(4_000);
+    done = true;
     await open();
-    expect(within(pending() as HTMLElement).getByText("antes de recargar")).toBeInTheDocument();
-    expect(countdown()).toHaveTextContent("Se envía en 6 s");
-    await advance(6_000);
+    await advance(0);
     expect(bodies(spy).map((body) => body.messages)).toEqual([["antes de recargar"]]);
   });
 });

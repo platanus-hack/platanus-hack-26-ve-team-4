@@ -28,10 +28,9 @@ async function enterMessage(text = "Consulta B-2001") {
   await userEvent.type(screen.getByLabelText("Mensaje al asistente"), text);
   await waitFor(() => expect(screen.getByRole("button", { name: "Enviar" })).not.toBeDisabled());
 }
-// El mensaje entra al lote y «Enviar ahora» lo manda sin esperar el contador.
+// El mensaje sale en el momento: no hay contador ni «Enviar ahora».
 async function send() {
   await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
-  await userEvent.click(await screen.findByRole("button", { name: "Enviar ahora" }));
 }
 
 describe("AttemptChat", () => {
@@ -158,12 +157,6 @@ describe("AttemptChat", () => {
       fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
       fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
     });
-    const pending = screen.getByRole("list", { name: "Mensajes por enviar" });
-    expect(within(pending).getAllByRole("listitem")).toHaveLength(1);
-    act(() => {
-      fireEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
-      fireEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
-    });
     await waitFor(() =>
       expect(mock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1),
     );
@@ -195,7 +188,7 @@ describe("AttemptChat", () => {
     render(<AttemptChat session={session} />);
     expect(await screen.findByText(/Ejecutándose · Política 1/)).toBeInTheDocument();
     expect(screen.getByText("Respuesta anterior")).toBeInTheDocument();
-    expect(screen.getByText(/Yummy está respondiendo/)).toBeInTheDocument();
+    expect(screen.getByText("Escribiendo…")).toBeInTheDocument();
     expect(screen.getByLabelText("Mensaje al asistente")).toBeEnabled();
   });
 
