@@ -6,7 +6,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 
 | Entrada | Función |
 | --- | --- |
-| [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor`, `/auditoria` y `/operator`. |
+| [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor`, `/auditoria`, `/consola` y `/operator`. |
 | [ParticipantPage.tsx](../../frontend/src/features/participant/ParticipantPage.tsx) | Consentimiento, alta y recuperación mediante `/api/sessions/me`. |
 | [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Los mensajes seguidos salen juntos en un lote invisible a los 10 s del último; cada lote es un intento que continúa la conversación en curso (`continues`). |
 | [richText.tsx](../../frontend/src/features/participant/richText.tsx) | Markdown mínimo de las respuestas de Yummy: `**negrita**` y viñetas `- ` o `* ` como «•», armado con elementos de React y sin HTML crudo. |
@@ -63,7 +63,29 @@ La repetición del ataque vive en [replay/](../../frontend/src/features/arena/re
 
 El panel de [monitor/](../../frontend/src/features/monitor/) usa el mismo secreto de operador en memoria y consulta `GET /api/operator/monitor` y `/api/operator/policies` cada 4 s. El detalle pide `GET /api/operator/attempts/{id}` y dibuja `graph` con `AttackGraph`. Si el intento es una violación cuyo parche tiene repetición, muestra la pantalla dividida de `/api/arena/replay/{version}` con las tareas legítimas. Las violaciones por versión cuentan sólo la ruta protegida con veredicto. Sin llamadas LIVE, los tokens se muestran como «sin medir» y el coste como «simulado».
 
-La [auditoría](../../frontend/src/features/audit/) consulta `GET /api/operator/audit/rounds`, `/audit/chats` y `/audit/chats/{sesión}`. En la ronda en curso refresca cada 5 s; una ronda archivada no cambia y se lee una vez. Cada mensaje muestra las burbujas del chat de Yummy (`participant/chat.css`) con resultado, ruta, política y duración, los objetivos vulnerados y una traza plegable con cada llamada a herramienta. Antes del primer mensaje atendido en el señuelo aparece el aviso del desvío con su motivo.
+La [auditoría](../../frontend/src/features/audit/) consulta `GET /api/operator/audit/rounds`, `/audit/chats` y `/audit/chats/{sesión}`. En la ronda en curso refresca cada 5 s; una ronda archivada no cambia y se lee una vez. Cada mensaje muestra las burbujas del chat de Yummy (`participant/chat.css`) con resultado, ruta, política y duración, los objetivos vulnerados y una traza plegable con cada llamada a herramienta. Antes del primer mensaje atendido en el señuelo aparece el aviso del desvío con su motivo. El mensaje y cada paso de la traza son los componentes compartidos [audit/Exchange.tsx](../../frontend/src/features/audit/Exchange.tsx) y [audit/ToolStep.tsx](../../frontend/src/features/audit/ToolStep.tsx), que también usa la consola.
+
+### Consola de pruebas (`/consola`)
+
+Ruta protegida con `OperatorGate` (secreto de operador solo en memoria) y enlace «Consola» en la navegación de [App.tsx](../../frontend/src/app/App.tsx). Junta en una pantalla un chat de prueba y su auditoría en vivo, para probar mensajes y ver cómo los clasifica el agente.
+
+| Archivo | Función |
+| --- | --- |
+| [ConsolePage.tsx](../../frontend/src/features/consola/ConsolePage.tsx) | Encabezado con «Nueva sesión», selector de sesiones anteriores, «Abrir en Auditoría» y «Salir». A la izquierda `AttemptChat`; a la derecha `LiveAudit`. |
+| [consoleSession.ts](../../frontend/src/features/consola/consoleSession.ts) | Sesión actual y lista de sesiones previas, en su propio almacenamiento. |
+| [LiveAudit.tsx](../../frontend/src/features/consola/LiveAudit.tsx) | Auditoría de la sesión que se refresca sola. |
+| [consola.css](../../frontend/src/features/consola/consola.css) | Disposición de dos columnas; en pantallas angostas se apilan. |
+
+- **Sesión.** Si no hay una guardada, al entrar se crea una sesión `Interno-consola-<sufijo>` con `POST /api/sessions` y el secreto de operador (`testAlias` la recorta a 40 caracteres). Se guarda en `localStorage` con la clave `agent-zero:consola:v1`, separada de la pulsera del participante (`agent-zero:participant:v1`): abrir la consola no reemplaza la sesión del participante. Si la sesión vence, la consola crea otra.
+- **Nueva sesión.** Crea una sesión nueva y archiva la anterior en `agent-zero:consola:past:v1`: hasta 20, la más reciente primero, con id, alias y fecha. El historial local de la sesión anterior (`agent-zero:history:<id>`) no se borra.
+- **Sesiones anteriores.** El selector abre `/auditoria?chat=<id>` en otra pestaña. Esa ruta busca el chat en la ronda en curso. Una sesión de una ronda archivada necesita además `ronda=<archive_id>` en la URL, y la consola todavía no lo añade.
+- **Chat.** `AttemptChat` se reutiliza sin cambios, con la sesión de la consola. El envío, el lote y «Nueva conversación» funcionan como en el participante.
+- **Auditoría en vivo.** `LiveAudit` consulta `GET /api/operator/audit/chats/{id}` cada 1,5 s con `usePolling` y `X-Operator-Secret`. Un chat sin mensajes responde 404 y se muestra una guía, no un error. Arriba aparecen la ruta, el riesgo (`risk_score`), las violaciones, la cantidad de mensajes, las señales de riesgo (`risk_signals`, validador y veces) y el desvío al señuelo. Debajo, una tarjeta `Exchange` por mensaje, con el más reciente primero, que muestra:
+  - el desenlace y el estado del intento;
+  - familia, ruta y los validadores que negaron llamadas («Negado por …»);
+  - lo escrito y la respuesta de Yummy, con el objetivo vulnerado si lo hubo;
+  - la traza abierta, con cada paso de herramienta. En los pasos denegados, el motivo de Armor con su etapa y su detalle, cuando el evento los trae.
+- **Clasificación.** Las sesiones de la consola salen como «Prueba interna» en el tablero y en la auditoría. No cuentan en las KPI, en `sessions_total` ni en la clasificación (ver [Arena](./arena.md)).
 
 [JoinCode.tsx](../../frontend/src/features/arena/JoinCode.tsx) genera SVG local con `qrcode`. Acepta HTTP/HTTPS sin usuario ni contraseña y normaliza el enlace a la raíz del origen. Usa `VITE_PUBLIC_PARTICIPANT_URL` de build o el origen actual; también se puede editar en la tarjeta. Ese cambio no publica un despliegue. `JoinQr` dibuja el mismo QR, compacto, en la cabecera de la Arena en vivo.
 
@@ -106,6 +128,8 @@ pnpm exec vitest run src/features/board src/shared/api
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, secreto no persistido, acciones seriales, evidencia, reset y evaluación explícita. |
 | [board/](../../frontend/src/features/board/) (`BoardPage`, `ChatTile`, `Carousel`, `KpiColumn`, `slots`), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo: acceso, carrusel, enmascarado, mapas de desenlace y negación, KPI honestas, «Cerrar acceso» y la ruta `/arena`. |
 | [AuditPage.test.tsx](../../frontend/src/features/audit/AuditPage.test.tsx) | Auditoría: acceso, filtros y búsqueda, historial con veredicto, traza y aviso de desvío, enlace directo a un chat y cambio a una ronda archivada. |
+| [Exchange.test.tsx](../../frontend/src/features/audit/Exchange.test.tsx) | Mensaje de la auditoría con y sin el modo `live`: clasificación, negaciones de validador y motivo de Armor en los pasos denegados. |
+| [consoleSession.test.ts](../../frontend/src/features/consola/consoleSession.test.ts), [ConsolePage.test.tsx](../../frontend/src/features/consola/ConsolePage.test.tsx), [LiveAudit.test.tsx](../../frontend/src/features/consola/LiveAudit.test.tsx) | Clave propia de la consola, lista de sesiones previas (máximo 20), «Nueva sesión» y la auditoría en vivo. |
 | [http.test.ts](../../frontend/src/shared/api/http.test.ts), [usePolling.test.ts](../../frontend/src/shared/api/usePolling.test.ts) | Timeout/cancelación, `Retry-After`, datos previos, ausencia de solapamiento y respuestas antiguas. |
 
 La ejecución previa aprobó 47 pruebas, lint, TypeScript y build. El proxy y el ejercicio completo se verificaron con imágenes Docker reales. Esas verificaciones son DOM/HTTP; no hubo revisión visual de navegador disponible. La [guía de evidencias](../pruebas/evidencias.md) conserva la diferencia.
