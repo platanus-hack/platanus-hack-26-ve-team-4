@@ -1,7 +1,12 @@
+from datetime import timedelta
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from agent_zero.arena.transactions import serialize_write
+from agent_zero.attempts.activation_gate import activation_pending, active_version
 from agent_zero.attempts.attempt_query_service import call_context
 from agent_zero.attempts.conversation import previous_turns
-from agent_zero.attempts.models import AttemptOutcome, AttemptStatus
+from agent_zero.attempts.models import Attempt, AttemptOutcome, AttemptStatus
 from agent_zero.attempts.repository import AttemptRepository
 from agent_zero.events.event_store import EventStore
 from agent_zero.events.models import EventType
@@ -9,7 +14,7 @@ from agent_zero.events.schemas import EventDraft
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.oracles.assessment_service import AssessmentService
 from agent_zero.runtime.handlers import StepContext
-from agent_zero.runtime.step_results import Advance, Complete, Fail, StepResult
+from agent_zero.runtime.step_results import Advance, Complete, Fail, StepResult, Wait
 from agent_zero.victim.arena_manifest import ARENA_HANDLER
 from agent_zero.victim.tool_loop import ConversationExecutor
 
@@ -29,17 +34,31 @@ class AttemptExecutionHandler:
         self._events = events
         self._assessments = assessments
 
+    async def _begin(self, db: AsyncSession, context: StepContext) -> Attempt | StepResult:
+        attempt = await AttemptRepository(db).get(str(context.input["attempt_id"]))
+        if attempt is None:
+            return Fail(reason="Intento no disponible o sin herramientas.")
+        if attempt.outcome is not None:
+            return Complete(output={"attempt_id": attempt.id, "outcome": attempt.outcome.value})
+        if attempt.status is not AttemptStatus.QUEUED:
+            return attempt
+        now = self._fleet.clock()
+        settings = self._fleet.settings
+        if await activation_pending(db, now, settings.defense_activation_hold_seconds):
+            return Wait(until=now + timedelta(seconds=settings.runtime_poll_seconds))
+        attempt.policy_version = await active_version(db)
+        attempt.status = AttemptStatus.RUNNING
+        attempt.updated_at = now
+        return attempt
+
     async def step(self, context: StepContext) -> StepResult:
+        if context.tools is None:
+            return Fail(reason="Intento no disponible o sin herramientas.")
         async with self._fleet.database.sessions() as db:
             await serialize_write(db)
-            attempt = await AttemptRepository(db).get(str(context.input["attempt_id"]))
-            if attempt is None or context.tools is None:
-                return Fail(reason="Intento no disponible o sin herramientas.")
-            if attempt.outcome is not None:
-                return Complete(output={"attempt_id": attempt.id, "outcome": attempt.outcome.value})
-            if attempt.status is AttemptStatus.QUEUED:
-                attempt.status = AttemptStatus.RUNNING
-                attempt.updated_at = self._fleet.clock()
+            attempt = await self._begin(db, context)
+            if not isinstance(attempt, Attempt):
+                return attempt
             if not context.checkpoint:
                 await self._events.stage(
                     db,

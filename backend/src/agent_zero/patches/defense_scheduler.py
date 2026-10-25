@@ -78,7 +78,7 @@ class DefenseScheduler:
                     await self._quarantine(pending)
 
                 if await self._policies.activate(
-                    version, self._attempts.drained, before_activate=quarantine
+                    version, self._attempts.none_running, before_activate=quarantine
                 ):
                     await self._findings.mitigate(pending["finding_ids"])
                     await self._policies.finalize(version)

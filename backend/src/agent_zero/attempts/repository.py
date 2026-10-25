@@ -38,6 +38,10 @@ class AttemptRepository:
             )
         )
 
+    async def running(self) -> int:
+        query = select(func.count()).select_from(Attempt)
+        return int(await self.db.scalar(query.where(Attempt.status == AttemptStatus.RUNNING)) or 0)
+
     async def pending_runs(self) -> list[Attempt]:
         return list(await self.db.scalars(select(Attempt).where(Attempt.status.in_(IN_FLIGHT))))
 

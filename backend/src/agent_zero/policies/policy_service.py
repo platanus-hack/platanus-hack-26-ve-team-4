@@ -122,7 +122,7 @@ class PolicyService:
             row = await PolicyRepository(db).require(version)
             if row.status is not PolicyStatus.VALIDATING or "passed" in row.validation:
                 return
-            row.validation = row.validation | report
+            row.validation = row.validation | report | {"validated_at": utc_now().isoformat()}
             if report.get("passed") is not True:
                 row.status = transition(row.status, PolicyStatus.REJECTED)
             await self._events.stage_public(

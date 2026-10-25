@@ -77,6 +77,10 @@ class AttemptQueryService:
         async with self._database.sessions() as db:
             return await AttemptRepository(db).in_flight() == 0
 
+    async def none_running(self) -> bool:
+        async with self._database.sessions() as db:
+            return await AttemptRepository(db).running() == 0
+
     async def needs_diversion(self, session_id: str) -> bool:
         async with self._database.sessions() as db:
             return await AttemptRepository(db).needs_diversion(session_id)

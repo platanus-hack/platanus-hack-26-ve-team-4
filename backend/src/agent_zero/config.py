@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     runtime_poll_seconds: float = Field(default=0.5, gt=0)
     runtime_priority_handlers: list[str] = ["validate_patch", "finding_analysis"]
     runtime_max_attempts: int = Field(default=3, ge=1)
+    defense_activation_hold_seconds: float = Field(default=30.0, ge=0)
 
     gateway_rate_limit_per_minute: int = Field(default=60, ge=1)
 
