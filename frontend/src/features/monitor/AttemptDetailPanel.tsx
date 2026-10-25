@@ -69,11 +69,11 @@ export function AttemptDetailPanel({
     ]);
   }
   return (
-    <section className="monitor-panel" aria-label="Detalle del intento">
+    <section className="monitor-panel" aria-label="Detalle de la interacción">
       <div className="monitor-row">
         <div>
           <span className="monitor-label">
-            Intento {attempt.id} · {clock(attempt.created_at)}
+            Interacción {attempt.id} · {clock(attempt.created_at)}
           </span>
           <h2>{familyOf(attempt)}</h2>
         </div>

@@ -78,9 +78,9 @@ export function KpiColumn({ kpis, sessionsTotal }: { kpis: LiveKpis; sessionsTot
     <aside className="av-kpis" aria-label="Analíticas">
       <Tile
         kind="t-att"
-        label="Intentos"
+        label="Interacciones"
         value={String(attacks.n)}
-        context={`n = ${integer.format(attacks.n)} intentos · ${sessionsTotal} sesiones${
+        context={`n = ${integer.format(attacks.n)} interacciones · ${sessionsTotal} sesiones${
           attacks.in_flight ? ` · ${attacks.in_flight} en curso` : ""
         }`}
       >
@@ -103,7 +103,7 @@ export function KpiColumn({ kpis, sessionsTotal }: { kpis: LiveKpis; sessionsTot
           <small>/{safe.n}</small>
         </div>
         <div className="av-k-side">
-          <Row label="Intentos contenidos" value={integer.format(safe.contained_attempts)} />
+          <Row label="Interacciones contenidas" value={integer.format(safe.contained_attempts)} />
           <Row label="De las sesiones" value={percent} />
         </div>
       </Tile>

@@ -17,7 +17,7 @@ export function MonitorKpis({ monitor }: { monitor: Monitor }) {
   const { totals } = monitor;
   const measured = totals.measured_calls > 0;
   const kpis: [string, string, string][] = [
-    [NUMBER.format(monitor.attempts.length), "Intentos", "line"],
+    [NUMBER.format(monitor.attempts.length), "Interacciones", "line"],
     [NUMBER.format(count("confirmed_violation")), "Violaciones confirmadas", "danger"],
     [NUMBER.format(count("prevented")), "Impedidos por política", "accent"],
     [NUMBER.format(count("contained_honeypot")), "Contenidos en señuelo", "decoy"],

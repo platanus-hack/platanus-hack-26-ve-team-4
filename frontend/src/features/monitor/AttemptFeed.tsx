@@ -30,14 +30,14 @@ export function AttemptFeed({
     .slice()
     .reverse();
   return (
-    <aside className="monitor-panel" aria-label="Intentos">
+    <aside className="monitor-panel" aria-label="Interacciones">
       <div className="monitor-row">
-        <h2>Intentos</h2>
+        <h2>Interacciones</h2>
         <span className="monitor-label">
           {list.length} de {attempts.length}
         </span>
       </div>
-      <fieldset className="monitor-filters" aria-label="Filtrar intentos">
+      <fieldset className="monitor-filters" aria-label="Filtrar interacciones">
         {FILTERS.map(([key, label]) => (
           <button
             key={key}
@@ -76,7 +76,7 @@ export function AttemptFeed({
             </button>
           );
         })}
-        {!list.length && <p className="muted monitor-small">Sin intentos con este filtro.</p>}
+        {!list.length && <p className="muted monitor-small">Sin interacciones con este filtro.</p>}
       </div>
     </aside>
   );

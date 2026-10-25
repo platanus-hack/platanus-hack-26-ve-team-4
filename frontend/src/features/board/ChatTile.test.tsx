@@ -29,8 +29,8 @@ describe("ChatTile", () => {
 
     expect(within(chat).getByText("Agente simulado")).toBeInTheDocument();
     expect(within(chat).getByText("Ruta: protegida")).toBeInTheDocument();
-    expect(chat).toHaveTextContent("Intento 1 · hace 12 s");
-    expect(chat).not.toHaveTextContent(/Intento 1 de/);
+    expect(chat).toHaveTextContent("Interacción 1 · hace 12 s");
+    expect(chat).not.toHaveTextContent(/Interacción 1 de/);
   });
 
   it("pinta los desenlaces con el mapa OUTCOME y los objetivos violados", () => {
@@ -49,7 +49,7 @@ describe("ChatTile", () => {
     });
     tile(session);
 
-    expect(screen.getByText("Intento 1 ·").parentElement).toHaveClass("o-blocked");
+    expect(screen.getByText("Interacción 1 ·").parentElement).toHaveClass("o-blocked");
     expect(screen.getByText(/Bloqueado · parche v2/)).toBeInTheDocument();
     expect(screen.getByText(/Contenido/).closest("li")).toHaveClass("o-safe");
     expect(screen.getByText(/Inconcluso/).closest("li")).toHaveClass("o-incon");

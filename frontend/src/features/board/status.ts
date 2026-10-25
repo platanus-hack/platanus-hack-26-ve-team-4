@@ -42,7 +42,7 @@ export function chatStatus(
   const { attempts } = session;
   const busy = attempts.some(isPending);
   if (session.kind !== "prober" && !accepting && !revealed && !busy)
-    return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
+    return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevas interacciones" };
   if (session.concealed)
     return { tone: "neutral", label: "Conversando", detail: "Oculto hasta revelar" };
   const done = attempts.filter((attempt) => !isPending(attempt));
@@ -52,7 +52,7 @@ export function chatStatus(
     return {
       tone: "leak",
       label: "Se filtró",
-      detail: `${objective ? `${objective} · ` : ""}intento ${leak.number}`,
+      detail: `${objective ? `${objective} · ` : ""}interacción ${leak.number}`,
     };
   }
   if (session.route === "honeypot") {
@@ -87,7 +87,7 @@ export function chatStatus(
       return {
         tone: "neutral",
         label: "Señal de riesgo",
-        detail: `${denialLabel(denial)} · intento ${signal.number}`,
+        detail: `${denialLabel(denial)} · interacción ${signal.number}`,
       };
     return { tone: "neutral", label: "Conversando", detail: "Sin señales de riesgo" };
   }

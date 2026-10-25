@@ -136,7 +136,7 @@ function Turn({
             )
           )}
           <li className={`av-chip ${masked ? "o-masked" : outcome.cls}`}>
-            <span className="n">Intento {attempt.number} ·</span>
+            <span className="n">Interacción {attempt.number} ·</span>
             {masked ? " resultado oculto" : ` ${outcome.text(attempt)}`}
           </li>
           {!masked && attempt.patched_by && (
@@ -251,10 +251,10 @@ export function ChatTile({
         <span>
           {last ? (
             <>
-              Intento <b>{last.number}</b> · {ago(session.last_activity, now)}
+              Interacción <b>{last.number}</b> · {ago(session.last_activity, now)}
             </>
           ) : (
-            "Sin intentos"
+            "Sin interacciones"
           )}
         </span>
         <span className="av-prog" aria-hidden="true">

@@ -44,7 +44,7 @@ describe("RevealCard", () => {
     render(<RevealCard session={session} />);
     expect(await screen.findByRole("heading", { name: "Eso era un señuelo" })).toBeInTheDocument();
     expect(screen.getByText(/Te retuvo 4 min 12 s/)).toBeInTheDocument();
-    expect(screen.getByText(/9 pasos de herramientas en 3 intentos/)).toBeInTheDocument();
+    expect(screen.getByText(/9 pasos de herramientas en 3 interacciones/)).toBeInTheDocument();
     expect(screen.getByText(/Cebos tocados: 2/)).toBeInTheDocument();
     expect(
       screen.getByText(/credencial que nunca existió y la volviste a usar/),

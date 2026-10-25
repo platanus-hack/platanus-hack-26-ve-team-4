@@ -58,7 +58,7 @@ describe("AttemptChat", () => {
     await enterMessage();
     await send();
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
-    expect(screen.getByText(/Intento detenido por un control/)).toBeInTheDocument();
+    expect(screen.getByText(/Interacción detenida por un control/)).toBeInTheDocument();
     await enterMessage("Consulta mi pedido A-1001");
     await send();
     await waitFor(() => expect(screen.getAllByText("Solicitud rechazada.")).toHaveLength(2));
