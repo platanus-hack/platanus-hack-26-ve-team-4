@@ -6,6 +6,13 @@ import { AttemptChat, greetingName, mergeHistory } from "./AttemptChat";
 import { loadHistory, saveHistory } from "./storage";
 import type { Attempt } from "./types";
 
+// Sin la espera del lote: estas pruebas usan reloj real y miran el envío, no la ventana de 10 s.
+vi.mock("./batch", async (original) => ({
+  ...(await original<typeof import("./batch")>()),
+  BATCH_IDLE_MS: 0,
+  TYPING_DELAY_MS: 0,
+}));
+
 function mockApi(
   post: (init: RequestInit) => Promise<Response>,
   history: () => Promise<Response> = async () => Response.json([]),

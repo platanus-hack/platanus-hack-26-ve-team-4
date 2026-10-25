@@ -16,3 +16,16 @@ export function PendingBubbles({ texts }: { texts: string[] }) {
     </ol>
   );
 }
+
+export function TypingBubble() {
+  return (
+    <p className="bubble bubble--bot bubble--typing" role="status">
+      <span aria-hidden="true" className="typing-dots">
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="visually-hidden">Yummy está escribiendo…</span>
+    </p>
+  );
+}

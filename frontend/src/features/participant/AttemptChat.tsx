@@ -8,7 +8,7 @@ import {
 } from "react";
 import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { useArenaState } from "../arena/hooks/useArenaState";
-import { PendingBubbles } from "./BatchPreview";
+import { PendingBubbles, TypingBubble } from "./BatchPreview";
 import { LabPanel } from "./LabPanel";
 import type { ArenaSession, ConversationEntry } from "./types";
 import { useBatch } from "./useBatch";
@@ -36,14 +36,7 @@ function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boole
           {attempt.reply}
         </p>
       ) : active(attempt) && (attempt || pending) ? (
-        <p className="bubble bubble--bot bubble--typing" role="status">
-          <span aria-hidden="true" className="typing-dots">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="visually-hidden">Yummy está escribiendo…</span>
-        </p>
+        <TypingBubble />
       ) : null}
     </li>
   );
@@ -118,7 +111,9 @@ export function AttemptChat({
           </span>
           <div>
             <h2>Soporte Yummy</h2>
-            <p>{closed ? "Fuera de horario" : waiting ? "Escribiendo…" : "En línea"}</p>
+            <p>
+              {closed ? "Fuera de horario" : waiting || batch.typing ? "Escribiendo…" : "En línea"}
+            </p>
           </div>
           <button
             type="button"
@@ -147,6 +142,7 @@ export function AttemptChat({
             ))}
           </ol>
           <PendingBubbles texts={batch.texts} />
+          {batch.typing && !waiting && <TypingBubble />}
           <div ref={end} />
         </div>
         <div className="chat-notices">
