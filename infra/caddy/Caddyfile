@@ -1,0 +1,12 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$AGENT_ZERO_DOMAIN} {
+	reverse_proxy frontend:8080 {
+		flush_interval -1
+		transport http {
+			read_timeout 1h
+		}
+	}
+}

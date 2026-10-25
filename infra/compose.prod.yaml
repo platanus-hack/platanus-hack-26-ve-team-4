@@ -1,0 +1,78 @@
+name: agent-zero
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: agent_zero
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: agent_zero
+    volumes:
+      - agent-zero-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_zero -d agent_zero"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/platanus-hack/agent-zero-backend:${AGENT_ZERO_IMAGE_TAG:-latest}
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      AGENT_ZERO_ENVIRONMENT: production
+      AGENT_ZERO_DATA_DIR: /data
+      AGENT_ZERO_DATABASE_URL: postgresql+asyncpg://agent_zero:${POSTGRES_PASSWORD}@postgres:5432/agent_zero
+      AGENT_ZERO_OPERATOR_SECRET: ${AGENT_ZERO_OPERATOR_SECRET:?Define AGENT_ZERO_OPERATOR_SECRET en .env}
+      AGENT_ZERO_GUARD_API_KEY: ${AGENT_ZERO_GUARD_API_KEY:?Define AGENT_ZERO_GUARD_API_KEY en .env}
+      AGENT_ZERO_IDENTITY_SIGNING_KEY: ${AGENT_ZERO_IDENTITY_SIGNING_KEY:?Define AGENT_ZERO_IDENTITY_SIGNING_KEY en .env}
+      AGENT_ZERO_MEMORY_ENCRYPTION_KEY: ${AGENT_ZERO_MEMORY_ENCRYPTION_KEY:?Define AGENT_ZERO_MEMORY_ENCRYPTION_KEY en .env}
+      AGENT_ZERO_LLM_MODE: ${AGENT_ZERO_LLM_MODE:-demo}
+      AGENT_ZERO_KNOWLEDGE_EMBEDDER: ${AGENT_ZERO_KNOWLEDGE_EMBEDDER:-local}
+    volumes:
+      - agent-zero-data:/data
+    healthcheck:
+      start_period: 5m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/platanus-hack/agent-zero-frontend:${AGENT_ZERO_IMAGE_TAG:-latest}
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      AGENT_ZERO_DOMAIN: ${AGENT_ZERO_DOMAIN:?Define AGENT_ZERO_DOMAIN en .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Define ACME_EMAIL en .env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:2019/config/ >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  agent-zero-data:
+  agent-zero-postgres:
+  caddy-data:
+  caddy-config:
