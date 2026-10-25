@@ -144,7 +144,7 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 
 ## Frontend
 
-- **Ruta y acceso.** `/arena` monta `BoardPage` dentro de `OperatorGate`. El secreto vive solo en memoria y la barra de navegación se oculta para proyectar. La ruta `/tablero` y la arena pública anterior ya no existen. El backend público (`/api/arena/state`, `/events`, `/coevolution`) no cambió.
+- **Ruta y acceso.** `/arena` monta `BoardPage` dentro de `OperatorGate`. El secreto vive solo en memoria. La barra de navegación se oculta solo mientras la Arena está abierta con el secreto (para proyectar); en el acceso y después de «Salir» vuelve a aparecer para ir a Participar, Monitor u Operación. La ruta `/tablero` y la arena pública anterior ya no existen. El backend público (`/api/arena/state`, `/events`, `/coevolution`) no cambió.
 - **Escenario.** `useStageScale` escala el escenario de 1920 × 1080 por `min(w/1920, h/1080)`.
 - **Consulta.** Se repite cada 1,5 s y pide 12 sesiones. `assignSlots` mantiene cada sesión en su lugar entre los 8 chats.
 - **Cabecera.** Lleva:
