@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter, Link, Route, Routes } from "react-router";
+import { AuditPage } from "../features/audit/AuditPage";
 import { BoardPage } from "../features/board/BoardPage";
 import { MonitorPage } from "../features/monitor/MonitorPage";
 import { OperatorPage } from "../features/operator/OperatorPage";
@@ -13,6 +14,7 @@ function Navigation({ hidden }: { hidden: boolean }) {
       <Link to="/">Participar</Link>
       <Link to="/arena">Arena en vivo</Link>
       <Link to="/monitor">Monitor</Link>
+      <Link to="/auditoria">Auditoría</Link>
       <Link to="/operator">Operación</Link>
     </nav>
   );
@@ -27,6 +29,7 @@ export function App() {
         <Route path="/" element={<ParticipantPage />} />
         <Route path="/arena" element={<BoardPage onProjectingChange={setProjecting} />} />
         <Route path="/monitor" element={<MonitorPage />} />
+        <Route path="/auditoria" element={<AuditPage />} />
         <Route path="/operator" element={<OperatorPage />} />
       </Routes>
     </BrowserRouter>
