@@ -58,7 +58,7 @@ Mientras `ArenaState.revealed` es falso, cada sesión `audience` lleva `conceale
 - Cada intento va con `outcome: null`, `route: null`, `reply: ""` y listas vacías de `denials` y `violated_objectives`.
 - `patched_by` y `technique` van en `null`.
 
-El texto de la respuesta no viaja en el JSON. Los mensajes del atacante sí se muestran, porque son del propio participante. El enjambre y el Prober se muestran completos. Tras revelar, todo aparece con su ruta y su desenlace reales.
+El texto de la respuesta no viaja en el JSON. Los mensajes del participante sí se muestran, porque son suyos. El enjambre y el Prober se muestran completos. Tras revelar, todo aparece con su ruta y su desenlace reales.
 
 En pantalla, un chat enmascarado muestra:
 

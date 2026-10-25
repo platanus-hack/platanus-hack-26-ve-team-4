@@ -58,7 +58,7 @@ Desde `frontend/` del worktree `feat/arena-buena-fe`:
 - Solo cambia el frontend. El backend no manda etiquetas (`live/service.py` solo manda códigos), así que no hay cambios de contrato.
 - Un Público revelado sin negaciones ya no aparece como «Atacando»; quien mire el tablero ve «Conversando». Esto es intencional.
 - La prueba `AttemptChat.test.tsx` («envía con token y clave estable…») superó el tiempo de 5 s una vez en la corrida completa, con carga de la suite. Pasó sola (14 de 14) y en las corridas completas siguientes (180 de 180). No toca el código de la Arena; queda como posible prueba lenta.
-- Los textos de «Ataque» en `docs/dominio/tablero.md` que describen al participante como «atacante» (líneas 51 y 61) se dejaron como están, fuera de este encargo.
+- En `docs/dominio/tablero.md`, la sección del enmascarado ya no llama «atacante» al participante. La mención de la línea 51 («Los del atacante se atribuyen por campaña») se refiere al enjambre y queda igual.
 
 ## Pendiente
 
