@@ -8,6 +8,7 @@ from agent_zero.arena.dependencies import Core
 from agent_zero.arena.round_models import RoundMetadata
 from agent_zero.attempts.models import Attempt, AttemptLink
 from agent_zero.events.models import EventRecord, EventType
+from agent_zero.prober.campaign_models import CampaignCaseRecord
 from agent_zero.registry.dependencies import OperatorOnly
 from agent_zero.sessions.models import ArenaSession
 
@@ -38,11 +39,16 @@ async def current_tables(core: Core, session_id: str | None = None) -> Tables:
         links = select(AttemptLink)
         if session_id is not None:
             links = links.where(AttemptLink.attempt_id.in_(ids))
+        cases: list[dict[str, Any]] = []
+        if session_id is not None:
+            cases_query = select(CampaignCaseRecord).where(CampaignCaseRecord.attempt_id.in_(ids))
+            cases = plain(_columns(row) for row in await db.scalars(cases_query))
         return {
             "sessions": plain(_columns(row) for row in await db.scalars(sessions)),
             "attempts": plain(_columns(row) for row in attempt_rows),
             "attempt_links": plain(_columns(row) for row in await db.scalars(links)),
             "product_events": plain(_columns(row) for row in await db.scalars(events)),
+            "campaign_cases": cases,
         }
 
 

@@ -57,6 +57,15 @@ def test_audit_rebuilds_conversations_tools_and_diversion(arena_client: TestClie
     assert all(
         "AZP_" not in item["reply"] for thread in detail["threads"] for item in thread["attempts"]
     )
+    # Riesgo de la sesión y señales de Armor por paso; la audiencia no tiene familia de campaña.
+    # Una sola lectura de pedido ajeno no suma riesgo (solo denegaciones y enumeración de 3+).
+    assert isinstance(detail["risk_score"], int)
+    assert detail["risk_score"] >= 0
+    assert isinstance(detail["risk_signals"], list)
+    attempts = [item for thread in detail["threads"] for item in thread["attempts"]]
+    steps = [step for item in attempts for step in item["tools"]]
+    assert all({"stage", "reason", "detail"} <= set(step) for step in steps)
+    assert all("family" in item and item["family"] is None for item in attempts)
 
     missing = arena_client.get("/api/operator/audit/chats/sess-nadie", headers=OPERATOR)
     assert missing.status_code == 404
