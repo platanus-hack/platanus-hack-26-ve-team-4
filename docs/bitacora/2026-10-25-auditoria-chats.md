@@ -2,8 +2,8 @@
 fecha: 2026-10-25
 autor: "@franbastardo"
 rama: feat/auditoria-chats
-pr: pendiente
-estado: en revisión
+pr: 55
+estado: integrado
 dominios: [arena, frontend]
 requisitos: []
 ---
@@ -52,7 +52,7 @@ requisitos: []
 - Backend:
   - `tests/arena/test_audit_router.py`: 3 passed;
   - `ruff check`, `ruff format` y `mypy src tests` limpios (681 archivos);
-  - suite completa: ver el PR.
+  - suite completa: CI del PR #55 (backend y backend-postgres).
 - Frontend: `pnpm lint`, `pnpm typecheck`, `pnpm test` (172 pruebas, 30 archivos) y `pnpm build` en verde.
 - Falta la revisión visual en navegador [SUPUESTO: solo se comprobó el DOM con jsdom].
 
