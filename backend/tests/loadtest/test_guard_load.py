@@ -17,7 +17,7 @@ def test_requests_alternate_and_use_distinct_subjects() -> None:
 def test_run_guard_load_records_every_answer() -> None:
     def answer(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
-        if body["subject"] == "titular-3":
+        if body["subject"].endswith("-3"):
             return httpx.Response(503)
         allowed = body["arguments"]["monto"] < 500
         return httpx.Response(200, json={"allowed": allowed, "rule_id": None if allowed else "r"})

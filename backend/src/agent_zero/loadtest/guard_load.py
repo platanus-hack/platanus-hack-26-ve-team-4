@@ -1,11 +1,13 @@
 import asyncio
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
 CONTRACT = "banco-transferencias"
+RUN = uuid.uuid4().hex[:8]
 
 
 @dataclass(frozen=True)
@@ -18,7 +20,7 @@ class GuardSample:
 
 
 def guard_request(index: int) -> tuple[str, dict[str, Any]]:
-    subject = f"titular-{index}"
+    subject = f"titular-{RUN}-{index}"
     base = {
         "subject": subject,
         "tool": "transferir",
