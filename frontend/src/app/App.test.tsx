@@ -39,6 +39,22 @@ describe("rutas", () => {
     expect(nav.querySelector('a[href="/"]')).not.toBeNull();
   });
 
+  it("tras un 401 vuelve el acceso y la barra se ve otra vez", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      Response.json({ detail: "No autorizado" }, { status: 401 }),
+    );
+    window.history.pushState({}, "", "/arena");
+    render(<App />);
+
+    await userEvent.type(screen.getByLabelText("Secreto de operador"), "incorrecto");
+    await userEvent.click(screen.getByRole("button", { name: "Acceder" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("autorización no es válida");
+    // La limpieza del efecto corre tras el commit del 401: se espera a que la barra vuelva.
+    const nav = await screen.findByRole("navigation", { name: "Principal" });
+    expect(nav.querySelector('a[href="/monitor"]')).not.toBeNull();
+    expect(nav.querySelector('a[href="/arena"]')).not.toBeNull();
+  });
+
   it("el menú lleva a la Arena en vivo y ya no ofrece /tablero", () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
       Response.json({ detail: "sin datos" }, { status: 404 }),

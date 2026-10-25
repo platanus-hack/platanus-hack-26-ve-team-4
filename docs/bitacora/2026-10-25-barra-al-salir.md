@@ -32,7 +32,7 @@ Pedido de Fernando: la Arena en vivo se proyecta, pero al salir de ella tiene qu
 |---|---|
 | `frontend/src/app/App.tsx` | `Navigation` recibe `hidden` en lugar de mirar la ruta; `App` guarda `projecting`. |
 | `frontend/src/features/board/BoardPage.tsx` | Prop opcional `onProjectingChange`; `LiveArena` la llama al montarse y al desmontarse. |
-| `frontend/src/app/App.test.tsx` | Prueba de `/arena` en el acceso (la barra se ve) y prueba nueva de entrar con el secreto (la barra se oculta) y de «Salir» (la barra vuelve). |
+| `frontend/src/app/App.test.tsx` | Prueba de `/arena` en el acceso (la barra se ve), prueba nueva de entrar con el secreto (la barra se oculta) y de «Salir» (la barra vuelve), y prueba de que tras un 401 la barra vuelve. |
 | `docs/dominio/tablero.md` | Viñeta «Ruta y acceso» de la sección Frontend. |
 | `docs/bitacora/2026-10-25-barra-al-salir.md` | Esta bitácora. |
 
@@ -47,15 +47,15 @@ Desde `frontend/` del worktree `wt-barra-al-salir`:
 - `pnpm typecheck` (`tsc -b`): sin errores.
 - `pnpm exec vitest run src/app/App.test.tsx src/features/board/BoardPage.test.tsx`: 2 archivos, 10 tests en verde (antes del formato de Biome).
 - `pnpm test`: 29 archivos y 171 tests en verde. La bitácora de `chat-mensajes-en-lote` registró 170 tests en la base; el número base no se volvió a medir en esta rama, así que el delta de +1 es el test nuevo de App.
+- Revisión del líder: se agregó la prueba del 401 en `App.test.tsx`. `pnpm test` quedó en 29 archivos y 172 tests en verde; `pnpm typecheck` y Biome (112 archivos) sin errores. Al quitar la limpieza del efecto en `LiveArena`, fallan las dos pruebas de entrar/salir y del 401, así que las pruebas sí la cubren.
 - `pnpm build`: `tsc -b && vite build` en verde; `dist/assets/index-ByBfii-h.js` 378.88 kB (gzip 119.36 kB).
 
 ## Riesgos y efectos en otros frentes
 
 - Solo cambia la visibilidad de la barra. Sin cambios de backend, de rutas ni de contrato.
 - El aviso `onProjectingChange` depende de que `App` pase `setProjecting`, que es estable. Si alguien pasa una función nueva en cada render, el efecto se reejecutaría, aunque el valor final sería el mismo.
-- La ruta 401 (secreto vencido durante el polling) usa la misma limpieza, pero la prueba nueva cubre solo «Salir». El 401 no tiene prueba propia todavía.
+- La limpieza del efecto corre después del commit en que aparece el aviso del 401, así que la prueba del 401 espera la barra con `findByRole` en lugar de buscarla de inmediato.
 
 ## Pendiente
 
-- Prueba de la vuelta de la barra tras un 401 en `App.test.tsx`.
 - Revisión visual en pantalla de proyección y en móvil de la barra al salir.
