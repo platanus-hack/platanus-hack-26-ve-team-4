@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import type { Evidence } from "./api";
 import { ACCESS_WITHOUT_DISCLOSURE_LABEL, EvidencePanel } from "./EvidencePanel";
 
-function evidence(level: string, violated: boolean): Evidence {
+function evidence(level: string, violated: boolean, outcome = "confirmed_violation"): Evidence {
   return {
     id: "attempt-1",
     status: "evaluated",
     route: "protected",
     policy_version: 1,
-    outcome: "confirmed_violation",
+    outcome,
     assessment: {
       verdicts: [{ objective_id: "order", violated, detail: "Lectura de pedido ajeno", level }],
     },
@@ -30,4 +30,13 @@ describe("EvidencePanel", () => {
     render(<EvidencePanel evidence={evidence("action", false)} close={() => undefined} />);
     expect(screen.queryByText(ACCESS_WITHOUT_DISCLOSURE_LABEL)).not.toBeInTheDocument();
   });
+  it.each(["contained_honeypot", "prevented", "inconclusive"])(
+    "no etiqueta cuando el resultado es %s",
+    (outcome) => {
+      render(
+        <EvidencePanel evidence={evidence("action", true, outcome)} close={() => undefined} />,
+      );
+      expect(screen.queryByText(ACCESS_WITHOUT_DISCLOSURE_LABEL)).not.toBeInTheDocument();
+    },
+  );
 });

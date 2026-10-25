@@ -39,11 +39,13 @@ export function EvidencePanel({ evidence, close }: { evidence: Evidence; close: 
           <strong>
             {verdict.objective_id}: {verdict.violated ? "Violado" : "Sin violación observada"}
           </strong>
-          {verdict.violated && verdict.level === "action" && (
-            <p>
-              <span className="badge danger">{ACCESS_WITHOUT_DISCLOSURE_LABEL}</span>
-            </p>
-          )}
+          {evidence.outcome === "confirmed_violation" &&
+            verdict.violated &&
+            verdict.level === "action" && (
+              <p>
+                <span className="badge danger">{ACCESS_WITHOUT_DISCLOSURE_LABEL}</span>
+              </p>
+            )}
           <p>{verdict.detail}</p>
           <p className="muted">
             Nivel: {verdict.level ?? "—"} · Eventos:{" "}
