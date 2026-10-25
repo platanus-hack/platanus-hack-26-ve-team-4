@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -147,20 +148,17 @@ class EventStore:
             )
             return [to_trace(row) for row in rows]
 
-    async def consecutive_denials(self, session_id: str, db: AsyncSession | None = None) -> bool:
-        if db is None:
-            async with self._fleet.database.sessions() as own_db:
-                return await self.consecutive_denials(session_id, own_db)
-        kinds = list(
-            await db.scalars(
-                select(EventRecord.type)
-                .where(
-                    EventRecord.session_id == session_id,
-                    EventRecord.visibility == Visibility.OPERATOR,
-                    EventRecord.type.in_([EventType.TOOL_DENIED, EventType.TOOL_COMPLETED]),
-                )
-                .order_by(EventRecord.id.desc())
-                .limit(3)
+    async def tool_outcomes(
+        self, session_id: str, since: datetime, db: AsyncSession
+    ) -> list[tuple[EventType, dict[str, Any]]]:
+        rows = await db.execute(
+            select(EventRecord.type, EventRecord.data)
+            .where(
+                EventRecord.session_id == session_id,
+                EventRecord.visibility == Visibility.OPERATOR,
+                EventRecord.type.in_([EventType.TOOL_DENIED, EventType.TOOL_COMPLETED]),
+                EventRecord.timestamp >= since,
             )
+            .order_by(EventRecord.id)
         )
-        return len(kinds) == 3 and all(kind is EventType.TOOL_DENIED for kind in kinds)
+        return [(kind, dict(data)) for kind, data in rows]

@@ -8,6 +8,7 @@ from agent_zero.events.models import EventType
 from agent_zero.events.schemas import EventDraft
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.routing.models import Route
+from agent_zero.routing.session_risk_reader import session_risk
 from agent_zero.sessions.models import ArenaSession
 
 
@@ -35,8 +36,12 @@ class RouteDecisionService:
             self._fleet.armor.screen(message, Surface.USER_INPUT).blocked for message in messages
         )
         prior_violation = await AttemptRepository(db).needs_diversion(session.id)
-        repeated_denials = await self._events.consecutive_denials(session.id, db)
-        if not (suspicious or prior_violation or repeated_denials):
+        settings = self._fleet.settings
+        risky = (
+            await session_risk(self._events, session, settings.routing_risk_window_seconds, db)
+            >= settings.routing_risk_threshold
+        )
+        if not (suspicious or prior_violation or risky):
             return Route.PROTECTED
         session.route = Route.HONEYPOT
         await self._events.stage(
@@ -50,7 +55,7 @@ class RouteDecisionService:
                     if suspicious
                     else "confirmed_violation"
                     if prior_violation
-                    else "repeated_denials",
+                    else "risk_score",
                 },
             ),
             dedup_key=f"{session.id}:diverted",

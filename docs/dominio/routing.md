@@ -22,10 +22,25 @@ No existe un DTO `RoutingDecision`, un endpoint público de cambio de ruta ni un
 | La sesión ya está en `honeypot` | Conservar `honeypot`, sin reevaluar una vuelta. |
 | Armor bloquea alguno de los mensajes en `Surface.USER_INPUT` | Cambiar a `honeypot`, motivo `armor`. |
 | Un intento anterior de la sesión confirmó una violación | Cambiar a `honeypot`, motivo `confirmed_violation`. |
-| Las últimas tres decisiones relevantes fueron `tool_denied` | Cambiar a `honeypot`, motivo `repeated_denials`. |
+| La puntuación de riesgo de la sesión en los últimos 10 minutos llega a 6 | Cambiar a `honeypot`, motivo `risk_score`. |
 | Ninguna de las anteriores | `protected`. |
 
-Si se cumplen varias señales, el motivo registrado sigue esa prioridad. No se usa el analizador semántico para esta decisión. Una llamada `tool_completed` entre denegaciones corta la racha; se consultan eventos privados persistidos, no el contenido del SSE público.
+Si se cumplen varias señales, el motivo registrado sigue esa prioridad. No se usa el analizador semántico para esta decisión; se consultan eventos privados persistidos, no el contenido del SSE público.
+
+## Puntuación de riesgo
+
+`routing/session_risk.py` suma puntos sobre las llamadas a herramientas de la sesión en la ventana `AGENT_ZERO_ROUTING_RISK_WINDOW_SECONDS` (600 s). Al llegar a `AGENT_ZERO_ROUTING_RISK_THRESHOLD` (6) la sesión pasa al señuelo. Una llamada que funciona no reinicia la cuenta.
+
+| Señal | Puntos |
+| --- | --- |
+| Denegación por pedido de otro cliente | 3 |
+| Denegación por importe de reembolso, clave de memoria, procedencia o regla de flujo | 2 |
+| Denegación por argumentos o contexto inválidos | 1 |
+| Pedido inexistente | 1 |
+| Pedido inexistente con la misma letra y a un carácter de un pedido propio (sobra, falta, cambia o se invierten dos seguidos) | 0 |
+| Tres o más pedidos ajenos distintos en la ventana | 2 |
+
+El coste de los dos errores no es simétrico: desviar a un cliente honesto le entrega datos falsos de sus propios pedidos, mientras que dejar a un atacante en el entorno protegido no filtra nada porque las reglas siguen negando. Por eso el umbral exige evidencia acumulada y un error al teclear no suma.
 
 ## Persistencia e invariantes
 
