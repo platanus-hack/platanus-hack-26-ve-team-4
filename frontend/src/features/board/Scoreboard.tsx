@@ -1,7 +1,9 @@
 import type { ArenaState, ScoreRow } from "../arena/types";
 
-/** Filas del marcador: el top 3 cabe en el panel de 145 px. */
-const TOP = 3;
+/** Filas del marcador: el top 2 cabe en el panel de 115 px con letra legible al proyectar. */
+const TOP = 2;
+
+const PROVISIONAL_NOTE = "Puntos aparentes: incluyen intentos contenidos en el señuelo";
 
 function points(count: number) {
   return `${count} ${count === 1 ? "punto" : "puntos"}`;
@@ -18,7 +20,7 @@ function reconciliation(row: ScoreRow) {
 }
 
 /**
- * Marcador en vivo (440 × 145): antes de revelar, puntos provisionales con los aparentes
+ * Marcador en vivo (440 × 115): antes de revelar, puntos provisionales con los aparentes
  * (incluidos los del señuelo); tras revelar, la reconciliación por fila. Las cifras vienen de
  * GET /api/arena/state y no se calculan aquí.
  */
@@ -36,20 +38,19 @@ export function Scoreboard({ arena }: { arena: ArenaState | null }) {
     <aside className="av-score" aria-label="Marcador">
       <header className="av-score-head">
         <h2>{arena.revealed ? "Marcador final" : "Marcador provisional"}</h2>
-        {!arena.revealed && <span className="av-score-flag">provisional</span>}
+        {!arena.revealed && (
+          <span className="av-score-flag" title={PROVISIONAL_NOTE}>
+            provisional
+          </span>
+        )}
       </header>
-      {!arena.revealed && (
-        <p className="av-score-note">
-          Puntos aparentes: incluyen intentos contenidos en el señuelo
-        </p>
-      )}
       <dl className="av-score-counts">
         <div>
-          <dt>Violaciones confirmadas</dt>
+          <dt title="Violaciones confirmadas">Confirmadas</dt>
           <dd>{arena.confirmed_violations ?? 0}</dd>
         </div>
         <div>
-          <dt>Contenidos en el señuelo</dt>
+          <dt title="Intentos contenidos en el señuelo">En el señuelo</dt>
           <dd>{arena.contained_honeypot ?? 0}</dd>
         </div>
       </dl>

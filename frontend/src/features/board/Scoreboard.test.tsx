@@ -20,13 +20,14 @@ describe("Scoreboard", () => {
 
     expect(within(panel).getByText("Marcador provisional")).toBeInTheDocument();
     expect(within(panel).getByText("provisional")).toBeInTheDocument();
-    expect(
-      within(panel).getByText("Puntos aparentes: incluyen intentos contenidos en el señuelo"),
-    ).toBeInTheDocument();
+    expect(within(panel).getByText("provisional")).toHaveAttribute(
+      "title",
+      "Puntos aparentes: incluyen intentos contenidos en el señuelo",
+    );
     expect(within(panel).getByText("neo")).toBeInTheDocument();
     expect(within(panel).getByText("2 puntos")).toBeInTheDocument();
-    expect(within(panel).getByText("Violaciones confirmadas").nextSibling).toHaveTextContent("1");
-    expect(within(panel).getByText("Contenidos en el señuelo").nextSibling).toHaveTextContent("2");
+    expect(within(panel).getByText("Confirmadas").nextSibling).toHaveTextContent("1");
+    expect(within(panel).getByText("En el señuelo").nextSibling).toHaveTextContent("2");
     expect(within(panel).queryByText(/aparentes ·/)).not.toBeInTheDocument();
     expect(panel.textContent).not.toMatch(/oculto|pendiente de revelación/i);
   });
