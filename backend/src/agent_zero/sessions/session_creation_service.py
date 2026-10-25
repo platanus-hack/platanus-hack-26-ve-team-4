@@ -15,7 +15,9 @@ from agent_zero.shared.clock import utc_now
 from agent_zero.shared.ids import new_id
 from agent_zero.victim.fixtures import customer_ids
 
-RESERVED_ALIAS = "Los alias que empiezan con «Agente-» están reservados para los agentes simulados."
+RESERVED_ALIAS = (
+    "Los alias que empiezan con «Agente-» o «Interno-» están reservados para el equipo."
+)
 
 
 async def create_session(
