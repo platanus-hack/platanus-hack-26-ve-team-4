@@ -73,7 +73,10 @@ function Turn({
   previous?: LiveAttempt;
 }) {
   const technique = masked ? null : techniqueLabel(attempt.technique);
-  const diverted = !masked && attempt.route === "honeypot" && previous?.route !== "honeypot";
+  const diverted =
+    !masked &&
+    attempt.route === "honeypot" &&
+    (previous ? previous.route !== "honeypot" : attempt.number === 1);
   const pending = isPending(attempt);
   const outcome = outcomeView(attempt);
   return (
@@ -116,7 +119,7 @@ function Turn({
                   // biome-ignore lint/suspicious/noArrayIndexKey: las negaciones de un intento no cambian.
                   <span className="av-denial" key={n}>
                     <LockIcon />
-                    Herramienta negada · {denialLabel(denial)}
+                    <span>Herramienta negada · {denialLabel(denial)}</span>
                   </span>
                 ))}
               </li>

@@ -45,7 +45,7 @@ export const DENIAL: Record<string, string> = {
   output_blocked: "salida bloqueada",
   tool_unregistered: "herramienta no registrada",
   region_not_allowed_by_policy: "región no permitida",
-  order_belongs_to_session_customer: "el pedido no es suyo",
+  order_belongs_to_session_customer: "pedido ajeno",
   refund_within_limit: "límite de reembolso",
   memory_key_allowlist: "memoria protegida",
   require_provenance: "origen sin verificar",

@@ -79,7 +79,7 @@ describe("ChatTile", () => {
       }),
     );
 
-    expect(screen.getByText("Herramienta negada · el pedido no es suyo")).toBeInTheDocument();
+    expect(screen.getByText("Herramienta negada · pedido ajeno")).toBeInTheDocument();
     expect(screen.getByText("Herramienta negada · límite de uso")).toBeInTheDocument();
     expect(screen.getByText("Herramienta negada · regla de flujo")).toBeInTheDocument();
     expect(screen.getByText("Herramienta negada · algo nuevo")).toBeInTheDocument();

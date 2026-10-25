@@ -345,9 +345,14 @@
   font-size: 20px;
   font-weight: 700;
   white-space: nowrap;
+  max-width: 100%;
   color: var(--text);
   border: 1px solid var(--border-strong);
   background: var(--surface-3);
+}
+.av-denial span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .av-denial svg {
   color: var(--muted);

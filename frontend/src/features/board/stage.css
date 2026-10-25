@@ -72,10 +72,11 @@
 }
 
 /* ---------- Cabecera (72 px) ---------- */
+/* Separación de 12 (la maqueta usa 16): deja sitio al QR y a "Salir" sin recortar textos. */
 .av-top {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   height: 72px;
   min-width: 0;
 }
