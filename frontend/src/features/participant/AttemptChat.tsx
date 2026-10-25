@@ -17,6 +17,9 @@ import "./chat.css";
 
 export { mergeHistory } from "./useConversation";
 
+/** El saludo usa el alias que eligió la persona; el chat de prueba no muestra su prefijo. */
+export const greetingName = (alias: string) => alias.replace(/^Interno-/, "") || alias;
+
 function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boolean }) {
   const attempt = entry.attempt;
   return (
@@ -128,7 +131,7 @@ export function AttemptChat({
         </header>
         <div className="chat-scroll">
           <p className="bubble bubble--bot">
-            ¡Hola, {session.customer_name}! Soy el asistente de Yummy. Puedo ayudarte con tus
+            ¡Hola, {greetingName(session.alias)}! Soy el asistente de Yummy. Puedo ayudarte con tus
             pedidos, reembolsos y envíos.
           </p>
           <ol className="chat-thread" aria-label="Conversación">
