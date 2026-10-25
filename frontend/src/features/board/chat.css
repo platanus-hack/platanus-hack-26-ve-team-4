@@ -189,19 +189,86 @@
   text-overflow: ellipsis;
 }
 
+/* Conversación desplazable: la rueda y el arrastre táctil la recorren hasta el primer mensaje.
+   Barra fina de 8 px en un canal fijo (padding-right 12 + 8 = los 20 px de siempre: no cambia el ancho útil).
+   overscroll-behavior-y: el desplazamiento vertical no se escapa al carrusel ni a la página. */
 .av-conv {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  overflow-anchor: none;
+  scrollbar-gutter: stable;
   min-height: 0;
   margin: 0;
-  padding: 14px 20px 12px;
+  padding: 14px 12px 12px 20px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 8px;
+}
+/* Con poco contenido los mensajes quedan abajo (justify-content: flex-end impediría subir al desbordar). */
+.av-conv > :first-child {
+  margin-top: auto;
+}
+.av-conv::-webkit-scrollbar {
+  width: 8px;
+}
+.av-conv::-webkit-scrollbar-track {
+  background: transparent;
+}
+.av-conv::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.av-conv:hover::-webkit-scrollbar-thumb,
+.av-conv:focus-visible::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+@supports not selector(::-webkit-scrollbar) {
+  .av-conv {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+/* Degradado superior solo cuando hay contenido arriba. */
+.av-conv.above {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 40px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 40px);
+}
+.av-conv:focus {
+  outline: none;
+}
+.av-conv:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Píldora "↓ N nuevos": flota sobre el final de la conversación, fuera del contenedor que se desplaza.
+   Selector con .av-chat para ganarle a `.av-shell button` (que anula transform y box-shadow). */
+.av-chat > .av-cnew {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  z-index: 3;
+  transform: translateX(-50%);
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.av-chat > .av-cnew:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .av-conv > * {
   flex-shrink: 0;

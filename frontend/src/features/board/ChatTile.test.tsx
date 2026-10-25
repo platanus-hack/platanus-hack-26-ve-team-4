@@ -1,9 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-import { ChatTile } from "./ChatTile";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { ChatTile, conversationCount } from "./ChatTile";
 import { concealedSession, liveAttempt, liveSession, NOW } from "./fixtures";
-import type { LiveSession } from "./types";
+import type { LiveAttempt, LiveSession } from "./types";
 
 function tile(session: LiveSession, extra: Partial<Parameters<typeof ChatTile>[0]> = {}) {
   return render(
@@ -206,5 +206,117 @@ describe("ChatTile", () => {
     );
     expect(screen.getByLabelText("Chat 1 de 8: Agente-1")).toHaveAttribute("inert");
     expect(screen.getByText("Fijado").closest("button")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  describe("conversación desplazable", () => {
+    const attempts = (n: number, pendingLast = false): LiveAttempt[] =>
+      Array.from({ length: n }, (_, k) =>
+        liveAttempt({
+          id: `a${k + 1}`,
+          number: k + 1,
+          messages: [`Mensaje ${k + 1}`],
+          ...(pendingLast && k === n - 1 ? { status: "running", outcome: null, reply: "" } : {}),
+        }),
+      );
+    const geom = { scrollHeight: 2000, clientHeight: 500 };
+    function props(session: LiveSession) {
+      return {
+        session,
+        index: 0,
+        total: 8,
+        pinned: false,
+        inView: true,
+        accepting: true,
+        revealed: false,
+        now: NOW,
+        onTogglePin: vi.fn(),
+      };
+    }
+    function conv(): HTMLOListElement {
+      return screen.getByLabelText("Conversación de Agente-1") as HTMLOListElement;
+    }
+
+    beforeEach(() => {
+      geom.scrollHeight = 2000;
+      geom.clientHeight = 500;
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(
+        () => geom.scrollHeight,
+      );
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(
+        () => geom.clientHeight,
+      );
+    });
+
+    it("cuenta 2 por intento y resta 1 si el último sigue en curso", () => {
+      expect(conversationCount([])).toBe(0);
+      expect(conversationCount(attempts(3))).toBe(6);
+      expect(conversationCount(attempts(3, true))).toBe(5);
+    });
+
+    it("dibuja todos los intentos recibidos, hasta el primero", () => {
+      tile(liveSession("1", { attempts: attempts(12) }));
+      expect(screen.getByText("Mensaje 1")).toBeInTheDocument();
+      expect(screen.getByText("Mensaje 12")).toBeInTheDocument();
+    });
+
+    it("es enfocable, arranca al final y sin píldora", () => {
+      tile(liveSession("1", { attempts: attempts(12) }));
+      expect(conv()).toHaveAttribute("tabindex", "0");
+      expect(conv().scrollTop).toBe(2000);
+      expect(conv()).toHaveClass("above");
+      expect(screen.queryByRole("button", { name: /Ir al último mensaje/ })).toBeNull();
+    });
+
+    it("sin contenido arriba no pinta el degradado", () => {
+      // Como el navegador: scrollTop no pasa de scrollHeight - clientHeight.
+      const original = Object.getOwnPropertyDescriptor(Element.prototype, "scrollTop");
+      const tops = new WeakMap<Element, number>();
+      Object.defineProperty(Element.prototype, "scrollTop", {
+        configurable: true,
+        get(this: Element) {
+          return tops.get(this) ?? 0;
+        },
+        set(this: Element, top: number) {
+          tops.set(this, Math.max(0, Math.min(top, geom.scrollHeight - geom.clientHeight)));
+        },
+      });
+      onTestFinished(() => {
+        if (original) Object.defineProperty(Element.prototype, "scrollTop", original);
+      });
+      geom.scrollHeight = 500;
+      tile(liveSession("1", { attempts: attempts(1) }));
+      expect(conv().scrollTop).toBe(0);
+      expect(conv()).not.toHaveClass("above");
+    });
+
+    it("con el usuario arriba muestra ↓ N nuevos y al hacer clic vuelve al final", () => {
+      const { rerender } = tile(liveSession("1", { attempts: attempts(5) }));
+      fireEvent.keyDown(conv(), { key: "Home" });
+      expect(conv().scrollTop).toBe(0);
+
+      rerender(<ChatTile {...props(liveSession("1", { attempts: attempts(6, true) }))} />);
+      expect(conv().scrollTop).toBe(0);
+      expect(
+        screen.getByRole("button", { name: "Ir al último mensaje: 1 nuevo" }),
+      ).toHaveTextContent("↓ 1 nuevo");
+
+      geom.scrollHeight = 2200;
+      rerender(<ChatTile {...props(liveSession("1", { attempts: attempts(7) }))} />);
+      const pill = screen.getByRole("button", { name: "Ir al último mensaje: 4 nuevos" });
+      expect(pill).toHaveTextContent("↓ 4 nuevos");
+
+      fireEvent.click(pill);
+      expect(conv().scrollTop).toBe(2200);
+      expect(screen.queryByRole("button", { name: /Ir al último mensaje/ })).toBeNull();
+    });
+
+    it("volver abajo a mano también quita la píldora", () => {
+      const { rerender } = tile(liveSession("1", { attempts: attempts(5) }));
+      fireEvent.keyDown(conv(), { key: "Home" });
+      rerender(<ChatTile {...props(liveSession("1", { attempts: attempts(6) }))} />);
+      expect(screen.getByRole("button", { name: /2 nuevos/ })).toBeInTheDocument();
+      fireEvent.keyDown(conv(), { key: "End" });
+      expect(screen.queryByRole("button", { name: /Ir al último mensaje/ })).toBeNull();
+    });
   });
 });
