@@ -4,6 +4,7 @@ export const KINDS: Record<ChatKind, string> = {
   audience: "Público",
   swarm: "Enjambre",
   prober: "Prober",
+  test: "Prueba interna",
   replay: "Repetición",
 };
 

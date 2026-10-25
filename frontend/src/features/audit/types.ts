@@ -1,6 +1,6 @@
 import type { Outcome } from "../monitor/types";
 
-export type ChatKind = "audience" | "swarm" | "prober" | "replay";
+export type ChatKind = "audience" | "swarm" | "prober" | "test" | "replay";
 
 export interface AuditRound {
   /** `null` para la ronda en curso; el id del archivo para las anteriores. */
