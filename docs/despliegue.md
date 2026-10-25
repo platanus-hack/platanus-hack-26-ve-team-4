@@ -68,7 +68,8 @@ Los archivos viven en `infra/`: `compose.prod.yaml`, `production.env.example`, `
 | `POSTGRES_PASSWORD` | Solo se fija al crear el volumen; cambiarla después exige `ALTER USER` dentro de Postgres. |
 | `AGENT_ZERO_LLM_MODE` | `live` o `demo`. |
 | `AGENT_ZERO_LLM_API_KEY`, `AGENT_ZERO_LLM_DAILY_USD_LIMIT` | Solo en `live`; el tope diario corta el gasto. |
-| `AGENT_ZERO_ARENA_*`, `AGENT_ZERO_RUNTIME_WORKER_CONCURRENCY` | Límites de la arena y concurrencia del runtime. |
+| `AGENT_ZERO_ARENA_*`, `AGENT_ZERO_RUNTIME_WORKER_CONCURRENCY` | Límites de la arena y concurrencia del runtime. La plantilla trae los valores medidos con 100 participantes: 8 workers y cola de 120 ([prueba de estrés](pruebas/estres-2026-10-24.md)). |
+| `AGENT_ZERO_DATABASE_POOL_SIZE`, `AGENT_ZERO_DATABASE_MAX_OVERFLOW` | Pool de conexiones de la base principal en Postgres (10 + 20 por defecto). |
 | `AGENT_ZERO_IMAGE_TAG` | Tag de imagen; `latest` o un sha largo. |
 
 ### URL de participación
