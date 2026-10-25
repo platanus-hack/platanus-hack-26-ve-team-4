@@ -43,7 +43,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     enforce_secure_settings(settings)
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     await ensure_database(settings.app_database_url)
-    database = Database(settings.app_database_url)
+    database = Database(
+        settings.app_database_url, settings.database_pool_size, settings.database_max_overflow
+    )
     await create_fleet_schema(database)
     await database.create_schema()
     app.state.database = database

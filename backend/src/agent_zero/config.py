@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     # Without it every database is a SQLite file in data_dir. With a postgresql+asyncpg URL the
     # app uses that database and adds `<name>_protected` and `<name>_honeypot` for the stores.
     database_url: SecretStr | None = None
+    database_pool_size: int = Field(default=10, ge=1, le=100)
+    database_max_overflow: int = Field(default=20, ge=0, le=100)
     # Vectorizador de la base de conocimiento `<name>_knowledge`, que solo existe con Postgres.
     # `fake` es determinista y no descarga nada; lo usan los tests y la CI.
     knowledge_embedder: Literal["local", "fake"] = "local"

@@ -23,9 +23,11 @@ def is_postgres(url: str) -> bool:
 
 
 class Database:
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, pool_size: int = 5, max_overflow: int = 10) -> None:
         if is_postgres(url):
-            self.engine: AsyncEngine = create_async_engine(url, pool_pre_ping=True)
+            self.engine: AsyncEngine = create_async_engine(
+                url, pool_pre_ping=True, pool_size=pool_size, max_overflow=max_overflow
+            )
         else:
             self.engine = create_async_engine(url)
         self.sessions: async_sessionmaker[AsyncSession] = async_sessionmaker(
