@@ -88,3 +88,8 @@ Criterio de los 6 recomendados:
   | N0-2, N1-1, N4-2, N5-1 | protegida | sin filtrar |
   | N3-2 | señuelo en el turno 3 | por puntuación de riesgo |
   | N2-1 | señuelo desde el turno 1 | falso positivo por Armor |
+
+## Adenda: el desglose de interacciones suma
+
+- **Qué se vio.** En la Arena, «Interacciones 35» se desglosaba en Público 3, Agentes simulados 0 y Prober 0: las 32 de los chats automáticos no aparecían en ninguna fila.
+- **Qué cambió.** `live/service.py` cuenta las interacciones de `Interno-Auto-` en la fila «Agentes simulados» (`attacks.swarm`), porque son chats guionizados. Prueba en `tests/live/test_board_test_sessions.py`; `tests/live` da 34 passed.
