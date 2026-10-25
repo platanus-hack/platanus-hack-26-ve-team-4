@@ -41,7 +41,8 @@ describe("Arena en vivo", () => {
     expect(screen.getByLabelText("Analíticas").querySelectorAll(".av-tile")).toHaveLength(5);
     expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 3 de 8 chats · 18 sesiones");
     expect(screen.getByText("En vivo")).toBeInTheDocument();
-    expect(screen.getByText("Ronda sin revelar")).toBeInTheDocument();
+    expect(screen.getByText("Ronda en vivo")).toBeInTheDocument();
+    expect(screen.getByText("Todo visible en tiempo real")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Código QR para participar/ })).toBeInTheDocument();
 
     const [path, init] = mock.mock.calls[0] ?? [];
@@ -123,7 +124,8 @@ describe("Arena en vivo", () => {
     await login();
 
     expect(await screen.findByText("Ronda revelada", { selector: ".av-live span" })).toBeVisible();
-    expect(screen.getByText("Rutas y violaciones visibles")).toBeInTheDocument();
+    expect(screen.getByText("Ronda revelada", { selector: ".av-info .t" })).toBeInTheDocument();
+    expect(screen.getByText("Marcador reconciliado")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /acceso/ })).not.toBeInTheDocument();
     expect(screen.queryByText("Acceso cerrado")).not.toBeInTheDocument();
   });

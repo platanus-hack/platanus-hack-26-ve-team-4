@@ -1,13 +1,6 @@
 import { JoinQr } from "../arena/JoinCode";
 import type { LiveBoard } from "./types";
 
-const EYE_OFF = (
-  <>
-    <path d="M3 3l18 18" />
-    <path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.8 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6" />
-    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
-  </>
-);
 const EYE = (
   <>
     <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
@@ -83,12 +76,12 @@ export function BoardHeader({ board, chats, visible, busy, onToggleAccess, onExi
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          {revealed ? EYE : EYE_OFF}
+          {EYE}
         </svg>
         <div>
-          <div className="t">{revealed ? "Ronda revelada" : "Ronda sin revelar"}</div>
+          <div className="t">{revealed ? "Ronda revelada" : "Ronda en vivo"}</div>
           <div className="s">
-            {revealed ? "Rutas y violaciones visibles" : "Público sin ruta ni violaciones"}
+            {revealed ? "Marcador reconciliado" : "Todo visible en tiempo real"}
           </div>
         </div>
       </div>
