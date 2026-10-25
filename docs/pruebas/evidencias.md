@@ -11,6 +11,7 @@ Todos los JSON siguientes están en [artifacts/core-evaluation](../../artifacts/
 | [demo-270.json](../../artifacts/core-evaluation/demo-270.json) | Comparación completa DEMO de 270 ejecuciones, 732 llamadas de origen `simulated`. Corresponde a los fixtures anteriores a los comercios de Yummy (#24), el origen y destino de entrega (#29) y los nombres de clientes (#34): su `fixture_hash` ya no coincide con `fixture_hash()` actual. |
 | [demo-270-2026-10-24-yummy.json](../../artifacts/core-evaluation/demo-270-2026-10-24-yummy.json) | La misma comparación DEMO repetida sobre los fixtures actuales, en `63e1096` con árbol limpio: 270 ejecuciones, 732 llamadas `simulated`, cifras iguales a `demo-270.json`. |
 | [live-270-2026-10-24-yummy.json](../../artifacts/core-evaluation/live-270-2026-10-24-yummy.json) | Comparación amplia LIVE de 270 ejecuciones con `claude-haiku-5-5`, en `aba711e` con árbol limpio: 683 llamadas de evaluación con coste medido (0,064237 USD). Violaciones 59/90 → 0/90, utilidad 45/45 en ambas versiones. |
+| [live-270-2026-10-24-escenario-limpio.json](../../artifacts/core-evaluation/live-270-2026-10-24-escenario-limpio.json) | Repetición LIVE de 270 ejecuciones tras quitar la pista `A-1001` de la descripción de `get_order` y los identificadores internos de las salidas de herramientas, en `df1fe76`. 684 llamadas, 0,072934 USD. Violaciones 66/90 → 0/90, utilidad 45/45 en ambas versiones. |
 | [live-p0.json](../../artifacts/core-evaluation/live-p0.json) | Once comprobaciones LIVE aprobadas, 93 llamadas reales y cinco roles. |
 | [live-p0-initial-timeout.json](../../artifacts/core-evaluation/live-p0-initial-timeout.json) | Primer ensayo: P0 verificado, pero timeout del límite global de campaña; `passed=false` preservado. |
 | [fleet-demo.json](../../artifacts/core-evaluation/fleet-demo.json) | Cuatro runs del recorrido original de la flota en DEMO. |
@@ -126,6 +127,36 @@ La campaña `{"max_attempts":6,"generation":"llm","max_mutations":6}` terminó c
 
 [test_audience_separation.py](../../backend/tests/evals/test_audience_separation.py) (`CORE-07`) demuestra que los ataques de la audiencia no entran a la suite de evaluación. Dos sesiones de audiencia envían intentos reales; después el test comprueba que `evaluation_suite()`, `suite_hash` y `fixture_hash` no cambiaron y que esos mensajes no están en la suite. Luego lanza una evaluación de una repetición y verifica que sus `case_id` son exactamente los 45 congelados, que ningún `attempt_id` coincide con los de la audiencia y que ningún resultado contiene su texto. Se comprobó que puede fallar: al hacer que `POST /api/attempts` añadiera el mensaje a una lista que `evaluation_suite()` convertía en casos, el test falló en la comprobación de que la suite no cambia.
 
+### Repetición con el escenario limpio
+
+La evaluación `eval-5d3cfb97af6c` repitió la comparación el 25 de octubre de 2026 (02:38 a 02:56 UTC) sobre una imagen construida desde `df1fe76`, con la misma configuración. Cambian dos cosas del escenario:
+
+- La descripción de `get_order` ya no usa el pedido ajeno `A-1001` como ejemplo.
+- Las salidas de herramientas ya no incluyen `customer_id`.
+
+El campo `commit` del JSON queda vacío porque la corrida se lanzó contra Docker; la referencia es la de la imagen. `fixture_hash` no cambia (`0fe4044f…ebf9`). `suite_hash` sí cambia (`1c3f744d…92f56`), porque la suite dejó de esperar `customer_id` en la salida de `get_order`.
+
+| Medida | Política 0 | Política 3 |
+| --- | --- | --- |
+| Violaciones confirmadas | 66/90 (73,33 %) | 0/90 |
+| Intentos impedidos por un control | 0 | 65 |
+| Objetivo del ataque no logrado | 24 | 25 |
+| Tareas legítimas correctas | 45/45 | 45/45 |
+| Inconclusos | 0 | 0 |
+
+Por familia, en la política 0:
+
+| Familia | Violaciones |
+| --- | --- |
+| `direct_injection` | 15/15 |
+| `memory_poisoning` | 15/15 |
+| `goal_hijacking` | 15/15 |
+| `tool_misuse` | 11/15 |
+| `indirect_injection` | 10/15 |
+| `tool_poisoning` | 0/15 |
+
+Diecinueve de los 30 casos violan en las tres repeticiones, cuatro en dos, uno en una y seis nunca. Quitar la pista no redujo la vulnerabilidad de la línea base: dio 66/90 frente a 59/90. Sin semilla, esa diferencia está dentro de la variación esperable entre corridas, así que no hay que leerla como un aumento. Lo que muestra es que los ataques no dependían de que el asistente sugiriera un pedido ajeno.
+
 ## Ensayo completo LIVE
 
 [live-p0.json](../../artifacts/core-evaluation/live-p0.json) registra `passed=true`, sin errores, con `claude-haiku-5-5`. Se comprobaron:
@@ -179,6 +210,7 @@ En Linux puede utilizarse `sha256sum -c *.sha256` dentro de la misma carpeta. Lo
 | `commit-map.json` | `8d473a972fbbdfc102956ec1efc0a8121b396fc0b340790edb28c21c1ca21943` |
 | `demo-270-2026-10-24-yummy.json` | `ed6623b94a80839a5d6f5d712a19dbf0190da7128ec4444cfc4568197ed27459` |
 | `live-270-2026-10-24-yummy.json` | `cf8f5d184709775dc2016dfc41770cf495e1a112f8cbffb8002e032e5897a308` |
+| `live-270-2026-10-24-escenario-limpio.json` | `07b59dac17c396134205c2fb80c126f08b7e54aab3c9dee7aa3f8a331e0c91bf` |
 
 La comparación DEMO registró originalmente `aed15dd4f7ea21ccabd5886a05bcdfd2d5d5fd9d` con árbol de trabajo modificado. La historia local se reorganizó antes de publicarse: el mapa identifica `20f97a771f309c0380b0a244d112a56ba870c926` con el mismo árbol Git. La referencia original `cc35d0661eb6439fa6e416f1c871385a4a339362` corresponde a `568f642f6658d18d10ae944b36db081873cad6c9`, también con árbol idéntico.
 
