@@ -1,15 +1,18 @@
 .demo-backdrop {
+  --demo-legit: #4ade80;
+  --demo-l4: #fb923c;
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 60%);
   display: grid;
   place-items: center;
   padding: 16px;
-  z-index: 10;
+  z-index: 100;
 }
 
 .demo-dialog {
-  width: min(720px, 100%);
+  width: min(760px, 100%);
+  max-width: none;
   max-height: 90vh;
   overflow-y: auto;
   background: var(--color-surface);

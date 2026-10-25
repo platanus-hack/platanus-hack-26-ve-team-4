@@ -76,7 +76,7 @@
 .av-top {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   height: 72px;
   min-width: 0;
 }
@@ -227,6 +227,23 @@
 .av-btn-close:disabled {
   opacity: 0.6;
   cursor: progress;
+}
+.av-btn-internal {
+  height: 52px;
+  padding: 0 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(128, 227, 179, 0.6);
+  background: rgba(128, 227, 179, 0.1);
+  color: var(--accent);
+  font-size: 17px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.av-btn-internal.running {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-3);
 }
 .av-exit {
   height: 52px;

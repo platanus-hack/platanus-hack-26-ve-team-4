@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { QrZoom } from "./QrZoom";
 import type { LiveBoard } from "./types";
 
@@ -22,6 +23,7 @@ interface Props {
   busy: boolean;
   onToggleAccess: () => void;
   onExit: () => void;
+  launcher?: ReactNode;
 }
 
 /** Píldora de estado: "En vivo", "Acceso cerrado" (pausa) o "Ronda revelada" (cerrada para siempre). */
@@ -32,7 +34,15 @@ export function livePill(board: LiveBoard | null): { text: string; cls: string }
   return { text: "En vivo", cls: "" };
 }
 
-export function BoardHeader({ board, chats, visible, busy, onToggleAccess, onExit }: Props) {
+export function BoardHeader({
+  board,
+  chats,
+  visible,
+  busy,
+  onToggleAccess,
+  onExit,
+  launcher,
+}: Props) {
   const pill = livePill(board);
   const revealed = board?.revealed ?? false;
   const closed = board ? !board.accepting : false;
@@ -64,12 +74,12 @@ export function BoardHeader({ board, chats, visible, busy, onToggleAccess, onExi
         <span>{pill.text}</span>
       </span>
       <span className="av-pill">
-        Mostrando <b>{visible}</b> de <b>{chats}</b> chats · <b>{board?.sessions_total ?? 0}</b>{" "}
-        sesiones
+        <b>{visible}</b> de <b>{chats}</b> chats · <b>{board?.sessions_total ?? 0}</b> sesiones
       </span>
       <span className="av-pill">
         Modelo: <b>{board ? (board.llm_mode === "demo" ? "demo" : "en vivo") : "—"}</b>
       </span>
+      {launcher}
       <span className="av-spacer" />
       <div className={`av-info${revealed ? " revealed" : ""}`}>
         <svg

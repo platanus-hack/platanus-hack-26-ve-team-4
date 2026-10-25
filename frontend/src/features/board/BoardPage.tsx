@@ -1,6 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { usePolling } from "../../shared/api/usePolling";
+import { InternalChatButton } from "../demo/InternalChatButton";
 import { OperatorGate } from "../operator/OperatorGate";
 import { loadBoard, setAccess } from "./api";
 import { BoardHeader } from "./BoardHeader";
@@ -154,6 +155,7 @@ function LiveArena({
           busy={requested !== null}
           onToggleAccess={() => void toggleAccess()}
           onExit={() => logout()}
+          launcher={<InternalChatButton secret={secret} />}
         />
         <div className="av-content">
           {data ? (
