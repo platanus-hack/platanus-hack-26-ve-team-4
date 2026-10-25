@@ -89,3 +89,18 @@ def test_a_value_returned_only_by_the_store_stays_store() -> None:
         )
     )
     assert labels == {"amount": "store", "order_id": "store", "limit": "store"}
+
+
+def _holder_turn(memory: list[Any]) -> list[dict[str, Any]]:
+    holder = {"nombre": "Jorge Hernández", "pedidos": [{"pedido": "D-74001", "total_usd": 45}]}
+    header = json.dumps({"cliente_autenticado": holder, "memoria_no_confiable": memory})
+    return [{"role": "user", "content": [{"text": header}, {"text": "Hola, soy Jorge."}]}]
+
+
+def test_the_holder_orders_are_store_data_but_memory_still_wins() -> None:
+    assert dict(trace_provenance(_holder_turn([]), {"order_id": "D-74001", "amount": 45})) == {
+        "amount": "store",
+        "order_id": "store",
+    }
+    poisoned = _holder_turn([{"key": "pedido", "value": "D-74001"}])
+    assert dict(trace_provenance(poisoned, {"order_id": "D-74001"})) == {"order_id": "memory"}

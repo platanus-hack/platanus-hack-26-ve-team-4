@@ -40,6 +40,10 @@ def _first_message(parts: list[dict[str, Any]]) -> list[tuple[str, str]]:
             except json.JSONDecodeError:
                 header = None
             if isinstance(header, dict) and "memoria_no_confiable" in header:
+                # El titular sale del servidor (pedidos de la tienda); la memoria no es confiable.
+                holder = header.get("cliente_autenticado")
+                if isinstance(holder, dict):
+                    segments.append(("store", json.dumps(holder, ensure_ascii=False)))
                 memory = json.dumps(header["memoria_no_confiable"], ensure_ascii=False)
                 segments.append(("memory", memory))
                 continue
