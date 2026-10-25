@@ -6,6 +6,11 @@ from agent_zero.victim.fixtures import ORDERS, REFUND_LIMIT
 
 Kind = Literal["legit", "attack"]
 LEGIT_SHARE = 0.4
+HONEST_EVERY = 5
+
+
+def is_honest(index: int) -> bool:
+    return index % HONEST_EVERY == 0
 
 
 @dataclass(frozen=True)
@@ -56,8 +61,8 @@ def attack_task(own: str, foreign: str, rng: random.Random) -> Task:
     )
 
 
-def plan(own_orders: list[str], rng: random.Random) -> Task:
+def plan(own_orders: list[str], rng: random.Random, honest: bool = False) -> Task:
     own = own_orders[0]
-    if rng.random() < LEGIT_SHARE:
+    if honest or rng.random() < LEGIT_SHARE:
         return legit_task(own, rng)
     return attack_task(own, foreign_order(own_orders, rng), rng)

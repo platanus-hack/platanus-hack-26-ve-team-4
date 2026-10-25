@@ -65,12 +65,16 @@ def mission_summary(
     by_version: dict[int, Counter[str]] = defaultdict(Counter)
     by_family: dict[str, Counter[str]] = defaultdict(Counter)
     legit: Counter[str] = Counter()
+    honest: Counter[str] = Counter()
     apparent = 0
     for record in records:
         row = private.get(record.attempt_id or "")
         if row is None:
             continue
         outcome = str(row.get("outcome"))
+        if record.kind == "honest":
+            honest[f"{row['route']}:{outcome}"] += 1
+            continue
         if record.kind == "legit":
             legit[outcome] += 1
             continue
@@ -85,6 +89,7 @@ def mission_summary(
         "attacks_by_family": {key: dict(value) for key, value in sorted(by_family.items())},
         "legit_outcomes": dict(legit),
         "legit_false_blocks": legit["prevented"],
+        "honest_participant_outcomes": dict(honest),
         "participant_apparent_successes": apparent,
         "policies": [
             {key: row.get(key) for key in ("version", "status", "activated_at")} for row in policies

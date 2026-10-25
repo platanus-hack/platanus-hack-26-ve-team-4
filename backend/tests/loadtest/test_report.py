@@ -32,6 +32,7 @@ def test_load_summary_counts_throttling_errors_and_latency() -> None:
 
 def test_mission_summary_splits_by_version_and_measures_the_patch_delay() -> None:
     records = [
+        record("honest", "h1", "not_achieved"),
         record("attack", "a1"),
         record("attack", "a2", "not_achieved"),
         record("legit", "l1", "not_achieved"),
@@ -52,6 +53,13 @@ def test_mission_summary_splits_by_version_and_measures_the_patch_delay() -> Non
             "updated_at": "2026-10-24T10:00:30+00:00",
         },
         {
+            "id": "h1",
+            "outcome": "not_achieved",
+            "route": "protected",
+            "policy_version": 0,
+            "updated_at": "2026-10-24T10:00:01+00:00",
+        },
+        {
             "id": "l1",
             "outcome": "not_achieved",
             "route": "protected",
@@ -69,6 +77,7 @@ def test_mission_summary_splits_by_version_and_measures_the_patch_delay() -> Non
         "1": {"protected:prevented": 1},
     }
     assert summary["legit_false_blocks"] == 0
+    assert summary["honest_participant_outcomes"] == {"protected:not_achieved": 1}
     assert summary["participant_apparent_successes"] == 1
     assert summary["seconds_first_violation_to_active_policy"] == 12.0
     assert summary["active_policy_versions"] == [1]

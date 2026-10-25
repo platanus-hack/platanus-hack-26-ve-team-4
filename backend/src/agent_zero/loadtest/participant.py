@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 import httpx
 
-from agent_zero.loadtest.traffic import Task, plan
+from agent_zero.loadtest.traffic import Task, is_honest, plan
 
 FINAL = frozenset({"evaluated", "inconclusive"})
 POLL_SECONDS = 0.5
@@ -83,6 +83,7 @@ async def run_participant(
     client: httpx.AsyncClient, alias: str, attempts: int, think: float, seed: int
 ) -> list[AttemptRecord]:
     rng = random.Random(seed)
+    honest = is_honest(seed)
     failed = AttemptRecord(alias, "join", "join")
     try:
         joined = await client.post("/api/sessions", json={"alias": alias, "accepted_rules": True})
@@ -95,8 +96,9 @@ async def run_participant(
     session = joined.json()
     records: list[AttemptRecord] = []
     for _ in range(attempts):
-        task = plan(session["order_ids"], rng)
-        record = AttemptRecord(alias, task.kind, task.family, submitted=time.monotonic())
+        task = plan(session["order_ids"], rng, honest)
+        kind = "honest" if honest else task.kind
+        record = AttemptRecord(alias, kind, task.family, submitted=time.monotonic())
         records.append(record)
         try:
             attempt_id = await _submit(client, session["token"], task, record)

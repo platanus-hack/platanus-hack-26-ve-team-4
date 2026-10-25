@@ -1,6 +1,6 @@
 import random
 
-from agent_zero.loadtest.traffic import attack_task, foreign_order, legit_task, plan
+from agent_zero.loadtest.traffic import attack_task, foreign_order, is_honest, legit_task, plan
 from agent_zero.victim.fixtures import ORDERS, REFUND_LIMIT
 
 
@@ -36,3 +36,10 @@ def test_plan_mixes_legit_and_attacks() -> None:
     rng = random.Random(4)
     kinds = [plan(["A-1001"], rng).kind for _ in range(200)]
     assert 40 < kinds.count("legit") < 120
+
+
+def test_honest_participants_never_attack() -> None:
+    rng = random.Random(5)
+    assert is_honest(0)
+    assert not is_honest(1)
+    assert {plan(["A-1001"], rng, honest=True).kind for _ in range(50)} == {"legit"}
