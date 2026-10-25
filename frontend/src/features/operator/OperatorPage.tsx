@@ -19,6 +19,7 @@ import { EvaluationPanel } from "./EvaluationPanel";
 import { downloadEvidence, EvidencePanel } from "./EvidencePanel";
 import { OperatorGate } from "./OperatorGate";
 import { PolicyList } from "./PolicyList";
+import { TestChatPanel } from "./TestChatPanel";
 
 export function OperatorPage() {
   return (
@@ -253,6 +254,7 @@ function OperatorDashboard({
               </form>
             </details>
           </section>
+          <TestChatPanel secret={secret} />
           {evidence && <EvidencePanel evidence={evidence} close={() => setEvidence(null)} />}
           <section className="result">
             <h2>Prober</h2>

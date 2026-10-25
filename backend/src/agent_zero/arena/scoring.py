@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from agent_zero.attempts.models import Attempt, AttemptOutcome
+from agent_zero.sessions.reserved_alias import is_test_alias
 
 SCORED_OUTCOMES = (AttemptOutcome.CONFIRMED_VIOLATION, AttemptOutcome.CONTAINED_HONEYPOT)
 Point = tuple[str, int]
@@ -51,6 +52,13 @@ def _tallies(attempts: Iterable[ScoredAttempt]) -> dict[str, _Tally]:
         else:
             tally.contained |= points
     return tallies
+
+
+def without_test_sessions(
+    attempts: Iterable[ScoredAttempt], aliases: Mapping[str, str]
+) -> list[ScoredAttempt]:
+    """Los chats de prueba del equipo (alias Interno-…) no compiten."""
+    return [a for a in attempts if not is_test_alias(aliases.get(a.session_id, ""))]
 
 
 def build_scores(

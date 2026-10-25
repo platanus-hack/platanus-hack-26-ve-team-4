@@ -5,7 +5,13 @@ from sqlalchemy import func, select
 from agent_zero.analyzer.models import FindingRecord, FindingStatus
 from agent_zero.arena.models import ArenaState
 from agent_zero.arena.round_models import RoundArchive, RoundMetadata
-from agent_zero.arena.scoring import SCORED_OUTCOMES, ScoredAttempt, build_scores, reveal_counts
+from agent_zero.arena.scoring import (
+    SCORED_OUTCOMES,
+    ScoredAttempt,
+    build_scores,
+    reveal_counts,
+    without_test_sessions,
+)
 from agent_zero.arena.transactions import serialize_write
 from agent_zero.attempts.attempt_query_service import AttemptQueryService
 from agent_zero.attempts.models import Attempt, AttemptOutcome, AttemptStatus
@@ -46,6 +52,7 @@ class ArenaService:
                 )
             ]
             aliases = await session_aliases(db, {attempt.session_id for attempt in scored})
+            scored = without_test_sessions(scored, aliases)
             statuses = dict(
                 (
                     await db.execute(select(Attempt.status, func.count()).group_by(Attempt.status))

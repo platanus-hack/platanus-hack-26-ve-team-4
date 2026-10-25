@@ -91,6 +91,7 @@ export const KIND: Record<SessionKind, { label: string; cls: string }> = {
   audience: { label: "Público", cls: "audience" },
   swarm: { label: "Agente simulado", cls: "swarm" },
   prober: { label: "Prober", cls: "prober" },
+  test: { label: "Prueba interna", cls: "test" },
 };
 
 export const ROUTE: Record<RouteName, { label: string; cls: string }> = {

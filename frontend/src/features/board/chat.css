@@ -120,6 +120,12 @@
   border-color: rgba(195, 166, 255, 0.5);
   background: rgba(195, 166, 255, 0.09);
 }
+.av-badge.test {
+  color: var(--muted);
+  border-color: var(--border-strong);
+  border-style: dashed;
+  background: rgba(173, 186, 198, 0.07);
+}
 .av-badge.r-honeypot {
   color: var(--safe);
   border-color: rgba(124, 184, 255, 0.5);
