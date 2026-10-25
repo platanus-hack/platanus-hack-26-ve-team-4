@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     arena_session_limit: int = Field(default=100, ge=1, le=500)
     arena_queue_limit: int = Field(default=40, ge=1)
     arena_session_queue_limit: int = Field(default=1, ge=1)
-    arena_attempts_per_minute: int = Field(default=12, ge=1)
+    arena_attempts_per_minute: int = Field(default=240, ge=1)
     prober_round_query_budget: int = Field(default=8, ge=1)
     prober_round_close_wait_seconds: float = Field(default=90.0, gt=0)
     arena_auto_patch: bool = True

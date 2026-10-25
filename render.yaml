@@ -63,7 +63,7 @@ services:
       - key: AGENT_ZERO_ARENA_SESSION_QUEUE_LIMIT
         value: "1"
       - key: AGENT_ZERO_ARENA_ATTEMPTS_PER_MINUTE
-        value: "12"
+        value: "240"
       - key: AGENT_ZERO_ARENA_VALIDATION_CONCURRENCY
         value: "8"
       - key: AGENT_ZERO_RUNTIME_WORKER_CONCURRENCY

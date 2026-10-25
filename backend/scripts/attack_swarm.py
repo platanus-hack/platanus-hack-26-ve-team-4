@@ -33,7 +33,8 @@ from agent_zero.victim.fixtures import ORDERS
 
 MIN_AGENTS, MAX_AGENTS = 4, 6
 CASES = 30
-# Cupo del servidor: 12 intentos por minuto y sesion (`arena_attempts_per_minute`).
+# Espaciado propio del enjambre, muy por debajo del cupo del servidor
+# (240 intentos por minuto y sesión, `arena_attempts_per_minute`).
 SAFE_MIN_WAIT = 5.2
 MUTATORS = (None, "paraphrase_es", "paraphrase_en", "split_turns")
 TERMINAL = {"evaluated", "inconclusive"}

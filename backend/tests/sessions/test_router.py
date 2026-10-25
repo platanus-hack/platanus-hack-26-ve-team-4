@@ -22,7 +22,7 @@ def test_create_session_returns_public_projection(client: TestClient) -> None:
     assert "customer_id" not in body
     assert "route" not in body
     assert body["limits"] == {
-        "attempts_per_minute": 12,
+        "attempts_per_minute": 240,
         "max_messages": 4,
         "message_max_length": 4000,
     }
