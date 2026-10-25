@@ -1,0 +1,60 @@
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Tag de imagen a desplegar (por defecto, el sha del commit)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      IMAGE_TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Comprobar configuración
+        id: gate
+        run: |
+          if [ -z "${DEPLOY_HOST}" ]; then
+            echo "DEPLOY_HOST no está definido; el despliegue no está configurado."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "${DEPLOY_USER}" ] || [ -z "${DEPLOY_SSH_KEY}" ]; then
+            echo "Faltan los secrets DEPLOY_USER o DEPLOY_SSH_KEY."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Preparar SSH
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+      - name: Copiar infra y desplegar
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          SSH=(ssh -i "$HOME/.ssh/deploy_key" -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${DEPLOY_HOST}")
+          tar -C infra --exclude='.env' -cf - . | "${SSH[@]}" "tar -C /opt/agent-zero -xf -"
+          REMOTE="cd /opt/agent-zero && AGENT_ZERO_IMAGE_TAG='${IMAGE_TAG}' ./scripts/deploy.sh"
+          "${SSH[@]}" "${REMOTE}"
