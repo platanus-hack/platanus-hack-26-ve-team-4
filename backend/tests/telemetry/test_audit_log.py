@@ -168,3 +168,18 @@ def test_append_checks_only_lines_it_has_not_verified(
     assert checked == []
     assert log.verify().ok
     assert checked == list(range(6))
+
+
+def test_entries_reparse_when_history_changes_underneath(tmp_path: Path) -> None:
+    path = tmp_path / "a.jsonl"
+    log = AuditLog.for_file(path, KEY, _clock)
+    _fill(log, 3)
+    assert [entry.resource for entry in log.entries()] == ["res-0", "res-1", "res-2"]
+    log.append(_event("res-3"))
+    assert [entry.resource for entry in log.entries()][-1] == "res-3"
+    lines = path.read_text().splitlines()
+    record = json.loads(lines[0])
+    record["resource"] = "editado"
+    lines[0] = json.dumps(record)
+    path.write_text("\n".join(lines) + "\n")
+    assert log.entries()[0].resource == "editado"

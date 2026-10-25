@@ -44,6 +44,8 @@ class AuditLog:
         self._clock = clock
         self._lock = threading.Lock()
         self._verified: list[str] = []
+        self._parsed_lines: list[str] = []
+        self._parsed: list[AuditEntry] = []
         self._journal = (
             AuditJournal(store, anchor, key) if isinstance(store, FileAuditStore) else None
         )
@@ -110,7 +112,13 @@ class AuditLog:
         with self._lock, self._store.locked():
             if self._journal is not None:
                 self._journal.recover()
-            return [AuditEntry.model_validate_json(line) for line in self._store.read_lines()]
+            lines = self._store.read_lines()
+            known = len(self._parsed_lines)
+            if not known or lines[:known] != self._parsed_lines:
+                known, self._parsed = 0, []
+            self._parsed += [AuditEntry.model_validate_json(line) for line in lines[known:]]
+            self._parsed_lines = lines
+            return list(self._parsed)
 
     def verify(self) -> AuditVerification:
         with self._lock, self._store.locked():
