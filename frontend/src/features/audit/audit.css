@@ -1,0 +1,133 @@
+/* Auditoría de chats: lista de sesiones | historial completo. Reutiliza monitor.css y las
+   burbujas del chat del participante (chat.css). */
+.audit-page {
+  --yummy: #ff7a45;
+  --yummy-ink: #1a0d06;
+  --bubble-bot: #1a2732;
+}
+.audit-page > .eyebrow,
+.audit-page > h1,
+.audit-page > p,
+.audit-page > form {
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 16px;
+}
+.audit select {
+  margin: 0;
+  max-width: 320px;
+  font: 500 0.75rem var(--mono);
+}
+.audit-list input[type="search"] {
+  margin: 0;
+}
+.audit .audit-feed {
+  max-height: calc(100vh - 260px);
+}
+.audit-alias {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.audit-chat {
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+.audit-threads,
+.audit-thread,
+.audit-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.audit-divider {
+  justify-self: center;
+  margin: 8px 0;
+  padding: 2px 12px;
+  font: 500 0.72rem var(--mono);
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  width: fit-content;
+}
+.audit-threads > li {
+  display: grid;
+  gap: 10px;
+}
+.audit-exchange {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--tone);
+  border-radius: 8px;
+}
+.audit-exchange-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+}
+.audit-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+.audit-violation {
+  color: var(--color-danger);
+}
+.audit-diversion {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  color: var(--color-decoy);
+  border: 1px dashed var(--color-decoy);
+  border-radius: 8px;
+}
+.audit-step summary {
+  font-size: 0.75rem;
+}
+.audit-trace > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+.audit-trace[open] > summary {
+  margin-bottom: 8px;
+}
+.audit-step {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+.audit-json {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 10px;
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+}
+.audit-json dd {
+  margin: 0;
+}
+.audit-json pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 0.72rem / 1.4 var(--mono);
+}
+@media (max-width: 820px) {
+  .audit .monitor-main {
+    grid-template-columns: 1fr;
+  }
+  .audit .audit-feed,
+  .audit-chat {
+    max-height: none;
+  }
+}

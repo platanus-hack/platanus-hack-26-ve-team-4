@@ -2,10 +2,12 @@ import { type FormEvent, type ReactNode, useCallback, useState } from "react";
 
 interface Props {
   children: (secret: string, logout: (message?: string) => void) => ReactNode;
+  /** Encabezado que se muestra solo mientras se pide el secreto. */
+  intro?: ReactNode;
 }
 
 /** Login de operador compartido. El secreto vive solo en memoria durante la visita. */
-export function OperatorGate({ children }: Props) {
+export function OperatorGate({ children, intro }: Props) {
   const [input, setInput] = useState("");
   const [secret, setSecret] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export function OperatorGate({ children }: Props) {
   if (secret) return <>{children(secret, logout)}</>;
   return (
     <>
+      {intro}
       <p>
         Autoriza el acceso a trazas, controles, campañas y evidencia del laboratorio. El secreto
         permanece solo en memoria durante esta visita.
