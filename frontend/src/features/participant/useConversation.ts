@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, errorMessage, isUnauthorized, requestJson } from "../../shared/api/http";
 import { usePolling } from "../../shared/api/usePolling";
+import { packBatch } from "./batch";
 import { loadHistory, saveHistory } from "./storage";
 import type { ArenaSession, Attempt, ConversationEntry } from "./types";
 
@@ -17,9 +18,10 @@ export function mergeHistory(local: ConversationEntry[], remote: Attempt[]): Con
       (entry) => entry.attempt?.id === attempt.id || entry.key === attempt.idempotency_key,
     );
     const previous = index >= 0 ? entries[index] : undefined;
-    const entry = {
+    const entry: ConversationEntry = {
       key: previous?.key ?? attempt.idempotency_key ?? attempt.id,
       messages: attempt.messages ?? previous?.messages ?? [],
+      ...(previous?.parts ? { parts: previous.parts } : {}),
       attempt:
         previous?.attempt && !active(previous.attempt) && active(attempt)
           ? previous.attempt
@@ -148,11 +150,14 @@ export function useConversation(session: ArenaSession, onExpired?: () => void) {
     }
   }
 
-  function submit(text: string): boolean {
-    if (submitting.current || running || pending || !history.data || !text.trim()) return false;
+  /** Envía un lote como un intento: unido con saltos de línea o, si no cabe, uno por mensaje. */
+  function submit(texts: string[]): boolean {
+    const parts = texts.map((text) => text.trim()).filter(Boolean);
+    if (submitting.current || running || pending || !history.data || !parts.length) return false;
     const entry: ConversationEntry = {
       key: newKey(),
-      messages: [text.trim()],
+      messages: packBatch(parts, session.limits?.message_max_length ?? 4000),
+      ...(parts.length > 1 ? { parts } : {}),
       attempt: null,
       continues: last && !active(last) && !full ? last.id : null,
     };
@@ -173,6 +178,8 @@ export function useConversation(session: ArenaSession, onExpired?: () => void) {
     startFresh: () => setFresh(true),
     pending,
     running,
+    /** Puede salir un intento nuevo: nada en vuelo ni en ejecución y el historial ya cargó. */
+    idle: !pending && !running && Boolean(history.data),
     unresolved,
     cooldown,
     error,

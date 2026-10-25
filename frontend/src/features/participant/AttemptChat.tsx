@@ -1,8 +1,18 @@
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { useArenaState } from "../arena/hooks/useArenaState";
+import { BatchBar, PendingBubbles } from "./BatchPreview";
+import { BATCH_MAX_MESSAGES } from "./batch";
 import { LabPanel } from "./LabPanel";
 import type { ArenaSession, ConversationEntry } from "./types";
+import { useBatch } from "./useBatch";
 import { active, useConversation } from "./useConversation";
 import "./chat.css";
 
@@ -12,7 +22,7 @@ function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boole
   const attempt = entry.attempt;
   return (
     <li className="chat-exchange">
-      {entry.messages.map((message, turn) => (
+      {(entry.parts ?? entry.messages).map((message, turn) => (
         <p className="bubble bubble--user" key={["first", "second", "third", "fourth"][turn]}>
           <span className="visually-hidden">Tú: </span>
           {message}
@@ -44,13 +54,21 @@ export function AttemptChat({
   session: ArenaSession;
   onExpired?: () => void;
 }) {
-  const [draft, setDraft] = useState("");
+  const [draft, setDraftState] = useState("");
+  // Copia síncrona del borrador: dos envíos en el mismo evento no agregan el texto dos veces.
+  const text = useRef("");
   const chat = useConversation(session, onExpired);
   const { data: arena } = useArenaState();
   const closed = arena?.accepting === false;
+  const batch = useBatch(
+    session.id,
+    chat.submit,
+    chat.idle && !closed,
+    Math.min(BATCH_MAX_MESSAGES, session.limits?.max_messages ?? BATCH_MAX_MESSAGES),
+  );
   const end = useRef<HTMLDivElement>(null);
   const waiting = chat.pending || chat.running;
-  const disabled = waiting || closed || !chat.history.data;
+  const disabled = closed || !chat.history.data;
   const threads = chat.fresh ? [...chat.threads, []] : chat.threads;
   const current = threads.at(-1) ?? [];
   const order = session.order_ids[0] ?? "propio";
@@ -60,24 +78,37 @@ export function AttemptChat({
     "¿Cuánto tarda un envío?",
   ];
 
+  const setDraft = useCallback((value: string | ((current: string) => string)) => {
+    if (typeof value === "string") {
+      text.current = value;
+      setDraftState(value);
+      return;
+    }
+    setDraftState((current) => {
+      text.current = value(current);
+      return text.current;
+    });
+  }, []);
+
   useEffect(() => {
     const restored = chat.restored;
     if (restored) setDraft((current) => (current.trim() ? `${restored}\n${current}` : restored));
-  }, [chat.restored]);
+  }, [chat.restored, setDraft]);
   useEffect(() => {
     void chat.entries.length;
+    void batch.texts.length;
     end.current?.scrollIntoView?.({ block: "end" });
-  }, [chat.entries.length]);
+  }, [chat.entries.length, batch.texts.length]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (closed || waiting) return;
-    if (chat.submit(draft)) setDraft("");
+    if (disabled) return;
+    if (batch.add(text.current)) setDraft("");
   }
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
-      if (!waiting) event.currentTarget.form?.requestSubmit();
+      event.currentTarget.form?.requestSubmit();
     }
   }
 
@@ -118,6 +149,7 @@ export function AttemptChat({
               </li>
             ))}
           </ol>
+          <PendingBubbles texts={batch.texts} />
           <div ref={end} />
         </div>
         <div className="chat-notices">
@@ -156,7 +188,7 @@ export function AttemptChat({
             <p role="status">Recuperando conversación…</p>
           )}
         </div>
-        {current.length === 0 && !disabled && (
+        {current.length === 0 && !disabled && !waiting && batch.texts.length === 0 && (
           <div className="chat-suggestions">
             {suggestions.map((text) => (
               <button key={text} type="button" onClick={() => setDraft(text)}>
@@ -165,6 +197,7 @@ export function AttemptChat({
             ))}
           </div>
         )}
+        <BatchBar batch={batch} idle={chat.idle} closed={closed} />
         <form className="chat-composer" onSubmit={submit} aria-label="Nuevo mensaje">
           <label htmlFor="chat-message" className="visually-hidden">
             Mensaje al asistente
@@ -180,11 +213,15 @@ export function AttemptChat({
             required
             disabled={closed}
           />
-          <button type="submit" disabled={disabled || !draft.trim()}>
-            {chat.pending ? "Enviando…" : chat.running ? "Esperando respuesta…" : "Enviar"}
+          <button type="submit" disabled={disabled || batch.full || !draft.trim()}>
+            Enviar
           </button>
           <p className="chat-composer-status" role="status" aria-live="polite">
-            {waiting ? "Yummy está respondiendo. Puedes ir escribiendo tu siguiente mensaje." : ""}
+            {batch.full
+              ? "Ya juntaste el máximo de mensajes; se envían juntos en cuanto se pueda."
+              : waiting
+                ? "Yummy está respondiendo. Lo que escribas se envía cuando termine."
+                : ""}
           </p>
         </form>
       </section>

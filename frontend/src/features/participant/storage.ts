@@ -1,7 +1,9 @@
+import { isBatch, type PendingBatch } from "./batch";
 import type { ArenaSession, ConversationEntry } from "./types";
 
 const SESSION_KEY = "agent-zero:participant:v1";
 const historyKey = (id: string) => `agent-zero:history:${id}`;
+const batchKey = (id: string) => `agent-zero:batch:${id}`;
 
 // localStorage, no sessionStorage: la pulsera sobrevive a cerrar la pestaña y la comparten las
 // pestañas del navegador, así que volver no crea otra sesión ni gasta cupo de la ronda.
@@ -61,6 +63,7 @@ export function saveSession(session: ArenaSession | null) {
   const previous = read<ArenaSession>(SESSION_KEY);
   if (session === null && previous && typeof previous.id === "string") {
     write(historyKey(previous.id), null);
+    write(batchKey(previous.id), null);
   }
   write(SESSION_KEY, session);
 }
@@ -73,6 +76,9 @@ export function loadHistory(id: string): ConversationEntry[] {
           typeof entry.key === "string" &&
           Array.isArray(entry.messages) &&
           entry.messages.every((message) => typeof message === "string") &&
+          (entry.parts === undefined ||
+            (Array.isArray(entry.parts) &&
+              entry.parts.every((part) => typeof part === "string"))) &&
           (entry.continues == null || typeof entry.continues === "string") &&
           (entry.attempt === null ||
             (entry.attempt &&
@@ -85,4 +91,12 @@ export function loadHistory(id: string): ConversationEntry[] {
 }
 export function saveHistory(id: string, entries: ConversationEntry[]) {
   write(historyKey(id), entries);
+}
+// Lote aún no enviado: sobrevive a una recarga y se envía al recuperar la sesión.
+export function loadBatch(id: string): PendingBatch | null {
+  const value = read<PendingBatch>(batchKey(id));
+  return isBatch(value) ? value : null;
+}
+export function saveBatch(id: string, batch: PendingBatch | null) {
+  write(batchKey(id), batch);
 }

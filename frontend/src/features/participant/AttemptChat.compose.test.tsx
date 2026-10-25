@@ -28,21 +28,23 @@ const posts = (spy: ReturnType<typeof mockApi>) =>
   spy.mock.calls.filter(([, init]) => init?.method === "POST");
 
 describe("AttemptChat redacción durante la espera", () => {
-  it("permite redactar, bloquea Enter y Enviar, y muestra el indicador", async () => {
+  it("deja escribir y juntar mensajes mientras Yummy responde, sin enviarlos", async () => {
     const spy = mockApi(() => [running]);
     render(<AttemptChat session={session} />);
     const box = screen.getByLabelText("Mensaje al asistente");
     expect(await screen.findByText(/Yummy está respondiendo/)).toBeInTheDocument();
     expect(box).toBeEnabled();
-    await userEvent.type(box, "Siguiente{Enter}");
-    expect(box).toHaveValue("Siguiente");
-    expect(screen.getByRole("button", { name: "Esperando respuesta…" })).toBeDisabled();
-    expect(posts(spy)).toHaveLength(0);
-    await userEvent.type(box, "{Shift>}{Enter}{/Shift}más");
+    await userEvent.type(box, "Siguiente{Shift>}{Enter}{/Shift}más");
     expect(box).toHaveValue("Siguiente\nmás");
+    await userEvent.type(box, "{Enter}");
+    expect(box).toHaveValue("");
+    const pending = screen.getByRole("list", { name: "Mensajes por enviar" });
+    expect(pending).toHaveTextContent(/Siguiente\s+más/);
+    expect(pending).toHaveTextContent("Pendiente");
+    expect(posts(spy)).toHaveLength(0);
   });
 
-  it("conserva el borrador y lo envía al llegar la respuesta; el indicador desaparece", async () => {
+  it("«Enviar ahora» espera a que termine la respuesta y luego manda el lote", async () => {
     let done = false;
     const spy = mockApi(() => [
       done ? attempt({ id: "run", messages: ["Hola"], reply: "Listo" }) : running,
@@ -50,15 +52,16 @@ describe("AttemptChat redacción durante la espera", () => {
     render(<AttemptChat session={session} />);
     const box = screen.getByLabelText("Mensaje al asistente");
     await screen.findByText(/Yummy está respondiendo/);
-    await userEvent.type(box, "Mi segunda pregunta");
+    await userEvent.type(box, "Mi segunda pregunta{Enter}");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
+    expect(screen.getByText(/Se envía cuando Yummy termine de responder/)).toBeInTheDocument();
+    expect(posts(spy)).toHaveLength(0);
     done = true;
-    await waitFor(() => expect(screen.queryByText(/Yummy está respondiendo/)).toBeNull(), {
-      timeout: 4000,
+    await waitFor(() => expect(posts(spy)).toHaveLength(1), { timeout: 4000 });
+    expect(JSON.parse(String(posts(spy)[0]?.[1]?.body))).toMatchObject({
+      messages: ["Mi segunda pregunta"],
+      continues: "run",
     });
-    expect(box).toHaveValue("Mi segunda pregunta");
-    await userEvent.type(box, "{Enter}");
-    await waitFor(() => expect(posts(spy)).toHaveLength(1));
-    expect(JSON.parse(String(posts(spy)[0]?.[1]?.body)).messages).toEqual(["Mi segunda pregunta"]);
-    expect(box).toHaveValue("");
+    expect(screen.queryByRole("list", { name: "Mensajes por enviar" })).toBeNull();
   });
 });

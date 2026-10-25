@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { session } from "../../test/fixtures";
-import { loadHistory, loadSession, saveHistory, saveSession } from "./storage";
+import {
+  loadBatch,
+  loadHistory,
+  loadSession,
+  saveBatch,
+  saveHistory,
+  saveSession,
+} from "./storage";
 
 const SESSION_KEY = "agent-zero:participant:v1";
 
@@ -55,5 +62,22 @@ describe("recuperación del navegador", () => {
     });
     expect(() => saveSession(session)).not.toThrow();
     expect(() => saveHistory(session.id, [])).not.toThrow();
+  });
+  it("guarda el lote sin enviar, descarta uno corrupto y lo borra al invalidar la pulsera", () => {
+    saveSession(session);
+    saveBatch(session.id, { texts: ["Hola", "otra"], first: 1, last: 2 });
+    expect(loadBatch(session.id)).toEqual({ texts: ["Hola", "otra"], first: 1, last: 2 });
+    localStorage.setItem(`agent-zero:batch:${session.id}`, JSON.stringify({ texts: [] }));
+    expect(loadBatch(session.id)).toBeNull();
+    saveBatch(session.id, { texts: ["Hola"], first: 1, last: 1 });
+    saveSession(null);
+    expect(loadBatch(session.id)).toBeNull();
+  });
+  it("conserva las partes de un lote enviado y descarta partes que no son texto", () => {
+    saveHistory(session.id, [
+      { key: "ok", messages: ["uno\ndos"], parts: ["uno", "dos"], attempt: null },
+      { key: "bad", messages: ["x"], parts: [1 as unknown as string], attempt: null },
+    ]);
+    expect(loadHistory(session.id).map((entry) => entry.key)).toEqual(["ok"]);
   });
 });

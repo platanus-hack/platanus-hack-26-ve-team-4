@@ -8,10 +8,12 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 | --- | --- |
 | [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor` y `/operator`. |
 | [ParticipantPage.tsx](../../frontend/src/features/participant/ParticipantPage.tsx) | Consentimiento, alta y recuperación mediante `/api/sessions/me`. |
-| [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Cada mensaje es un intento que continúa la conversación en curso (`continues`). |
+| [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Los mensajes se juntan en un lote y cada lote es un intento que continúa la conversación en curso (`continues`). |
+| [batch.ts](../../frontend/src/features/participant/batch.ts) | Constantes del lote (`BATCH_IDLE_MS`, `BATCH_MAX_WAIT_MS`, `BATCH_MAX_MESSAGES`), vencimiento y armado del cuerpo (`packBatch`). |
+| [useBatch.ts](../../frontend/src/features/participant/useBatch.ts), [BatchPreview.tsx](../../frontend/src/features/participant/BatchPreview.tsx) | Lote pendiente: contador, envío al vencer o con «Enviar ahora», persistencia; burbujas pendientes y barra con la cuenta regresiva. |
 | [useConversation.ts](../../frontend/src/features/participant/useConversation.ts) | Envío durable, reconciliación del historial, conversaciones (`threadsOf`), reintento y espera de 429. |
 | [LabPanel.tsx](../../frontend/src/features/participant/LabPanel.tsx) | Panel discreto del laboratorio: modo, identidad ficticia, pedidos, objetivos, límites y resultado provisional de cada mensaje. |
-| [storage.ts](../../frontend/src/features/participant/storage.ts) | Sesión e historial pendiente en `localStorage`, con validación al leer; descarta la pulsera vencida y migra la que haya quedado en `sessionStorage`. |
+| [storage.ts](../../frontend/src/features/participant/storage.ts) | Sesión, historial pendiente y lote sin enviar en `localStorage`, con validación al leer; descarta la pulsera vencida y migra la que haya quedado en `sessionStorage`. |
 | [OperatorPage.tsx](../../frontend/src/features/operator/OperatorPage.tsx) | Controles, campañas, políticas, hallazgos, evaluación y reset archivado. |
 | [OperatorGate.tsx](../../frontend/src/features/operator/OperatorGate.tsx) | Acceso de operador con el secreto solo en memoria; lo usan `/operator` y `/arena`. |
 | [BoardPage.tsx](../../frontend/src/features/board/BoardPage.tsx) | Ruta `/arena`: Arena en vivo de 1920 × 1080 con carrusel de 8 chats, cinco KPI, QR y «Cerrar acceso». Ver [Arena en vivo](./tablero.md). |
@@ -27,9 +29,28 @@ Al recargar, cerrar la pestaña o abrir otra, se recupera el token del navegador
 
 Antes del POST se guarda una entrada con mensajes exactos y una clave aleatoria generada mediante `crypto.getRandomValues`, que funciona en HTTP local. La clave se conserva si se pierde la respuesta, incluso tras recargar. El historial consultado al servidor se reconcilia por ID o `idempotency_key`; una aceptación ya existente evita enviar de nuevo.
 
-El chat envía un mensaje por intento con `continues` igual al último intento terminado de la conversación en curso. «Nueva conversación», o llegar a 6 intentos, envía el siguiente sin `continues`. Si el servidor rechaza la continuación con 404 o 409, el texto vuelve al campo y el mensaje siguiente abre una conversación nueva. Los resultados no aparecen en el chat, sino en el panel del laboratorio; antes de revelar, una violación y un éxito en el señuelo se ven igual.
+El chat envía un lote por intento con `continues` igual al último intento terminado de la conversación en curso. «Nueva conversación», o llegar a 6 intentos, envía el siguiente sin `continues`. Si el servidor rechaza la continuación con 404 o 409, el texto vuelve al campo y el mensaje siguiente abre una conversación nueva. Los resultados no aparecen en el chat, sino en el panel del laboratorio; antes de revelar, una violación y un éxito en el señuelo se ven igual.
 
-La interfaz bloquea envíos simultáneos y nuevos envíos mientras existe una entrada pendiente. Un 422 permite corregir el formulario; un 429 conserva la clave y respeta `Retry-After`. Las mutaciones no se reintentan silenciosamente desde el cliente HTTP.
+### Mensajes en lote
+
+«Enviar» (o Enter) no llama al servidor: el mensaje entra a un lote pendiente que se ve en el chat como burbuja propia atenuada, con la marca «Pendiente», y el campo queda libre para el siguiente. Una barra encima del campo dice cuántos mensajes hay y «Se envía en N s», con el botón «Enviar ahora». El lote vence con lo primero que ocurra:
+
+| Condición | Constante en `batch.ts` |
+| --- | --- |
+| 10 s sin un mensaje nuevo; cada mensaje reinicia la espera | `BATCH_IDLE_MS = 10_000` |
+| 20 s desde el primer mensaje del lote | `BATCH_MAX_WAIT_MS = 20_000` |
+| 4 mensajes juntos (o `limits.max_messages`, si es menor) | `BATCH_MAX_MESSAGES = 4` |
+| «Enviar ahora» | — |
+
+El lote vencido sale en un solo POST a `/api/attempts`, con una clave idempotente nueva: `messages` lleva un único texto con los mensajes unidos por saltos de línea; si ese texto supera `limits.message_max_length` (4000 por defecto), `messages` lleva los mensajes por separado (hasta 4, cada uno ya limitado por el campo). En el chat siguen viéndose como burbujas separadas: la entrada guarda `parts` además de `messages`, y la reconciliación las conserva.
+
+Mientras Yummy responde se puede seguir escribiendo; esos mensajes arman el lote siguiente y su contador corre. Si vence antes de que termine el intento anterior, la barra dice «Se envía cuando Yummy termine de responder» y el lote sale al terminar ese intento (el servidor admite una ejecución pendiente por sesión). Con 4 mensajes esperando, «Enviar» se desactiva hasta que el lote salga; el texto queda en el campo. Con la ronda cerrada, el lote espera a que se reabran las entradas. Un envío sin confirmar (fallo de red o 429) también retiene el lote siguiente hasta reintentarlo.
+
+El lote se guarda en `localStorage` (`agent-zero:batch:<sesión>`) con la hora del primer y del último mensaje: sobrevive a una recarga, conserva el tiempo transcurrido y se borra al salir el POST o al invalidar la pulsera. La entrada del intento se guarda antes del POST y el lote se borra en el mismo paso síncrono, así que una recarga no puede enviarlo dos veces.
+
+### Concurrencia y errores
+
+La interfaz no lanza un intento nuevo mientras existe una entrada pendiente o en ejecución, y dos envíos del formulario en el mismo evento agregan el texto una sola vez. Un 422 permite corregir el formulario; un 429 conserva la clave y respeta `Retry-After`. Las mutaciones no se reintentan silenciosamente desde el cliente HTTP.
 
 Los límites vienen de la sesión, con compatibilidad de campos anterior. La UI muestra pausa de admisión y resultados provisionales. Tras revelar, vuelve a leer el resultado final propio; una lectura antigua no puede convertir una respuesta terminal en un intento en cola.
 
@@ -79,7 +100,8 @@ pnpm exec vitest run src/features/board src/shared/api
 | Archivos de pruebas | Comportamiento cubierto |
 | --- | --- |
 | [ParticipantPage.test.tsx](../../frontend/src/features/participant/ParticipantPage.test.tsx), [storage.test.ts](../../frontend/src/features/participant/storage.test.ts) | Consentimiento, alta, recuperación, expiración/reset, JSON corrupto y almacenamiento no disponible. |
-| [AttemptChat.test.tsx](../../frontend/src/features/participant/AttemptChat.test.tsx) | Respuesta perdida, recarga, reconciliación sin duplicar, cuatro turnos, doble envío, frecuencia y revelación sin filtrar ruta. |
+| [AttemptChat.test.tsx](../../frontend/src/features/participant/AttemptChat.test.tsx), [AttemptChat.compose.test.tsx](../../frontend/src/features/participant/AttemptChat.compose.test.tsx) | Respuesta perdida, recarga, reconciliación sin duplicar, cuatro turnos, doble envío, frecuencia, revelación sin filtrar ruta y redacción mientras Yummy responde. |
+| [AttemptChat.batch.test.tsx](../../frontend/src/features/participant/AttemptChat.batch.test.tsx), [batch.test.ts](../../frontend/src/features/participant/batch.test.ts) | Lote con temporizadores falsos: espera de 10 s que se reinicia, tope de 20 s, cuarto mensaje, «Enviar ahora», unión y división por largo, lote siguiente durante un intento, lote lleno y recarga. |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, secreto no persistido, acciones seriales, evidencia, reset y evaluación explícita. |
 | [board/](../../frontend/src/features/board/) (`BoardPage`, `ChatTile`, `Carousel`, `KpiColumn`, `slots`), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo: acceso, carrusel, enmascarado, mapas de desenlace y negación, KPI honestas, «Cerrar acceso» y la ruta `/arena`. |
 | [http.test.ts](../../frontend/src/shared/api/http.test.ts), [usePolling.test.ts](../../frontend/src/shared/api/usePolling.test.ts) | Timeout/cancelación, `Retry-After`, datos previos, ausencia de solapamiento y respuestas antiguas. |

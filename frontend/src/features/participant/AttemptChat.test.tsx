@@ -28,6 +28,11 @@ async function enterMessage(text = "Consulta B-2001") {
   await userEvent.type(screen.getByLabelText("Mensaje al asistente"), text);
   await waitFor(() => expect(screen.getByRole("button", { name: "Enviar" })).not.toBeDisabled());
 }
+// El mensaje entra al lote y «Enviar ahora» lo manda sin esperar el contador.
+async function send() {
+  await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Enviar ahora" }));
+}
 
 describe("AttemptChat", () => {
   it("envía con token y clave estable, conserva conversación y permite varios intentos", async () => {
@@ -37,11 +42,11 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.getByText(/Intento detenido por un control/)).toBeInTheDocument();
     await enterMessage("Consulta mi pedido A-1001");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     await waitFor(() => expect(screen.getAllByText("Solicitud rechazada.")).toHaveLength(2));
     expect(results()).toHaveLength(2);
     const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST");
@@ -68,7 +73,7 @@ describe("AttemptChat", () => {
     });
     const first = render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     expect(await screen.findByRole("button", { name: "Reintentar envío" })).toBeInTheDocument();
     expect(loadHistory(session.id)[0]?.attempt).toBeNull();
     first.unmount();
@@ -93,7 +98,7 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage();
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reintentar envío" })).not.toBeInTheDocument();
     expect(mock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
@@ -106,11 +111,11 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage("Hola");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     await screen.findByText("Solicitud rechazada.");
     await userEvent.click(screen.getByRole("button", { name: "Nueva conversación" }));
     await enterMessage("Otra consulta");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     await waitFor(() => expect(screen.getAllByText("Solicitud rechazada.")).toHaveLength(2));
     const bodies = mock.mock.calls
       .filter(([, init]) => init?.method === "POST")
@@ -131,12 +136,12 @@ describe("AttemptChat", () => {
     );
     render(<AttemptChat session={session} />);
     await enterMessage("Sigo aquí");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     expect(await screen.findByRole("alert")).toHaveTextContent("largo máximo");
     await waitFor(() =>
       expect(screen.getByLabelText("Mensaje al asistente")).toHaveValue("Sigo aquí"),
     );
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     await waitFor(() => expect(results()).toHaveLength(2));
     const bodies = mock.mock.calls
       .filter(([, init]) => init?.method === "POST")
@@ -153,7 +158,15 @@ describe("AttemptChat", () => {
       fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
       fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
     });
-    expect(mock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+    const pending = screen.getByRole("list", { name: "Mensajes por enviar" });
+    expect(within(pending).getAllByRole("listitem")).toHaveLength(1);
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
+      fireEvent.click(screen.getByRole("button", { name: "Enviar ahora" }));
+    });
+    await waitFor(() =>
+      expect(mock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1),
+    );
     await act(async () => response.resolve(Response.json(attempt())));
     expect(results()).toHaveLength(1);
   });
@@ -182,7 +195,8 @@ describe("AttemptChat", () => {
     render(<AttemptChat session={session} />);
     expect(await screen.findByText(/Ejecutándose · Política 1/)).toBeInTheDocument();
     expect(screen.getByText("Respuesta anterior")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Esperando respuesta…" })).toBeDisabled();
+    expect(screen.getByText(/Yummy está respondiendo/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Mensaje al asistente")).toBeEnabled();
   });
 
   it("respeta Retry-After sin regenerar la clave", async () => {
@@ -195,7 +209,7 @@ describe("AttemptChat", () => {
     render(<AttemptChat session={session} />);
     await enterMessage();
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-24T12:00:00Z"));
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     expect(await screen.findByText("Límite de frecuencia")).toBeInTheDocument();
     // The wait comes from the header (60 s), not from the 5 s fallback.
     expect(await screen.findByRole("button", { name: "Reintentar en 60 s" })).toBeDisabled();
@@ -207,7 +221,7 @@ describe("AttemptChat", () => {
     render(<AttemptChat session={session} />);
     await enterMessage();
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-24T12:00:00Z"));
-    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await send();
     expect(await screen.findByText("Cola llena")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Reintentar en 5 s" })).toBeDisabled();
     expect(loadHistory(session.id)[0]?.key).toBeTruthy();
@@ -253,6 +267,15 @@ describe("AttemptChat", () => {
     );
     expect(merged).toHaveLength(1);
     expect(merged[0]?.attempt).toEqual(final);
+  });
+
+  it("la reconciliación conserva las partes de un lote enviado como un solo mensaje", () => {
+    const merged = mergeHistory(
+      [{ key: "lote", messages: ["uno\ndos"], parts: ["uno", "dos"], attempt: null }],
+      [attempt({ idempotency_key: "lote", messages: ["uno\ndos"] })],
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ messages: ["uno\ndos"], parts: ["uno", "dos"] });
   });
 
   it("cierra envío al pausar y mantiene el historial visible", async () => {
