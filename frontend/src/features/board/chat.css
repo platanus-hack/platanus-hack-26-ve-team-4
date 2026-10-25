@@ -294,9 +294,11 @@
   align-self: flex-start;
   align-items: flex-start;
 }
+/* max-width: con una técnica larga la etiqueta se corta con "…" en vez de salirse por la izquierda. */
 .av-meta {
   display: flex;
   align-items: center;
+  max-width: 100%;
   gap: 8px;
   margin-bottom: 6px;
   font-size: 20px;
