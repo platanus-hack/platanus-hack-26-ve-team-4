@@ -20,6 +20,13 @@ async function login() {
 }
 
 describe("ParticipantPage", () => {
+  it("explica que cuenta acceder al dato aunque no se muestre", async () => {
+    mockFetch(() => Response.json(session, { status: 201 }));
+    render(<ParticipantPage />);
+    expect(
+      await screen.findByText(/Cuenta si el agente accede al dato, aunque no te lo muestre\./),
+    ).toBeInTheDocument();
+  });
   it("crea la sesión con consentimiento y guarda credencial para recargar", async () => {
     const fetchMock = mockFetch(() => Response.json(session, { status: 201 }));
     render(<ParticipantPage />);
