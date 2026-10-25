@@ -269,6 +269,15 @@ describe("AttemptChat", () => {
     expect(merged[0]?.attempt).toEqual(final);
   });
 
+  it("la reconciliación conserva las partes de un lote enviado como un solo mensaje", () => {
+    const merged = mergeHistory(
+      [{ key: "lote", messages: ["uno\ndos"], parts: ["uno", "dos"], attempt: null }],
+      [attempt({ idempotency_key: "lote", messages: ["uno\ndos"] })],
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ messages: ["uno\ndos"], parts: ["uno", "dos"] });
+  });
+
   it("cierra envío al pausar y mantiene el historial visible", async () => {
     mockApi(
       async () => Response.json(attempt()),
