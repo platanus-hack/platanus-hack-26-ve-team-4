@@ -17,51 +17,17 @@ import {
 import { DecoyPanel } from "./DecoyPanel";
 import { EvaluationPanel } from "./EvaluationPanel";
 import { downloadEvidence, EvidencePanel } from "./EvidencePanel";
+import { OperatorGate } from "./OperatorGate";
 import { PolicyList } from "./PolicyList";
 
 export function OperatorPage() {
-  const [input, setInput] = useState("");
-  const [secret, setSecret] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const logout = useCallback((message?: string) => {
-    setSecret("");
-    setInput("");
-    setError(message ?? null);
-  }, []);
-  function login(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!input.trim()) return;
-    setError(null);
-    setSecret(input);
-    setInput("");
-  }
   return (
     <main className="page operator-page">
       <p className="eyebrow">Agent Zero · Acceso reservado</p>
       <h1>Operación</h1>
-      {secret ? (
-        <OperatorDashboard key={secret} secret={secret} logout={logout} />
-      ) : (
-        <>
-          <p>
-            Autoriza el acceso a trazas, controles, campañas y evidencia del laboratorio. El secreto
-            permanece solo en memoria durante esta visita.
-          </p>
-          <form onSubmit={login}>
-            <label htmlFor="operator-secret">Secreto de operador</label>
-            <input
-              id="operator-secret"
-              type="password"
-              autoComplete="off"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              required
-            />
-            <button type="submit">Acceder</button>
-          </form>
-          {error && <p role="alert">{error}</p>}
-        </>
-      )}
+      <OperatorGate>
+        {(secret, logout) => <OperatorDashboard key={secret} secret={secret} logout={logout} />}
+      </OperatorGate>
     </main>
   );
 }

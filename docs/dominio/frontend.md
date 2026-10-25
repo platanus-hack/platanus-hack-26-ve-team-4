@@ -6,19 +6,20 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 
 | Entrada | Función |
 | --- | --- |
-| [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` pública y `/operator` reservada. |
+| [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor` y `/operator`. |
 | [ParticipantPage.tsx](../../frontend/src/features/participant/ParticipantPage.tsx) | Consentimiento, alta y recuperación mediante `/api/sessions/me`. |
 | [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Cada mensaje es un intento que continúa la conversación en curso (`continues`). |
 | [useConversation.ts](../../frontend/src/features/participant/useConversation.ts) | Envío durable, reconciliación del historial, conversaciones (`threadsOf`), reintento y espera de 429. |
 | [LabPanel.tsx](../../frontend/src/features/participant/LabPanel.tsx) | Panel discreto del laboratorio: modo, identidad ficticia, pedidos, objetivos, límites y resultado provisional de cada mensaje. |
 | [storage.ts](../../frontend/src/features/participant/storage.ts) | Sesión e historial pendiente en `localStorage`, con validación al leer; descarta la pulsera vencida y migra la que haya quedado en `sessionStorage`. |
-| [ArenaPage.tsx](../../frontend/src/features/arena/ArenaPage.tsx) | Estado agregado, cronómetro transcurrido, actividad SSE, QR y clasificación. |
 | [OperatorPage.tsx](../../frontend/src/features/operator/OperatorPage.tsx) | Controles, campañas, políticas, hallazgos, evaluación y reset archivado. |
+| [OperatorGate.tsx](../../frontend/src/features/operator/OperatorGate.tsx) | Acceso de operador con el secreto solo en memoria; lo usan `/operator` y `/arena`. |
+| [BoardPage.tsx](../../frontend/src/features/board/BoardPage.tsx) | Ruta `/arena`: Arena en vivo de 1920 × 1080 con carrusel de 8 chats, cinco KPI, QR y «Cerrar acceso». Ver [Arena en vivo](./tablero.md). |
 | [MonitorPage.tsx](../../frontend/src/features/monitor/MonitorPage.tsx) | Panel de la empresa en `/monitor`: KPIs de la ronda, feed de intentos con filtros, detalle con conversación y grafo, y tendencias (violación por versión, versiones de política, tokens por intento). |
 | [http.ts](../../frontend/src/shared/api/http.ts) | Errores tipados, timeout, cancelación y lectura de `Retry-After`. |
 | [usePolling.ts](../../frontend/src/shared/api/usePolling.ts) | Consultas seriales y descarte de respuestas de un propietario anterior. |
 
-Los contratos se declaran junto a cada feature, en [participant/types.ts](../../frontend/src/features/participant/types.ts), [arena/types.ts](../../frontend/src/features/arena/types.ts) y [operator/api.ts](../../frontend/src/features/operator/api.ts). Cambiar un payload exige revisar esos tipos y las pruebas del consumidor correspondiente.
+Los contratos se declaran junto a cada feature, en [participant/types.ts](../../frontend/src/features/participant/types.ts), [arena/types.ts](../../frontend/src/features/arena/types.ts), [board/types.ts](../../frontend/src/features/board/types.ts) y [operator/api.ts](../../frontend/src/features/operator/api.ts). Cambiar un payload exige revisar esos tipos y las pruebas del consumidor correspondiente.
 
 ## Flujo del participante y fallos de red
 
@@ -36,13 +37,13 @@ Los límites vienen de la sesión, con compatibilidad de campos anterior. La UI 
 
 `usePolling` usa por defecto 2 s entre consultas completadas; el historial del chat usa 1,5 s. No solapa una lectura lenta con la siguiente y aborta/desestima respuestas al cambiar credenciales, ronda o componente. Ante errores conserva los últimos datos y muestra que pueden estar desactualizados.
 
-[useArenaEvents.ts](../../frontend/src/features/arena/hooks/useArenaEvents.ts) utiliza `EventSource`, valida tipo/visibilidad/ID, deduplica y conserva hasta 100 eventos recientes. La reconexión de la misma instancia usa el comportamiento nativo de `EventSource`; los contadores completos vienen de `/api/arena/state`.
+La Arena en vivo consulta `GET /api/operator/live` cada 1,5 s; ya no hay una vista pública que use el SSE de `/api/arena/events` ni la co-evolución (el backend los sigue publicando). `useArenaState` sigue leyendo `/api/arena/state` para participante, monitor y operación.
 
 La repetición del ataque vive en [replay/](../../frontend/src/features/arena/replay/). `useReplay` espera un `patch_validated` con `passed=true`, consulta `GET /api/arena/replay/{version}` y `ReplayStage` dibuja dos columnas (política anterior con el efecto en rojo, política nueva con la arista cortada y «bloqueado por política vN») y la fila de tareas legítimas. `AttackGraph` es SVG puro con texto además de color; con `prefers-reduced-motion` salta al estado final. Si la ruta responde 404 no se muestra nada. Muestra el rótulo «repetición de las llamadas a herramientas registradas»: el «antes» sale de la traza original y no se vuelve a ejecutar.
 
 El panel de [monitor/](../../frontend/src/features/monitor/) usa el mismo secreto de operador en memoria y consulta `GET /api/operator/monitor` y `/api/operator/policies` cada 4 s. El detalle pide `GET /api/operator/attempts/{id}` y dibuja `graph` con `AttackGraph`. Si el intento es una violación cuyo parche tiene repetición, muestra la pantalla dividida de `/api/arena/replay/{version}` con las tareas legítimas. Las violaciones por versión cuentan sólo la ruta protegida con veredicto. Sin llamadas LIVE, los tokens se muestran como «sin medir» y el coste como «simulado».
 
-[JoinCode.tsx](../../frontend/src/features/arena/JoinCode.tsx) genera SVG local con `qrcode`. Acepta HTTP/HTTPS sin usuario ni contraseña y normaliza el enlace a la raíz del origen. Usa `VITE_PUBLIC_PARTICIPANT_URL` de build o el origen actual; también se puede editar en la tarjeta. Ese cambio no publica un despliegue.
+[JoinCode.tsx](../../frontend/src/features/arena/JoinCode.tsx) genera SVG local con `qrcode`. Acepta HTTP/HTTPS sin usuario ni contraseña y normaliza el enlace a la raíz del origen. Usa `VITE_PUBLIC_PARTICIPANT_URL` de build o el origen actual; también se puede editar en la tarjeta. Ese cambio no publica un despliegue. `JoinQr` dibuja el mismo QR, compacto, en la cabecera de la Arena en vivo.
 
 Operación mantiene el secreto sólo en memoria durante la visita. Todas sus peticiones usan `X-Operator-Secret`, y un rechazo de autorización borra el acceso. Un bloqueo local serializa acciones, incluso un doble clic anterior al render siguiente. Cada mutación tiene que solicitarse explícitamente otra vez si se pierde su respuesta.
 
@@ -72,7 +73,7 @@ Para revisar un flujo concreto:
 cd frontend
 pnpm exec vitest run src/features/participant
 pnpm exec vitest run src/features/operator/OperatorPage.test.tsx
-pnpm exec vitest run src/features/arena src/shared/api
+pnpm exec vitest run src/features/board src/shared/api
 ```
 
 | Archivos de pruebas | Comportamiento cubierto |
@@ -80,13 +81,11 @@ pnpm exec vitest run src/features/arena src/shared/api
 | [ParticipantPage.test.tsx](../../frontend/src/features/participant/ParticipantPage.test.tsx), [storage.test.ts](../../frontend/src/features/participant/storage.test.ts) | Consentimiento, alta, recuperación, expiración/reset, JSON corrupto y almacenamiento no disponible. |
 | [AttemptChat.test.tsx](../../frontend/src/features/participant/AttemptChat.test.tsx) | Respuesta perdida, recarga, reconciliación sin duplicar, cuatro turnos, doble envío, frecuencia y revelación sin filtrar ruta. |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, secreto no persistido, acciones seriales, evidencia, reset y evaluación explícita. |
-| [ArenaPage.test.tsx](../../frontend/src/features/arena/ArenaPage.test.tsx), [useArenaEvents.test.ts](../../frontend/src/features/arena/hooks/useArenaEvents.test.ts) | Modo simulado, marcador, QR, eventos privados/malformados, duplicados y cambio de ronda. |
+| [board/](../../frontend/src/features/board/) (`BoardPage`, `ChatTile`, `Carousel`, `KpiColumn`, `slots`), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo: acceso, carrusel, enmascarado, mapas de desenlace y negación, KPI honestas, «Cerrar acceso» y la ruta `/arena`. |
 | [http.test.ts](../../frontend/src/shared/api/http.test.ts), [usePolling.test.ts](../../frontend/src/shared/api/usePolling.test.ts) | Timeout/cancelación, `Retry-After`, datos previos, ausencia de solapamiento y respuestas antiguas. |
 
 La ejecución previa aprobó 47 pruebas, lint, TypeScript y build. El proxy y el ejercicio completo se verificaron con imágenes Docker reales. Esas verificaciones son DOM/HTTP; no hubo revisión visual de navegador disponible. La [guía de evidencias](../pruebas/evidencias.md) conserva la diferencia.
 
 ## Qué completar después
-
-El backend emite `round_started`, pero el tipo y la suscripción del frontend todavía no lo incluyen: el polling de estado detecta el nuevo `round_id` y reinicia la conexión. Añadir el evento debe conservar la separación de rondas y el descarte de conexiones antiguas.
 
 La UI de reset muestra el `archive_id`; listar y descargar archivos de rondas previas sigue siendo una operación de API. Falta revisión visual y de accesibilidad en móvil/navegador, además de QR desde un teléfono contra un despliegue publicado. Al ampliar un flujo, mantener el estado de recuperación, la idempotencia y los tests de respuestas tardías antes de modificar la presentación.

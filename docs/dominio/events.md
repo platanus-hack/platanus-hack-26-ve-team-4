@@ -65,7 +65,6 @@ uv run pytest tests/events tests/arena/test_transactional_events.py \
 | [test_sse.py](../../backend/tests/events/test_sse.py) | Formato y exclusión de eventos privados. |
 | [test_transactional_events.py](../../backend/tests/arena/test_transactional_events.py) | Rollback cola/outbox, caída antes de publicar, caída tras auditoría, dispatchers concurrentes y eventos remotos sin notificación local. |
 | [test_recovery.py](../../backend/tests/arena/test_recovery.py) | Historia recuperable después del reinicio y de expulsar la caché local. |
-| [useArenaEvents.test.ts](../../frontend/src/features/arena/hooks/useArenaEvents.test.ts) | Duplicados, JSON malformado, eventos privados, reconexión y cambio de ronda. |
 
 El proxy SSE también formó parte del smoke Docker previo. Ver [evidencias](../pruebas/evidencias.md) y [frontend](./frontend.md).
 

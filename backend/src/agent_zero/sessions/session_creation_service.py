@@ -9,10 +9,13 @@ from agent_zero.armor.model_armor import ModelArmor
 from agent_zero.routing.models import Route
 from agent_zero.sessions.models import ArenaSession
 from agent_zero.sessions.repository import SessionRepository
+from agent_zero.sessions.reserved_alias import is_reserved_alias
 from agent_zero.sessions.schemas import SessionCreate
 from agent_zero.shared.clock import utc_now
 from agent_zero.shared.ids import new_id
 from agent_zero.victim.fixtures import customer_ids
+
+RESERVED_ALIAS = "Los alias que empiezan con «Agente-» están reservados para los agentes simulados."
 
 
 async def create_session(
@@ -21,7 +24,10 @@ async def create_session(
     limit: int = 3,
     *,
     provision: Callable[[str], Awaitable[None]] | None = None,
+    operator: bool = False,
 ) -> ArenaSession:
+    if not operator and is_reserved_alias(payload.alias):
+        raise ValueError(RESERVED_ALIAS)
     await serialize_write(db)
     state = await db.get(ArenaState, 1)
     if state is not None and not state.accepting:
@@ -31,6 +37,8 @@ async def create_session(
     if not available or len(allocated) >= limit:
         raise ValueError("Se agotaron las identidades sintéticas de esta ronda.")
     alias = ModelArmor().redact_pii(payload.alias.strip())
+    if not operator and is_reserved_alias(alias):
+        raise ValueError(RESERVED_ALIAS)
     if await SessionRepository(db).alias_exists(alias):
         raise ValueError("Este alias ya está en uso.")
     if len(alias) < 2 or len(alias) > 40:

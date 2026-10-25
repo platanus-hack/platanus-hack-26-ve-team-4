@@ -9,6 +9,7 @@ Estado: implementado y revisado contra el código del 24 de octubre de 2026. El 
 | [models.py](../../backend/src/agent_zero/sessions/models.py) | Tabla `sessions`: `id`, `alias`, `customer_id`, `route`, `created_at`. |
 | [schemas.py](../../backend/src/agent_zero/sessions/schemas.py) | Consentimiento obligatorio y proyección `SessionIssued`. |
 | [session_creation_service.py](../../backend/src/agent_zero/sessions/session_creation_service.py) | Reserva una identidad disponible, valida alias y provisiona sus pedidos. |
+| [reserved_alias.py](../../backend/src/agent_zero/sessions/reserved_alias.py) | Prefijo `Agente-` reservado para el enjambre simulado. |
 | [session_token.py](../../backend/src/agent_zero/sessions/session_token.py) | Firma y verificación HMAC de tokens con vencimiento. |
 | [dependencies.py](../../backend/src/agent_zero/sessions/dependencies.py) | `CurrentSession`: autentica Bearer y exige que la sesión siga en la base. |
 | [router.py](../../backend/src/agent_zero/sessions/router.py) | `POST /api/sessions` y `GET /api/sessions/me`. |
@@ -20,17 +21,18 @@ Estado: implementado y revisado contra el código del 24 de octubre de 2026. El 
 
 | Operación | Entrada / salida |
 | --- | --- |
-| `POST /api/sessions` | JSON `{"alias":"equipo-a","accepted_rules":true}`; 201 con `id`, `alias`, `created_at`, `token`, `expires_at`, `customer_name`, `order_ids`, `objectives` y `limits`. |
+| `POST /api/sessions` | JSON `{"alias":"equipo-a","accepted_rules":true}`; `X-Operator-Secret` opcional (solo para el prefijo reservado). 201 con `id`, `alias`, `created_at`, `token`, `expires_at`, `customer_name`, `order_ids`, `objectives` y `limits`. |
 | `GET /api/sessions/me` | `Authorization: Bearer <token>`; devuelve identidad visible, fechas, pedidos y límites. No renueva ni vuelve a emitir el token. |
 | Token | Cuerpo base64url con `session_id` y `exp`, más firma HMAC-SHA256. No incluye `customer_id`. |
 | Error de autenticación | 401 para token ausente, alterado, vencido o sesión eliminada. |
-| Error de creación | 422 por esquema inválido; 409 por alias ocupado, ronda cerrada o capacidad agotada. |
+| Error de creación | 422 por esquema inválido; 409 por alias ocupado, alias reservado, ronda cerrada o capacidad agotada; 401 si viene un `X-Operator-Secret` incorrecto. |
 
 El cliente visible es ficticio. El `customer_id` que autoriza herramientas se resuelve desde la fila de sesión y viaja en `CallContext`; no se acepta desde un mensaje del participante.
 
 ## Invariantes y persistencia
 
 - `accepted_rules` debe ser literalmente `true`; el esquema rechaza campos extra. Alias: 2–40 caracteres, caracteres de palabra Unicode, guion y espacios según el patrón del esquema; se recorta y se redacta PII con Armor.
+- Los alias que empiezan por `Agente-` (sin distinguir mayúsculas ni espacios iniciales, antes y después de redactar PII) solo se aceptan con el secreto de operador: son del enjambre simulado de la [Arena en vivo](./tablero.md).
 - La comparación de alias de participantes no distingue mayúsculas. La asignación de clientes y esa comprobación ocurren bajo `BEGIN IMMEDIATE`; dos asignadores sobre el mismo SQLite no reservan la misma identidad pública.
 - La ruta inicial es `protected`. El cambio a `honeypot` es permanente para esa sesión; sólo [routing](routing.md) debe decidirlo.
 - `AGENT_ZERO_ARENA_SESSION_LIMIT` vale 100 por defecto y admite 1–500. Los clientes semilla se amplían con identidades `cust-demo-*` y pedidos `D-*` provisionados en protegido y señuelo.

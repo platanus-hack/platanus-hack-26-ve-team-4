@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from agent_zero.arena.dependencies import Core
 from agent_zero.policies.validator_catalog import OBJECTIVE_CONTROLS
+from agent_zero.registry.dependencies import OperatorFlag
 from agent_zero.sessions.dependencies import CurrentSession
 from agent_zero.sessions.schemas import SessionCreate, SessionIssued
 from agent_zero.sessions.session_creation_service import create_session
@@ -16,7 +17,9 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create(payload: SessionCreate, db: DbSession, core: Core) -> SessionIssued:
+async def create(
+    payload: SessionCreate, db: DbSession, core: Core, operator: OperatorFlag
+) -> SessionIssued:
     await core.ensure_agents()
     async with core.admission_lock:
         try:
@@ -25,6 +28,7 @@ async def create(payload: SessionCreate, db: DbSession, core: Core) -> SessionIs
                 payload,
                 core.fleet.settings.arena_session_limit,
                 provision=core.environments.ensure_customer,
+                operator=operator,
             )
         except ValueError as error:
             raise HTTPException(409, str(error)) from error

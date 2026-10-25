@@ -16,6 +16,7 @@ Documentación de la implementación vigente al 24 de octubre de 2026. Cada domi
 | [policies](./policies.md) | Catálogo, controles acumulativos, hashes, ciclo de vida, activación y reversión. |
 | [patches](./patches.md) | Scheduler de defensa, explicación de asesoría y validación contrafactual/conversacional. |
 | [arena](./arena.md) | Estado, clasificación, revelación, operación y reset archivado recuperable. |
+| [Arena en vivo](./tablero.md) | `GET /api/operator/live` v2, carrusel de 8 chats, cinco KPI con su n, enmascarado del Público en el servidor, prefijo `Agente-` reservado, enjambre simulado y `/arena`. |
 | [events](./events.md) | Eventos, outbox, proyección pública y SSE con cursor e historia durable. |
 | [guard](./guard.md) | Contrato de dominio declarativo y Guard de dos llamadas para agentes de cualquier negocio. |
 
