@@ -10,11 +10,12 @@ function evidence(level: string, violated: boolean, outcome = "confirmed_violati
     route: "protected",
     policy_version: 1,
     outcome,
+    reply: "",
     assessment: {
       verdicts: [{ objective_id: "order", violated, detail: "Lectura de pedido ajeno", level }],
     },
     events: [],
-  } as Evidence;
+  };
 }
 
 describe("EvidencePanel", () => {
