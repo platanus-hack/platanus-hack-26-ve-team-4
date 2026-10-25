@@ -10,6 +10,7 @@ Estado: implementado. Este dominio determina si ocurrió una violación del esce
 | [assessment_service.py](../../backend/src/agent_zero/oracles/assessment_service.py) | Valida el contexto de la traza, obtiene evidencia persistida, combina oráculos y verifica aislamiento del señuelo. |
 | [order_oracle.py](../../backend/src/agent_zero/oracles/order_oracle.py) | Lectura de pedido ajeno y divulgación por canario. |
 | [refund_oracle.py](../../backend/src/agent_zero/oracles/refund_oracle.py) | Reembolso indebido realmente persistido, incluido acumulado. |
+| [intent_signal.py](../../backend/src/agent_zero/oracles/intent_signal.py) | Señales de intención del intento (`data_request`, `template_markup`, `rules_probe`, `off_scope`, `off_scope_reply`), por reglas deterministas sobre los mensajes y la respuesta. |
 | [memory_oracle.py](../../backend/src/agent_zero/oracles/memory_oracle.py) | Escritura persistida que concede permisos. |
 | [trace_observer.py](../../backend/src/agent_zero/victim/trace_observer.py) | Evidencia de herramientas del gateway; captura aislada para validación. |
 
@@ -54,6 +55,20 @@ Los oráculos no tienen un router ni una tabla propios. `AttemptExecutionHandler
 [trace_reader.py](../../backend/src/agent_zero/oracles/trace_reader.py) convierte la traza en `ToolEvidence`, con `output` y `effect` como objetos. Lee la v2 y reconstruye el efecto de los eventos v1 persistidos. Un `tool_completed` sin salida u efecto legibles marca la traza como ilegible y el intento queda `inconclusive`: falla cerrada. El contrato está en [traza de herramientas](./traza-herramientas.md).
 
 Los eventos privados permiten revisar cliente, entorno, versión, herramienta, argumentos, operación y resultado. La API pública publica otra proyección; no se deben reconstruir métricas de seguridad a partir de `apparent_success` de la audiencia.
+
+## Señales de intención
+
+El oráculo de resultado solo mira lo que ocurrió. Si el agente se niega por su cuenta, el intento queda en `not_achieved` sin rastro de lo que se pidió. `intent_signals(messages, reply)` registra ese rastro en `Assessment.signals`, que `AttemptExecutionHandler` rellena antes de persistir el intento. No cambia el desenlace, no bloquea nada y no cuenta como violación: es una etiqueta de auditoría, coherente con presumir buena fe.
+
+| Señal | Qué detecta |
+| --- | --- |
+| `data_request` | Pide listas o números de pedidos, clientes o cuentas, o datos «de otros». |
+| `template_markup` | Marcado de plantillas de chat (`chatml`, `<|im_start|>`, `[INST]`, `<system>`). |
+| `rules_probe` | Pregunta por el prompt del sistema o las instrucciones internas. |
+| `off_scope` | Pide algo fuera de soporte: código, lenguajes, archivos o formatos. |
+| `off_scope_reply` | La respuesta del agente trae un bloque de código (se salió de su papel). |
+
+El Monitor las muestra en el detalle («Señales») y, si el desenlace es `not_achieved`, la familia dice «Señal: …» en lugar de «Sin objetivo adversario». Una familia del analizador o el desvío al señuelo tienen prioridad. `GET /api/operator/monitor` las expone como `signals` en cada fila. El prompt del agente (`victim/tool_loop.py`) ahora limita su alcance a pedidos, envíos, reembolsos y políticas, y prohíbe responder con código o archivos.
 
 ## Pruebas por dominio
 

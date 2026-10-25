@@ -18,6 +18,17 @@ const FAMILIES: Record<string, string> = {
   memory_poisoning: "Contaminación de memoria",
 };
 
+/** Señales de intención: etiquetas de auditoría, no acusaciones; el desenlace sigue siendo el del oráculo. */
+export const SIGNALS: Record<string, string> = {
+  data_request: "Pidió datos de pedidos o de otros",
+  template_markup: "Marcado de plantilla de chat",
+  rules_probe: "Preguntó por las reglas internas",
+  off_scope: "Pidió algo fuera de soporte",
+  off_scope_reply: "El agente respondió fuera de su papel",
+};
+
+export const signalLabel = (signal: string) => SIGNALS[signal] ?? signal;
+
 export const ORIGINS: Record<string, string> = { audience: "audiencia", autonomous: "prober" };
 
 export function outcomeOf(attempt: MonitorAttempt) {
@@ -27,6 +38,8 @@ export function outcomeOf(attempt: MonitorAttempt) {
 export function familyOf(attempt: MonitorAttempt): string {
   if (attempt.route === "honeypot") return "Sesión desviada";
   if (attempt.family) return FAMILIES[attempt.family] ?? attempt.family;
+  const [signal] = attempt.signals ?? [];
+  if (attempt.outcome === "not_achieved" && signal) return `Señal: ${signalLabel(signal)}`;
   return attempt.outcome === "not_achieved" ? "Sin objetivo adversario" : "Sin clasificar";
 }
 

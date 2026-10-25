@@ -13,6 +13,7 @@ from agent_zero.events.models import EventType
 from agent_zero.events.schemas import EventDraft
 from agent_zero.fleet.fleet_builder import Fleet
 from agent_zero.oracles.assessment_service import AssessmentService
+from agent_zero.oracles.intent_signal import intent_signals
 from agent_zero.runtime.handlers import StepContext
 from agent_zero.runtime.step_results import Advance, Complete, Fail, StepResult, Wait
 from agent_zero.victim.arena_manifest import ARENA_HANDLER
@@ -97,6 +98,7 @@ class AttemptExecutionHandler:
         assessment = await self._assessments.assess(
             scope, await self._events.for_attempt(attempt.id), reply
         )
+        assessment.signals = intent_signals(attempt.messages, reply)
         async with self._fleet.database.sessions() as db:
             await serialize_write(db)
             stored = await AttemptRepository(db).get(attempt.id)

@@ -4,7 +4,16 @@ import type { Replay } from "../arena/replay/types";
 import { operatorRequest } from "../operator/api";
 import { richText } from "../participant/richText";
 import { AttemptReplay } from "./AttemptReplay";
-import { clock, familyOf, NUMBER, ORIGINS, outcomeOf, patchDelay, tokensText } from "./labels";
+import {
+  clock,
+  familyOf,
+  NUMBER,
+  ORIGINS,
+  outcomeOf,
+  patchDelay,
+  signalLabel,
+  tokensText,
+} from "./labels";
 import type { AttemptDetail, MonitorAttempt } from "./types";
 
 function useDetail(secret: string, attempt: MonitorAttempt) {
@@ -63,6 +72,8 @@ export function AttemptDetailPanel({
         : `${attempt.duration_seconds.toLocaleString("es", { maximumFractionDigits: 2 })} s`,
     ],
   ];
+  if (attempt.signals?.length)
+    meta.splice(1, 0, ["Señales", attempt.signals.map(signalLabel).join(" · ")]);
   if (attempt.patch) {
     meta.push([
       "Parche",
