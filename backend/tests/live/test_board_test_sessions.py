@@ -39,3 +39,30 @@ def test_test_sessions_do_not_move_the_kpis_or_the_session_count() -> None:
     assert result.kpis.attacks.audience == 1
     assert result.kpis.leaked.leaked == 0
     assert result.sessions_total == 1
+
+
+def test_automated_test_chats_move_the_kpis_and_stay_unmasked() -> None:
+    rows = [
+        attempt(
+            "a-auto",
+            "sess-auto",
+            seconds=10,
+            outcome=AttemptOutcome.CONFIRMED_VIOLATION,
+            violated=[OBJ],
+        ),
+        attempt("a-int", "sess-int", seconds=20, outcome=AttemptOutcome.NOT_ACHIEVED),
+    ]
+    sessions = [
+        session("sess-auto", "Interno-Auto-N4-2-Ingrid-1"),
+        session("sess-int", "Interno-x"),
+    ]
+    result = build_board(
+        BoardData(rows, sessions, [], [], []), revealed=False, llm_mode="live", limit=6
+    )
+
+    auto = {s.session_id: s for s in result.sessions}["sess-auto"]
+    assert auto.kind == "test"
+    assert auto.concealed is False
+    assert result.kpis.attacks.n == 1
+    assert result.kpis.leaked.leaked == 1
+    assert result.sessions_total == 1

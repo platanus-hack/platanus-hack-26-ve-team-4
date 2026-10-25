@@ -5,6 +5,7 @@ from agent_zero.config import Settings
 from agent_zero.sessions.reserved_alias import (
     SWARM_PREFIX,
     TEST_PREFIX,
+    counts_in_analytics,
     is_reserved_alias,
     is_test_alias,
 )
@@ -109,3 +110,10 @@ async def test_the_service_rejects_the_prefix_unless_the_caller_is_the_operator(
     finally:
         await database.dispose()
     assert created.alias == "Agente-4"
+
+
+def test_only_automated_internal_chats_count_in_analytics() -> None:
+    assert counts_in_analytics("neo")
+    assert counts_in_analytics("Agente-2")
+    assert counts_in_analytics("Interno-Auto-N0-2-Doña-7")
+    assert not counts_in_analytics("Interno-consola-ab12c")

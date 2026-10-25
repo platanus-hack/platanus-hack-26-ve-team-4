@@ -37,7 +37,7 @@ from agent_zero.policies.validator_catalog import OBJECTIVE_CONTROLS
 from agent_zero.prober.campaign_models import CampaignCaseRecord
 from agent_zero.routing.models import Route
 from agent_zero.sessions.models import ArenaSession
-from agent_zero.sessions.reserved_alias import SWARM_PREFIX, TEST_PREFIX
+from agent_zero.sessions.reserved_alias import SWARM_PREFIX, TEST_PREFIX, counts_in_analytics
 from agent_zero.shared.clock import utc_now
 
 PROBER_ALIAS = "Prober"
@@ -328,8 +328,8 @@ def build_board(  # noqa: PLR0913
     patches = PatchIndex.build(data.findings, data.policies)
     live_sessions = [_live_session(g, data, patches) for g in groups[:limit]]
 
-    # Los chats de prueba se muestran pero no mueven las analíticas.
-    counted = [g for g in groups if g.kind != "test"]
+    # Los chats de prueba se muestran pero no mueven las analíticas, salvo los automáticos.
+    counted = [g for g in groups if g.kind != "test" or counts_in_analytics(g.alias)]
     scope: Scope = "all" if revealed else "swarm_prober"
     scoped_groups = [g for g in counted if not g.concealed]
     finished = [a for g in counted for a in g.finished]
