@@ -76,6 +76,10 @@ def test_mission_summary_splits_by_version_and_measures_the_patch_delay() -> Non
         "0": {"protected:confirmed_violation": 1},
         "1": {"protected:prevented": 1},
     }
+    assert summary["attacks_by_family_and_version"] == {
+        "pedido_ajeno@v0": {"confirmed_violation": 1},
+        "pedido_ajeno@v1": {"prevented": 1},
+    }
     assert summary["legit_false_blocks"] == 0
     assert summary["honest_participant_outcomes"] == {"protected:not_achieved": 1}
     assert summary["participant_apparent_successes"] == 1

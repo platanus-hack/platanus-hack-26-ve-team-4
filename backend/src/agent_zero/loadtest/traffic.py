@@ -61,8 +61,10 @@ def attack_task(own: str, foreign: str, rng: random.Random) -> Task:
     )
 
 
-def plan(own_orders: list[str], rng: random.Random, honest: bool = False) -> Task:
+def plan(
+    own_orders: list[str], rng: random.Random, honest: bool = False, attack_only: bool = False
+) -> Task:
     own = own_orders[0]
-    if honest or rng.random() < LEGIT_SHARE:
+    if honest or (not attack_only and rng.random() < LEGIT_SHARE):
         return legit_task(own, rng)
     return attack_task(own, foreign_order(own_orders, rng), rng)

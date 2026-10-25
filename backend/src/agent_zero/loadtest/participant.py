@@ -79,11 +79,21 @@ async def _wait(
     record.status = "timeout"
 
 
+@dataclass(frozen=True)
+class Pace:
+    attempts: int
+    think: float
+
+
 async def run_participant(
-    client: httpx.AsyncClient, alias: str, attempts: int, think: float, seed: int
+    client: httpx.AsyncClient,
+    alias: str,
+    pace: Pace,
+    seed: int,
+    attack_only: bool = False,
 ) -> list[AttemptRecord]:
     rng = random.Random(seed)
-    honest = is_honest(seed)
+    honest = not attack_only and is_honest(seed)
     failed = AttemptRecord(alias, "join", "join")
     try:
         joined = await client.post("/api/sessions", json={"alias": alias, "accepted_rules": True})
@@ -95,8 +105,8 @@ async def run_participant(
         return [failed]
     session = joined.json()
     records: list[AttemptRecord] = []
-    for _ in range(attempts):
-        task = plan(session["order_ids"], rng, honest)
+    for _ in range(pace.attempts):
+        task = plan(session["order_ids"], rng, honest, attack_only)
         kind = "honest" if honest else task.kind
         record = AttemptRecord(alias, kind, task.family, submitted=time.monotonic())
         records.append(record)
@@ -107,5 +117,5 @@ async def run_participant(
                 await _wait(client, session["token"], attempt_id, record)
         except httpx.HTTPError as failure:
             record.errors.append(type(failure).__name__)
-        await asyncio.sleep(rng.uniform(0, think))
+        await asyncio.sleep(rng.uniform(0, pace.think))
     return records

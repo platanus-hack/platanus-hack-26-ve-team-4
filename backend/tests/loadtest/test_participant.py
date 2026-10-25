@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from agent_zero.loadtest import participant
-from agent_zero.loadtest.participant import AttemptRecord, run_participant
+from agent_zero.loadtest.participant import AttemptRecord, Pace, run_participant
 
 
 def fake_arena(throttle_first: bool) -> httpx.MockTransport:
@@ -29,7 +29,7 @@ def fake_arena(throttle_first: bool) -> httpx.MockTransport:
 def run(transport: httpx.MockTransport, attempts: int) -> list[AttemptRecord]:
     async def go() -> list[AttemptRecord]:
         async with httpx.AsyncClient(transport=transport, base_url="http://arena") as client:
-            return await run_participant(client, "p", attempts, 0.0, 1)
+            return await run_participant(client, "p", Pace(attempts, 0.0), 1)
 
     return asyncio.run(go())
 

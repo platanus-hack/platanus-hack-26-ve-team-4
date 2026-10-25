@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 
 from agent_zero.loadtest.guard_load import run_guard_load
-from agent_zero.loadtest.participant import run_participant
+from agent_zero.loadtest.participant import Pace, run_participant
 from agent_zero.loadtest.report import guard_summary, load_summary, mission_summary
 
 SETTLE_SECONDS = 180.0
@@ -22,6 +22,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--participants", type=int, default=30)
     parser.add_argument("--attempts", type=int, default=3)
     parser.add_argument("--think", type=float, default=3.0)
+    parser.add_argument("--replay-participants", type=int, default=20)
     parser.add_argument("--guard-checks", type=int, default=400)
     parser.add_argument("--guard-concurrency", type=int, default=20)
     parser.add_argument("--insecure", action="store_true")
@@ -55,15 +56,26 @@ async def main() -> dict[str, Any]:
         base_url=args.base, timeout=30, limits=limits, verify=not args.insecure
     ) as client:
         state = (await client.get("/api/arena/state")).json()
+        pace = Pace(args.attempts, args.think)
         started = time.monotonic()
         batches = await asyncio.gather(
             *(
-                run_participant(client, f"estres-{index}", args.attempts, args.think, index)
+                run_participant(client, f"estres-{index}", pace, index)
                 for index in range(args.participants)
             )
         )
         arena_wall = time.monotonic() - started
         records = [record for batch in batches for record in batch]
+        await settled_policies(client, secret)
+        replay_started = time.monotonic()
+        replays = await asyncio.gather(
+            *(
+                run_participant(client, f"replay-{index}", pace, index, True)
+                for index in range(args.replay_participants)
+            )
+        )
+        replay_records = [record for batch in replays for record in batch]
+        replay_wall = time.monotonic() - replay_started
         policies = await settled_policies(client, secret)
         attempts = await operator_rows(client, secret, "/api/operator/attempts")
         guard_started = time.monotonic()
@@ -75,7 +87,8 @@ async def main() -> dict[str, Any]:
         "participants": args.participants,
         "attempts_per_participant": args.attempts,
         "load": load_summary(records, arena_wall),
-        "mission": mission_summary(records, attempts, policies),
+        "mission": mission_summary(records + replay_records, attempts, policies),
+        "replay_load": load_summary(replay_records, replay_wall),
         "guard": guard_summary(samples, guard_wall),
     }
     if args.out:

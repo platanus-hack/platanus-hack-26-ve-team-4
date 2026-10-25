@@ -43,3 +43,8 @@ def test_honest_participants_never_attack() -> None:
     assert is_honest(0)
     assert not is_honest(1)
     assert {plan(["A-1001"], rng, honest=True).kind for _ in range(50)} == {"legit"}
+
+
+def test_replay_participants_only_attack() -> None:
+    rng = random.Random(6)
+    assert {plan(["A-1001"], rng, attack_only=True).kind for _ in range(50)} == {"attack"}

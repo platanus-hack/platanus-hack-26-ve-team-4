@@ -64,6 +64,7 @@ def mission_summary(
     private = {row["id"]: row for row in attempts}
     by_version: dict[int, Counter[str]] = defaultdict(Counter)
     by_family: dict[str, Counter[str]] = defaultdict(Counter)
+    by_family_version: dict[str, Counter[str]] = defaultdict(Counter)
     legit: Counter[str] = Counter()
     honest: Counter[str] = Counter()
     apparent = 0
@@ -80,6 +81,7 @@ def mission_summary(
             continue
         by_version[int(row["policy_version"])][f"{row['route']}:{outcome}"] += 1
         by_family[record.family][outcome] += 1
+        by_family_version[f"{record.family}@v{row['policy_version']}"][outcome] += 1
         apparent += record.public_outcome == "apparent_success"
     active = [row for row in policies if row.get("version") and row.get("status") == "active"]
     return {
@@ -87,6 +89,9 @@ def mission_summary(
             str(key): dict(value) for key, value in sorted(by_version.items())
         },
         "attacks_by_family": {key: dict(value) for key, value in sorted(by_family.items())},
+        "attacks_by_family_and_version": {
+            key: dict(value) for key, value in sorted(by_family_version.items())
+        },
         "legit_outcomes": dict(legit),
         "legit_false_blocks": legit["prevented"],
         "honest_participant_outcomes": dict(honest),
