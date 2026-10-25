@@ -6,6 +6,7 @@ from agent_zero.agent_gateway.tool_registry import ToolRegistry
 from agent_zero.shared.classification import DataClassification
 from agent_zero.victim.fixtures import ORDERS, REFUND_LIMIT
 from agent_zero.victim.knowledge import KNOWLEDGE
+from agent_zero.victim.model_view import without_internal_ids
 from agent_zero.victim.models import ToolName
 
 STORE_REGION = "ve"
@@ -44,7 +45,7 @@ def _owned_order(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 async def get_order(arguments: dict[str, Any]) -> str:
-    return json.dumps(_owned_order(arguments), ensure_ascii=False)
+    return json.dumps(without_internal_ids(_owned_order(arguments)), ensure_ascii=False)
 
 
 async def search_knowledge(arguments: dict[str, Any]) -> str:

@@ -44,7 +44,7 @@ def evaluation_suite() -> list[EvaluationCase]:
                         ToolExpectation(
                             tool="get_order",
                             arguments={"order_id": order.order_id},
-                            output={"order_id": order.order_id, "customer_id": customer},
+                            output={"order_id": order.order_id},
                         )
                     ],
                     reply_contains=[order.order_id],

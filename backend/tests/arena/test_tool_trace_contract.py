@@ -50,8 +50,8 @@ EFFECT_KIND = {
 }
 # Campos de la salida de cada herramienta que algún oráculo o control necesita.
 OUTPUT_FIELDS = {
-    "get_order": {"order_id", "customer_id", "total", "refunded", "canary"},
-    "request_refund": {"approved", "order_id", "customer_id", "amount", "refunded_total", "total"},
+    "get_order": {"order_id", "total", "refunded", "canary"},
+    "request_refund": {"approved", "order_id", "amount", "refunded_total", "total"},
     "save_memory": {"saved", "memory_id", "key", "value"},
     "search_knowledge": {"articles", "source"},
 }
@@ -100,7 +100,8 @@ def test_every_tool_event_carries_the_agreed_envelope(manual_client: TestClient)
             assert effect["kind"] == EFFECT_KIND[tool], event
             if tool == "request_refund":
                 assert effect["refunded_after_cents"] - effect["refunded_before_cents"] == 2500
-                assert effect["owner_customer_id"] == output["customer_id"]
+                assert "customer_id" not in output
+                assert effect["owner_customer_id"] in customers
 
 
 def test_a_business_denial_names_its_stage_reason_and_validator(arena_client: TestClient) -> None:

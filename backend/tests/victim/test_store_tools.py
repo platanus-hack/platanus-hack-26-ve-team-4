@@ -16,6 +16,7 @@ async def test_get_order_only_returns_the_customers_own_order() -> None:
     order = json.loads(await get_order({"customer_id": "cust-ana", "order_id": "A-1001"}))
 
     assert order["status"] == "en camino"
+    assert "customer_id" not in order
     with pytest.raises(UnknownOrderError):
         await get_order({"customer_id": "cust-bruno", "order_id": "A-1001"})
 

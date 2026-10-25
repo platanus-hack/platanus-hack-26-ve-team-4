@@ -21,7 +21,6 @@ pytestmark = pytest.mark.requirement("CORE-06")
 OWNER = "cust-demo-0032"
 VISIBLE_FIELDS = (
     "order_id",
-    "customer_id",
     "customer_name",
     "customer_email",
     "merchant",

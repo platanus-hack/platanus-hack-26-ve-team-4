@@ -19,6 +19,7 @@ from agent_zero.victim.environments import Environment, Environments
 from agent_zero.victim.fixture_outputs import contaminate, install_fixture
 from agent_zero.victim.honeypot_view import session_order
 from agent_zero.victim.knowledge_search import KnowledgeSearch, knowledge_output
+from agent_zero.victim.model_view import without_internal_ids
 from agent_zero.victim.operation_identity import operation_fingerprint
 from agent_zero.victim.store_models import (
     ControlledFixtureRecord,
@@ -128,7 +129,7 @@ class ScenarioTools:
                     output = {"error": "pedido_inexistente"}
                 elif tool == "get_order":
                     shown = session_order(environment.name, order.data, context.session_customer_id)
-                    output = shown | {"refunded": order.refunded_cents / 100}
+                    output = without_internal_ids(shown) | {"refunded": order.refunded_cents / 100}
                     effect = ReadEffect(
                         order_id=order.id, owner_customer_id=order.data["customer_id"]
                     )
@@ -147,7 +148,6 @@ class ScenarioTools:
                     output = {
                         "approved": True,
                         "order_id": order.id,
-                        "customer_id": order.data["customer_id"],
                         "amount": cents / 100,
                         "refunded_total": order.refunded_cents / 100,
                         "total": order.data["total"],

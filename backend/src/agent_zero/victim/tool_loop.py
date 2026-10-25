@@ -65,7 +65,7 @@ class ConversationExecutor:
         )
         header = {
             "text": json.dumps(
-                {"cliente": context.session_customer_id, "memoria_no_confiable": memories},
+                {"memoria_no_confiable": memories},
                 ensure_ascii=False,
             )
         }
