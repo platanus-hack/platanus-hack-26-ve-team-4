@@ -334,7 +334,7 @@ def build_board(  # noqa: PLR0913
     scoped_groups = [g for g in counted if not g.concealed]
     finished = [a for g in counted for a in g.finished]
     scoped = [a for g in scoped_groups for a in g.finished]
-    counts = Counter(g.kind for g in counted for _ in g.finished)
+    counts = Counter("swarm" if g.kind == "test" else g.kind for g in counted for _ in g.finished)
     leaked = [a for a in scoped if a.outcome is AttemptOutcome.CONFIRMED_VIOLATION]
     by_objective = dict.fromkeys(OBJECTIVE_CONTROLS, 0)
     for objective in (o for a in leaked for o in _violated_objectives(a)):

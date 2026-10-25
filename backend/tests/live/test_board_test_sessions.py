@@ -64,5 +64,6 @@ def test_automated_test_chats_move_the_kpis_and_stay_unmasked() -> None:
     assert auto.kind == "test"
     assert auto.concealed is False
     assert result.kpis.attacks.n == 1
+    assert result.kpis.attacks.swarm == 1
     assert result.kpis.leaked.leaked == 1
     assert result.sessions_total == 1
