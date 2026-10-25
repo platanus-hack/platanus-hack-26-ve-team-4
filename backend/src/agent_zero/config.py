@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     llm_retry_attempts: int = Field(default=4, ge=1)
     llm_cassette_path: Path | None = None
     llm_daily_call_limit: int = Field(default=2000, ge=1)
-    llm_session_call_limit: int = Field(default=40, ge=1)
+    llm_session_call_limit: int = Field(default=400, ge=1)
     llm_campaign_call_limit: int = Field(default=300, ge=1)
     llm_campaign_token_limit: int = Field(default=1_500_000, ge=1)
     llm_daily_usd_limit: float = Field(default=2.0, gt=0)
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     routing_risk_threshold: int = Field(default=6, ge=1)
     routing_risk_window_seconds: float = Field(default=600.0, gt=0)
 
-    gateway_rate_limit_per_minute: int = Field(default=60, ge=1)
+    gateway_rate_limit_per_minute: int = Field(default=480, ge=1)
 
     arena_session_ttl_seconds: int = Field(default=3600, ge=60)
     arena_session_limit: int = Field(default=100, ge=1, le=500)

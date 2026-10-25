@@ -51,7 +51,7 @@ services:
       - key: AGENT_ZERO_LLM_DAILY_CALL_LIMIT
         value: "5000"
       - key: AGENT_ZERO_LLM_SESSION_CALL_LIMIT
-        value: "40"
+        value: "400"
       - key: AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT
         value: "1200"
       - key: AGENT_ZERO_LLM_CAMPAIGN_TOKEN_LIMIT

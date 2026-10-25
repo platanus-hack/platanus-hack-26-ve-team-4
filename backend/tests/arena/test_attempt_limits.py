@@ -190,3 +190,12 @@ def test_the_default_per_minute_limit_is_240_and_reaches_the_participant(
     assert Settings.model_fields["arena_attempts_per_minute"].default == 240
     with client_with(settings) as client:
         assert join(client)["limits"]["attempts_per_minute"] == 240
+
+
+def test_related_limits_leave_room_for_240_attempts_without_raising_the_daily_caps() -> None:
+    defaults = {name: field.default for name, field in Settings.model_fields.items()}
+    assert defaults["llm_session_call_limit"] == 400
+    assert defaults["gateway_rate_limit_per_minute"] == 480
+    assert defaults["arena_session_queue_limit"] == 1
+    assert defaults["llm_daily_usd_limit"] == 2.0
+    assert defaults["llm_daily_call_limit"] == 2000
