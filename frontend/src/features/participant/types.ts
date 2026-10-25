@@ -35,6 +35,8 @@ export interface Attempt {
 export interface ConversationEntry {
   key: string;
   messages: string[];
+  // Mensajes del lote tal como se escribieron; `messages` es lo que viajó al servidor.
+  parts?: string[];
   attempt: Attempt | null;
   continues?: string | null;
 }
