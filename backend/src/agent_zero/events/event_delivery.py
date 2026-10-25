@@ -3,6 +3,7 @@ import hashlib
 from sqlalchemy import select
 
 from agent_zero.arena.transactions import serialize_write
+from agent_zero.events.audited_events import audited_events
 from agent_zero.events.broker import EventBroker
 from agent_zero.events.models import EventDelivery, EventRecord
 from agent_zero.events.schemas import TraceEvent
@@ -43,11 +44,7 @@ async def deliver_pending(fleet: Fleet, broker: EventBroker) -> int:
         )
         if not pending:
             return 0
-        audited = {
-            (entry.attributes.get("event_id"), entry.attributes.get("event_hash"))
-            for entry in fleet.audit.entries()
-            if entry.actor == "arena"
-        }
+        audited = audited_events(fleet.audit)
         for delivery, row in pending:
             event = to_trace(row)
             digest = hashlib.sha256(event.model_dump_json().encode()).hexdigest()
