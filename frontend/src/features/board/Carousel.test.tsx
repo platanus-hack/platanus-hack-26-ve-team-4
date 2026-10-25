@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Carousel } from "./Carousel";
+import { STEP } from "./slots";
 import type { CarouselItem, ChatTone } from "./types";
 
 const ids = ["1", "2", "3", "4", "5", "6", "7", "8"];
@@ -78,6 +79,46 @@ describe("Carousel", () => {
     const nav = screen.getByRole("navigation", { name: "Navegar entre chats" });
     fireEvent.wheel(nav, { deltaY: 120 });
     expect(visible()).toEqual(["Chat 2", "Chat 3", "Chat 4"]);
+  });
+
+  it("la rueda vertical sobre un chat no mueve el carrusel ni bloquea el scroll de la conversación", () => {
+    carousel();
+    const chat = screen.getByRole("region", { name: "Chat 1" });
+    expect(fireEvent.wheel(chat, { deltaY: 120 })).toBe(true);
+    expect(visible()).toEqual(["Chat 1", "Chat 2", "Chat 3"]);
+  });
+
+  it("Shift+rueda sobre los chats pasa un chat", () => {
+    carousel();
+    const chat = screen.getByRole("region", { name: "Chat 1" });
+    expect(fireEvent.wheel(chat, { deltaY: 120, shiftKey: true })).toBe(false);
+    expect(visible()).toEqual(["Chat 2", "Chat 3", "Chat 4"]);
+  });
+
+  it("el desplazamiento horizontal del trackpad queda nativo", () => {
+    carousel();
+    const view = document.querySelector(".av-cview") as HTMLElement;
+    expect(fireEvent.wheel(view, { deltaX: 120, deltaY: 0 })).toBe(true);
+    expect(visible()).toEqual(["Chat 1", "Chat 2", "Chat 3"]);
+    view.scrollLeft = STEP;
+    fireEvent.scroll(view);
+    expect(visible()).toEqual(["Chat 2", "Chat 3", "Chat 4"]);
+  });
+
+  it("un arrastre vertical no mueve el carrusel", () => {
+    carousel();
+    const view = document.querySelector(".av-cview") as HTMLElement;
+    fireEvent.pointerDown(view, {
+      pointerId: 1,
+      button: 0,
+      clientX: 500,
+      clientY: 300,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerMove(view, { pointerId: 1, clientX: 495, clientY: 200, pointerType: "mouse" });
+    fireEvent.pointerMove(view, { pointerId: 1, clientX: 380, clientY: 200, pointerType: "mouse" });
+    fireEvent.pointerUp(view, { pointerId: 1, clientX: 380, clientY: 200, pointerType: "mouse" });
+    expect(visible()).toEqual(["Chat 1", "Chat 2", "Chat 3"]);
   });
 
   it("un arrastre corto basta para pasar al siguiente chat", () => {

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { ago, chatStatus, isPending } from "./status";
 import type { LiveAttempt, LiveSession } from "./types";
+import { useConversationScroll } from "./useConversationScroll";
 import {
   denialLabel,
   KIND,
@@ -10,11 +11,18 @@ import {
   UNKNOWN_OUTCOME,
 } from "./vocabulary";
 
-/** Intentos que se dibujan en la conversación (los más recientes; el resto queda fuera de vista). */
-const SHOWN = 8;
 /** Segmentos de la barra de progreso del pie. */
 const PROGRESS = 10;
 const EVENT_MS = 4000;
+
+/**
+ * Contador monótono de mensajes: cada intento suma 2 (el del atacante al empezar y el
+ * desenlace al terminar). No depende de cuántos intentos manda el servidor (los últimos 30).
+ */
+export function conversationCount(attempts: LiveAttempt[]): number {
+  const last = attempts.at(-1);
+  return last ? last.number * 2 - (isPending(last) ? 1 : 0) : 0;
+}
 
 const LockIcon = () => (
   <svg
@@ -156,9 +164,9 @@ export function ChatTile({
   const masked = session.concealed;
   const kind = KIND[session.kind];
   const route = !masked && session.route ? ROUTE[session.route] : null;
-  const shown = session.attempts.slice(-SHOWN);
-  const offset = session.attempts.length - shown.length;
   const last = session.attempts.at(-1);
+  const conv = useConversationScroll<HTMLOListElement>(conversationCount(session.attempts));
+  const fresh = conv.unread === 1 ? "1 nuevo" : `${conv.unread} nuevos`;
 
   // Evento: cuando cambia el estado, borde grueso 4 s y dos pulsos de anillo.
   const [event, setEvent] = useState(false);
@@ -207,13 +215,31 @@ export function ChatTile({
         </div>
         <div className="det">{status.detail}</div>
       </div>
-      <ol className="av-conv" aria-label={`Conversación de ${session.alias}`}>
-        {shown.map((attempt, n) => (
+      <ol
+        className={`av-conv${conv.above ? " above" : ""}`}
+        ref={conv.ref}
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: la conversación desplazable se recorre con el teclado (↑ ↓ Inicio Fin AvPág RePág).
+        tabIndex={0}
+        aria-label={`Conversación de ${session.alias}`}
+        onScroll={conv.onScroll}
+        onKeyDown={conv.onKeyDown}
+      >
+        {session.attempts.map((attempt, n) => (
           <Fragment key={attempt.id}>
-            <Turn attempt={attempt} masked={masked} previous={session.attempts[offset + n - 1]} />
+            <Turn attempt={attempt} masked={masked} previous={session.attempts[n - 1]} />
           </Fragment>
         ))}
       </ol>
+      {conv.unread > 0 && (
+        <button
+          type="button"
+          className="av-cnew"
+          aria-label={`Ir al último mensaje: ${fresh}`}
+          onClick={conv.jumpToEnd}
+        >
+          <span aria-hidden="true">↓</span> {fresh}
+        </button>
+      )}
       <div className="av-cfoot">
         <span>
           {last ? (
