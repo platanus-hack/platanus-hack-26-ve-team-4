@@ -1,4 +1,5 @@
 import { requestJson } from "../../shared/api/http";
+import type { LegitRow, ReplaySide } from "../arena/replay/types";
 
 export interface Policy {
   version: number;
@@ -25,7 +26,10 @@ export interface Policy {
     passed?: boolean;
     level1_passed?: boolean;
     reason?: string;
-    cases?: { name: string; passed: boolean; error?: string | null }[];
+    cases?: { name: string; passed: boolean; adversarial?: boolean; error?: string | null }[];
+    evidence_attempt_ids?: string[];
+    seconds?: number;
+    replay?: { before: ReplaySide; after: ReplaySide; legit?: LegitRow[] };
     integrity_probe?: { passed: boolean; outcome: string; untrusted_effects?: number };
     synthesis?: Synthesis;
   };

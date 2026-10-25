@@ -7,6 +7,7 @@ import { AttemptDetailPanel } from "./AttemptDetailPanel";
 import { AttemptFeed, type Filter } from "./AttemptFeed";
 import { MonitorKpis } from "./MonitorKpis";
 import { MonitorTrends } from "./MonitorTrends";
+import { PolicyStory } from "./PolicyStory";
 import type { Monitor } from "./types";
 import "./monitor.css";
 
@@ -133,7 +134,8 @@ function MonitorDashboard({
           </section>
         )}
       </div>
-      {monitor.data && <MonitorTrends attempts={attempts} policies={policies.data ?? []} />}
+      {policies.data && <PolicyStory policies={policies.data} attempts={attempts} />}
+      {monitor.data && <MonitorTrends attempts={attempts} />}
     </main>
   );
 }
