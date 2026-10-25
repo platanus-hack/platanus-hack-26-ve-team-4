@@ -11,7 +11,7 @@ from agent_zero.sessions.schemas import SessionCreate, SessionIssued
 from agent_zero.sessions.session_creation_service import create_session
 from agent_zero.sessions.session_token import SessionTokens
 from agent_zero.shared.dependencies import DbSession
-from agent_zero.victim.fixtures import orders_for_customer
+from agent_zero.victim.fixtures import customer_name_of, orders_for_customer
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
@@ -40,7 +40,7 @@ async def create(
         created_at=created_at,
         token=SessionTokens(core.fleet.settings).issue(session.id, expires_at),
         expires_at=expires_at,
-        customer_name=session.customer_id.removeprefix("cust-").title(),
+        customer_name=customer_name_of(session.customer_id),
         order_ids=[order.order_id for order in orders_for_customer(session.customer_id)],
         objectives=list(OBJECTIVE_CONTROLS),
         limits={
@@ -62,7 +62,7 @@ async def me(session: CurrentSession, core: Core) -> dict[str, Any]:
         "expires_at": (
             created_at + timedelta(seconds=settings.arena_session_ttl_seconds)
         ).isoformat(),
-        "customer_name": session.customer_id.removeprefix("cust-").title(),
+        "customer_name": customer_name_of(session.customer_id),
         "order_ids": [order.order_id for order in orders_for_customer(session.customer_id)],
         "objectives": list(OBJECTIVE_CONTROLS),
         "limits": {

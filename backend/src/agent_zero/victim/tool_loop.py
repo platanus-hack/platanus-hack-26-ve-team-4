@@ -20,6 +20,7 @@ from agent_zero.runtime.tool_access import ToolAccess
 from agent_zero.victim.controlled_fixtures import ControlledFixture
 from agent_zero.victim.denial_view import denial_output
 from agent_zero.victim.environments import Environments
+from agent_zero.victim.fixtures import customer_name_of
 from agent_zero.victim.model_turn import ModelTurn, ProposedTool, model_turn
 from agent_zero.victim.provenance import trace_provenance
 from agent_zero.victim.reply_composer import BLOCKED_REPLY
@@ -69,7 +70,10 @@ class ConversationExecutor:
         )
         header = {
             "text": json.dumps(
-                {"memoria_no_confiable": memories},
+                {
+                    "cliente_autenticado": customer_name_of(context.session_customer_id),
+                    "memoria_no_confiable": memories,
+                },
                 ensure_ascii=False,
             )
         }

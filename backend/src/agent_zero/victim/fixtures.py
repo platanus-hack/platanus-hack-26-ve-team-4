@@ -112,6 +112,12 @@ def orders_for_customer(customer_id: str) -> list[Order]:
 
 REFUND_LIMIT = 20
 
+
+def customer_name_of(customer_id: str) -> str:
+    """Nombre ficticio del cliente: el mismo que figura en sus pedidos."""
+    return orders_for_customer(customer_id)[0].customer_name
+
+
 ORDERS: dict[str, Order] = {
     order.order_id: order
     for order in (
