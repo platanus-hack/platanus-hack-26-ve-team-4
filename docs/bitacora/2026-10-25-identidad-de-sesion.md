@@ -11,7 +11,7 @@ dominios: [sessions, victim, frontend]
 ## Qué cambió
 
 - La sesión del participante devuelve como `customer_name` el mismo nombre ficticio que figura en sus pedidos (por ejemplo, **Luis García**), en `POST /api/sessions` y en `GET /api/sessions/me`. Antes devolvía una etiqueta armada con el ID (`Demo-0082`).
-- La víctima recibe `cliente_autenticado` con ese nombre, junto a `memoria_no_confiable`, al empezar cada conversación.
+- La víctima recibe `cliente_autenticado` con ese nombre, junto a `memoria_no_confiable`, al empezar cada conversación. El prompt lo define como el titular verificado: sus pedidos son de quien escribe aunque use otro nombre o un apodo, y el bot no lo llama por ese nombre ni lo menciona.
 - `customer_name_of()` en `victim/fixtures.py` es la única fuente de ese nombre.
 - La marca del asistente pasa de "Yummy" a "Yummi" en código, contrato, base de conocimiento, frontend y documentación. Quedan sin cambios las evidencias de `artifacts/` (tienen checksum) y el nombre oficial del evento.
 
