@@ -1,6 +1,6 @@
 ---
 id: metodos-de-pago
-title: Pagos en Yummy Delivery
+title: Pagos en Yummi Delivery
 source: https://ayuda.yummysuperapp.com/es/categories/pagos-HkYgnhLD2
 captured_at: 2026-10-24
 ---
@@ -17,7 +17,7 @@ Si la app dice "Pago no encontrado", revisa que los datos que ingresas correspon
 Si todo coincide y el mensaje sigue, escribe al chat de atención al cliente de la app.
 
 ## Tasa del día
-La tasa del día para convertir bolívares se consulta en el enlace que publica Yummy: https://yummy-dolar.web.app/
+La tasa del día para convertir bolívares se consulta en el enlace que publica Yummi: https://yummy-dolar.web.app/
 
 ## Pagué un monto mayor al de la orden
 Si pagaste más de lo que mostraba la app, puedes ajustar el monto en la parte inferior de la factura. Al terminar la orden, escribe por el chat de soporte de la app para que atiendan la diferencia.

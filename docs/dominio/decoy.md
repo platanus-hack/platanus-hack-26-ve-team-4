@@ -7,7 +7,7 @@ Estado: implementado. El señuelo deja de ser solo un lugar donde se contiene un
 | Archivo | Función |
 | --- | --- |
 | [honeytool_schemas.py](../../backend/src/agent_zero/victim/honeytool_schemas.py) | Argumentos cerrados y descripciones de las dos herramientas cebo. |
-| [honeytools.py](../../backend/src/agent_zero/victim/honeytools.py) | Registro y ejecución; datos falsos coherentes con el escenario de Yummy. Rechaza cualquier entorno distinto de `honeypot`. |
+| [honeytools.py](../../backend/src/agent_zero/victim/honeytools.py) | Registro y ejecución; datos falsos coherentes con el escenario de Yummi. Rechaza cualquier entorno distinto de `honeypot`. |
 | [honeytoken.py](../../backend/src/agent_zero/victim/honeytoken.py) | Honeytoken por sesión derivado por HMAC de `identity_signing_key`. |
 | [session_trace.py](../../backend/src/agent_zero/decoy/session_trace.py) | Traza de una sesión desviada, solo desde eventos e intentos. |
 | [metrics_service.py](../../backend/src/agent_zero/decoy/metrics_service.py) | Agregado con n explícito y tarjeta de revelación de una sesión. |

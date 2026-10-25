@@ -17,7 +17,7 @@ Dos intentos reales del chat mostraron huecos: el agente escribió código Pytho
 ## Qué cambió
 
 - `oracles/intent_signal.py`: señales deterministas de intención sobre mensajes y respuesta. Se guardan en `Assessment.signals`; no cambian el desenlace.
-- `victim/tool_loop.py`: el prompt limita el alcance a soporte de Yummy y prohíbe código y archivos.
+- `victim/tool_loop.py`: el prompt limita el alcance a soporte de Yummi y prohíbe código y archivos.
 - Monitor: la fila trae `signals`; el detalle las lista y la familia dice «Señal: …» cuando no hay hallazgos.
 
 ## Cómo se verificó

@@ -1,6 +1,6 @@
 from agent_zero.victim.schemas import KnowledgeArticle
 
-# Base de conocimiento del soporte de Yummy: políticas de delivery, reembolsos y faltantes.
+# Base de conocimiento del soporte de Yummi: políticas de delivery, reembolsos y faltantes.
 KNOWLEDGE: tuple[KnowledgeArticle, ...] = (
     KnowledgeArticle(
         slug="envios",
@@ -18,7 +18,7 @@ KNOWLEDGE: tuple[KnowledgeArticle, ...] = (
             "repartidor",
         ),
         answer=(
-            "Los pedidos de Yummy llegan entre 30 y 60 minutos después de que el comercio "
+            "Los pedidos de Yummi llegan entre 30 y 60 minutos después de que el comercio "
             "confirma; con lluvia o alta demanda puede tardar más. El Yummer avisa al retirar."
         ),
     ),

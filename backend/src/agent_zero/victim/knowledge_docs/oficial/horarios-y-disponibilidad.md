@@ -5,7 +5,7 @@ source: https://ayuda.yummysuperapp.com/es/categories/generalidades-BJGDlRvP3
 captured_at: 2026-10-24
 ---
 ## Horario del servicio de delivery
-Según el centro de ayuda de Yummy, los horarios para pedir son:
+Según el centro de ayuda de Yummi, los horarios para pedir son:
 - Lunes a miércoles: de 7:30 a. m. a 12:00 a. m.
 - Jueves a domingo: de 7:00 a. m. a 3:00 a. m.
 
@@ -27,4 +27,4 @@ Si la app pide completar el perfil y validar el correo, la cuenta ya está regis
 3. Vuelve a entrar y genera la orden.
 
 ## Mantener la app actualizada
-Yummy recomienda usar siempre la última versión de la app, desde App Store o Play Store, para evitar errores de plataforma que afecten la gestión de una orden.
+Yummi recomienda usar siempre la última versión de la app, desde App Store o Play Store, para evitar errores de plataforma que afecten la gestión de una orden.

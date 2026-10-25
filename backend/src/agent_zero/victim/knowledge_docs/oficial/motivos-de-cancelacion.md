@@ -5,7 +5,7 @@ source: https://ayuda.yummysuperapp.com/es/categories/orden-cancelada-rJ9f_Aww2
 captured_at: 2026-10-24
 ---
 ## Aviso de cancelación
-Cuando una orden se cancela, Yummy envía al cliente un mensaje de texto con el motivo.
+Cuando una orden se cancela, Yummi envía al cliente un mensaje de texto con el motivo.
 
 ## Motivos atribuidos al cliente
 - **Cambio de dirección o de forma de pago:** las políticas de la empresa no permiten esos cambios en una orden ya procesada.
@@ -24,4 +24,4 @@ Cuando una orden se cancela, Yummy envía al cliente un mensaje de texto con el 
 - **Problemas logísticos:** faltaban Yummers disponibles en la zona para la demanda.
 
 ## Orden pagada con tarjeta y cancelada
-Si la orden se pagó con tarjeta de crédito o débito y aparece cancelada, puede deberse a saldo insuficiente o a una falla en la plataforma bancaria. Si el cargo aparece en la cuenta, figura como pendiente. Yummy recomienda consultar con el banco y, si la orden está cancelada y el banco hizo el descuento, contactar al equipo de soporte de la app para validar el caso.
+Si la orden se pagó con tarjeta de crédito o débito y aparece cancelada, puede deberse a saldo insuficiente o a una falla en la plataforma bancaria. Si el cargo aparece en la cuenta, figura como pendiente. Yummi recomienda consultar con el banco y, si la orden está cancelada y el banco hizo el descuento, contactar al equipo de soporte de la app para validar el caso.

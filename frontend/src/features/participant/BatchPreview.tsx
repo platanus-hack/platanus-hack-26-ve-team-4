@@ -25,7 +25,7 @@ export function TypingBubble() {
         <i />
         <i />
       </span>
-      <span className="visually-hidden">Yummy está escribiendo…</span>
+      <span className="visually-hidden">Yummi está escribiendo…</span>
     </p>
   );
 }

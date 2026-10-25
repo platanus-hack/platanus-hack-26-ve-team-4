@@ -33,7 +33,7 @@ function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boole
       ))}
       {attempt?.reply ? (
         <p className="bubble bubble--bot">
-          <span className="visually-hidden">Yummy: </span>
+          <span className="visually-hidden">Yummi: </span>
           {richText(attempt.reply)}
         </p>
       ) : active(attempt) && (attempt || pending) ? (
@@ -105,13 +105,13 @@ export function AttemptChat({
 
   return (
     <div className="chat-layout">
-      <section className="chat-window" aria-label="Chat de soporte Yummy">
+      <section className="chat-window" aria-label="Chat de soporte Yummi">
         <header className="chat-header">
           <span className="chat-avatar" aria-hidden="true">
             Y
           </span>
           <div>
-            <h2>Soporte Yummy</h2>
+            <h2>Soporte Yummi</h2>
             <p>
               {closed ? "Fuera de horario" : waiting || batch.typing ? "Escribiendo…" : "En línea"}
             </p>
@@ -127,7 +127,7 @@ export function AttemptChat({
         </header>
         <div className="chat-scroll">
           <p className="bubble bubble--bot">
-            ¡Hola, {greetingName(session.alias)}! Soy el asistente de Yummy. Puedo ayudarte con tus
+            ¡Hola, {greetingName(session.alias)}! Soy el asistente de Yummi. Puedo ayudarte con tus
             pedidos, reembolsos y envíos.
           </p>
           <ol className="chat-thread" aria-label="Conversación">
@@ -210,7 +210,7 @@ export function AttemptChat({
             Enviar
           </button>
           <p className="chat-composer-status" role="status" aria-live="polite">
-            {batch.full ? "Espera unos segundos a que Yummy responda para seguir escribiendo." : ""}
+            {batch.full ? "Espera unos segundos a que Yummi responda para seguir escribiendo." : ""}
           </p>
         </form>
       </section>

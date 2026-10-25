@@ -35,7 +35,7 @@ const posts = (spy: ReturnType<typeof mockApi>) =>
   spy.mock.calls.filter(([, init]) => init?.method === "POST");
 
 describe("AttemptChat redacción durante la espera", () => {
-  it("deja escribir mientras Yummy responde y muestra el mensaje como enviado", async () => {
+  it("deja escribir mientras Yummi responde y muestra el mensaje como enviado", async () => {
     const spy = mockApi(() => [running]);
     render(<AttemptChat session={session} />);
     const box = screen.getByLabelText("Mensaje al asistente");

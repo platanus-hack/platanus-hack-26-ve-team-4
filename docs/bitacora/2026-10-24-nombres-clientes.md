@@ -8,11 +8,11 @@ dominios: [victim, evals]
 requisitos: [CORE-06]
 ---
 
-# Nombre de los clientes en los pedidos de Yummy
+# Nombre de los clientes en los pedidos de Yummi
 
 ## Qué cambió
 
-Cada pedido de la víctima (Yummy, el bot de soporte del delivery) trae `customer_name`, obligatorio. Antes un cliente generado era solo `cust-demo-0046` con `cliente46@correo-demo.ve`, y el bot terminaba mostrando el ID.
+Cada pedido de la víctima (Yummi, el bot de soporte del delivery) trae `customer_name`, obligatorio. Antes un cliente generado era solo `cust-demo-0046` con `cliente46@correo-demo.ve`, y el bot terminaba mostrando el ID.
 
 | Cliente | Nombre | Correo |
 |---|---|---|

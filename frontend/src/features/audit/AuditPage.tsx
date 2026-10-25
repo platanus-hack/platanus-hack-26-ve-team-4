@@ -20,7 +20,7 @@ export function AuditPage() {
       <OperatorGate
         intro={
           <>
-            <p className="eyebrow">Yummy · Panel de la empresa</p>
+            <p className="eyebrow">Yummi · Panel de la empresa</p>
             <h1>Auditoría de chats</h1>
           </>
         }
@@ -83,7 +83,7 @@ function AuditBoard({ secret, logout }: { secret: string; logout: (message?: str
     <div className="monitor audit">
       <header className="monitor-top">
         <div>
-          <span className="monitor-label">Yummy · Panel de la empresa</span>
+          <span className="monitor-label">Yummi · Panel de la empresa</span>
           <h1>Auditoría de chats</h1>
         </div>
         <div className="monitor-tags">

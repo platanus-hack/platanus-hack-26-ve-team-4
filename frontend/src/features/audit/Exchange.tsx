@@ -55,7 +55,7 @@ export function Exchange({ attempt, live = false }: { attempt: AuditAttempt; liv
       ))}
       {attempt.reply ? (
         <p className="bubble bubble--bot">
-          <span className="visually-hidden">Yummy: </span>
+          <span className="visually-hidden">Yummi: </span>
           {attempt.reply}
         </p>
       ) : (

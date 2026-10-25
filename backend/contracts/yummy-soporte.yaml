@@ -1,6 +1,6 @@
 contract_id: yummy-soporte
 version: "1.0"
-name: Soporte de pedidos de Yummy
+name: Soporte de pedidos de Yummi
 description: >-
   Asistente que consulta pedidos de comida y emite reembolsos pequeños. Es el dominio del
   laboratorio de Agent Zero escrito como contrato.

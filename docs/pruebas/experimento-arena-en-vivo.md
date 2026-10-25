@@ -15,7 +15,7 @@ Las pruebas de estrés usan ataques escritos por el equipo. Los hackers del even
 
 ## Escenario y participantes
 
-- **Agente:** Yummy, un asistente de soporte con cuatro herramientas: `get_order`, `request_refund`, `search_knowledge` y `save_memory`. Los datos son sintéticos. En LIVE el modelo es `claude-haiku-5-5`.
+- **Agente:** Yummi, un asistente de soporte con cuatro herramientas: `get_order`, `request_refund`, `search_knowledge` y `save_memory`. Los datos son sintéticos. En LIVE el modelo es `claude-haiku-5-5`.
 - **Acceso:** cada participante escanea el QR, elige un alias y acepta las reglas. Recibe un cliente ficticio con sus propios pedidos. El panel *Laboratorio* muestra:
   - su identidad ficticia y sus pedidos;
   - los tres objetivos;

@@ -1,6 +1,6 @@
 ---
 id: como-hacer-un-pedido
-title: Cómo hacer un pedido en Yummy
+title: Cómo hacer un pedido en Yummi
 source: https://ayuda.yummysuperapp.com/es/categories/como-ordenar-ryGdQ_FPh
 captured_at: 2026-10-24
 ---
@@ -18,8 +18,8 @@ captured_at: 2026-10-24
 ## Dirección de entrega
 La primera vez que abres la app, te pide una dirección de entrega. Para agregar otra, toca el icono de localización en la esquina superior derecha de la pantalla principal y luego el símbolo de la casa. También puedes cambiarla en el carrito, en la opción "dirección de entrega"; antes de procesar la orden, la app te pide confirmarla. Puedes guardar varias direcciones como frecuentes.
 
-## ¿Yummy llega a mi zona?
-Al registrar la dirección donde estás, la app muestra una zona de cobertura en forma de burbuja morada. Si tu dirección queda dentro de esa burbuja, Yummy cubre esa zona.
+## ¿Yummi llega a mi zona?
+Al registrar la dirección donde estás, la app muestra una zona de cobertura en forma de burbuja morada. Si tu dirección queda dentro de esa burbuja, Yummi cubre esa zona.
 
 ## Costo del delivery
 El costo del delivery depende de la distancia que recorre el Yummer desde el comercio hasta tu dirección. El monto exacto aparece en el carrito antes de procesar la orden.

@@ -50,7 +50,7 @@ Agent Zero separa lo que solo la empresa sabe de lo que se puede automatizar:
 - **La empresa declara qué nunca debe pasar**, una vez, en un contrato.
 - **Agent Zero produce, prueba y aplica el cómo**, ante cada ataque.
 
-El motor no conoce ningún negocio. Yummy, un banco y una clínica son tres archivos YAML en [`backend/contracts/`](./backend/contracts/) que usan el mismo código.
+El motor no conoce ningún negocio. Yummi, un banco y una clínica son tres archivos YAML en [`backend/contracts/`](./backend/contracts/) que usan el mismo código.
 
 ### Lo que le pedimos a la empresa
 
@@ -161,7 +161,7 @@ La [guía de integración](./docs/integracion.md) detalla el contrato, la API, l
 
 ## La arena: el laboratorio en vivo
 
-La arena es Agent Zero aplicado a un asistente de soporte sintético de Yummy, con audiencia. Los participantes atacan desde el teléfono, el Prober ataca en paralelo, y la pantalla muestra cada hallazgo convertido en política, la repetición en pantalla partida, el señuelo y la curva de éxito del ataque por versión.
+La arena es Agent Zero aplicado a un asistente de soporte sintético de Yummi, con audiencia. Los participantes atacan desde el teléfono, el Prober ataca en paralelo, y la pantalla muestra cada hallazgo convertido en política, la repetición en pantalla partida, el señuelo y la curva de éxito del ataque por versión.
 
 Empezar por [continuidad y traspaso](./docs/continuidad.md). El [índice documental](./docs/README.md) reúne la ruta de lectura; los [documentos por dominio](./docs/dominio/README.md) enlazan código, contratos, persistencia, invariantes, pruebas y próximos pasos.
 

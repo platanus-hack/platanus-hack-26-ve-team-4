@@ -13,9 +13,9 @@ requisitos: []
 ## Qué cambió
 
 - Se quitó la espera visible del lote: ya no hay «Pendiente», «Se envía en N s» ni «Enviar ahora». Cada mensaje sale al apretar «Enviar».
-- Lo escrito mientras Yummy responde queda en una cola, se ve como enviado y sale junto en el intento siguiente. Eso sigue siendo necesario porque el servidor admite una sola ejecución pendiente por sesión.
-- Regla nueva: con 10 mensajes sin respuesta (`QUEUE_MAX`), «Enviar» se desactiva y el chat pide esperar unos segundos a que Yummy responda.
-- Se quitó el aviso «Yummy está respondiendo…» del campo; el encabezado sigue diciendo «Escribiendo…».
+- Lo escrito mientras Yummi responde queda en una cola, se ve como enviado y sale junto en el intento siguiente. Eso sigue siendo necesario porque el servidor admite una sola ejecución pendiente por sesión.
+- Regla nueva: con 10 mensajes sin respuesta (`QUEUE_MAX`), «Enviar» se desactiva y el chat pide esperar unos segundos a que Yummi responda.
+- Se quitó el aviso «Yummi está respondiendo…» del campo; el encabezado sigue diciendo «Escribiendo…».
 
 ## Cómo se verificó
 

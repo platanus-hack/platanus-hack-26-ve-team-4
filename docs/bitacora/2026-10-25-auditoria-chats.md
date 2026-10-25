@@ -32,7 +32,7 @@ requisitos: []
 ## Por qué
 
 - El monitor muestra intentos sueltos y la Arena en vivo solo las sesiones más recientes.
-- Faltaba poder abrir cualquier chat ya creado, incluso de una ronda reiniciada, y leerlo completo: qué escribió la persona, qué respondió Yummy, qué herramientas pidió, qué control las detuvo y en qué momento la sesión pasó al señuelo.
+- Faltaba poder abrir cualquier chat ya creado, incluso de una ronda reiniciada, y leerlo completo: qué escribió la persona, qué respondió Yummi, qué herramientas pidió, qué control las detuvo y en qué momento la sesión pasó al señuelo.
 
 ## Archivos
 

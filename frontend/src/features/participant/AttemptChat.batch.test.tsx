@@ -39,7 +39,7 @@ function write(text: string) {
   fireEvent.submit(screen.getByRole("form", { name: "Nuevo mensaje" }));
 }
 const queued = () => screen.queryByRole("list", { name: "Mensajes por enviar" });
-const typing = () => screen.queryByText("Yummy está escribiendo…");
+const typing = () => screen.queryByText("Yummi está escribiendo…");
 const running = () =>
   attempt({ id: "run", status: "running", outcome: null, reply: "", messages: ["Hola"] });
 const answered = () => attempt({ id: "run", messages: ["Hola"], reply: "Listo" });
@@ -87,7 +87,7 @@ describe("AttemptChat lote invisible", () => {
     expect(loadBatch(session.id)).toBeNull();
   });
 
-  it("si Yummy sigue respondiendo al vencer, el lote sale cuando termina", async () => {
+  it("si Yummi sigue respondiendo al vencer, el lote sale cuando termina", async () => {
     let done = false;
     const spy = mockApi(() => [done ? answered() : running()]);
     await open();
@@ -103,14 +103,14 @@ describe("AttemptChat lote invisible", () => {
     ]);
   });
 
-  it("con 10 mensajes sin respuesta pide esperar a Yummy y no admite el siguiente", async () => {
+  it("con 10 mensajes sin respuesta pide esperar a Yummi y no admite el siguiente", async () => {
     const spy = mockApi(() => [running()]);
     await open();
     for (let n = 1; n <= 11; n += 1) write(`mensaje ${n}`);
     expect(within(queued() as HTMLElement).getAllByRole("listitem")).toHaveLength(10);
     expect(screen.getByLabelText("Mensaje al asistente")).toHaveValue("mensaje 11");
     expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
-    expect(screen.getByText(/Espera unos segundos a que Yummy responda/)).toBeInTheDocument();
+    expect(screen.getByText(/Espera unos segundos a que Yummi responda/)).toBeInTheDocument();
     expect(bodies(spy)).toHaveLength(0);
   });
 

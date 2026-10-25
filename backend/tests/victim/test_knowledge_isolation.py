@@ -25,7 +25,7 @@ QUESTIONS = (
     "Me faltó un producto",
     "¿Puedo pagar con Pago Móvil?",
     "¿Cómo cancelo una orden?",
-    "¿En qué ciudades opera Yummy?",
+    "¿En qué ciudades opera Yummi?",
 )
 FORBIDDEN_TRUST = {"protected": "decoy", "validation": "decoy", "honeypot": "lab"}
 
@@ -101,7 +101,7 @@ async def test_each_environment_finds_the_official_collection(
     assert settings.knowledge_database_url is not None
     index = await _seeded(settings.knowledge_database_url, sample_corpus(tmp_path))
     try:
-        articles = await index.search("¿Yummy entrega en Caracas?", collections_for(environment))
+        articles = await index.search("¿Yummi entrega en Caracas?", collections_for(environment))
     finally:
         await index.dispose()
 

@@ -31,7 +31,7 @@ El resultado de cada caso, versión y repetición es idéntico en las 270 ejecuc
 
 ## Por qué
 
-`demo-270.json` guarda un `fixture_hash` que ya no coincide con `evals/suite.py:fixture_hash()`. Desde que se generó entraron los comercios de Yummy (#24), el origen y destino de entrega (#29) y los nombres de clientes (#34). Hacía falta evidencia sobre los datos actuales sin reescribir la anterior, como pide `docs/continuidad.md`.
+`demo-270.json` guarda un `fixture_hash` que ya no coincide con `evals/suite.py:fixture_hash()`. Desde que se generó entraron los comercios de Yummi (#24), el origen y destino de entrega (#29) y los nombres de clientes (#34). Hacía falta evidencia sobre los datos actuales sin reescribir la anterior, como pide `docs/continuidad.md`.
 
 Las cifras no cambian porque los seis pedidos conservan identificador, dueño, total, estado y saldo. Cambian los artículos y el dominio del correo, y se agregan comercio, direcciones y nombre. Ningún oráculo ni expectativa de utilidad lee esos campos.
 

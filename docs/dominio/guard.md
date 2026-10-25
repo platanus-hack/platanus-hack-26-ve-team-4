@@ -1,6 +1,6 @@
 # Dominio guard y contrato
 
-Agent Zero para agentes de terceros. El dominio `contract` define el lenguaje con el que una empresa describe su agente; el dominio `guard` aplica el bucle invariante → hallazgo → regla → compuerta → activación sobre ese contrato. No depende del escenario Yummy: la arena sigue usando sus oráculos propios, y el contrato `yummy-soporte.yaml` describe ese mismo dominio en el formato genérico. La guía para empresas está en [integración](../integracion.md).
+Agent Zero para agentes de terceros. El dominio `contract` define el lenguaje con el que una empresa describe su agente; el dominio `guard` aplica el bucle invariante → hallazgo → regla → compuerta → activación sobre ese contrato. No depende del escenario Yummi: la arena sigue usando sus oráculos propios, y el contrato `yummy-soporte.yaml` describe ese mismo dominio en el formato genérico. La guía para empresas está en [integración](../integracion.md).
 
 ## Responsabilidad
 

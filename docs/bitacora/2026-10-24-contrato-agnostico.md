@@ -14,7 +14,7 @@ requisitos: []
 
 - `backend/src/agent_zero/contract/`: esquema del contrato en YAML (herramientas, tipos de argumento, invariantes, tareas legítimas), cinco condiciones, procedencia léxica compartida y variantes de ataque por invariante.
 - `backend/src/agent_zero/guard/`: API `/api/guard` con `check` antes de cada herramienta y `effects` después; hallazgos, síntesis o derivación de reglas, compuerta contra las tareas legítimas, activación, aprobación y reversión.
-- `backend/contracts/`: tres contratos (Yummy, banca y clínica) que usan el mismo código.
+- `backend/contracts/`: tres contratos (Yummi, banca y clínica) que usan el mismo código.
 - `examples/guard/`: cliente de referencia en Python 3.9+ sin dependencias y un agente bancario de ejemplo.
 - README reescrito con la explicación de producto; guía en `docs/integracion.md` y dominio en `docs/dominio/guard.md`.
 

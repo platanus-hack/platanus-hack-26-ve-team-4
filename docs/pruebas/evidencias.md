@@ -8,7 +8,7 @@ Todos los JSON siguientes están en [artifacts/core-evaluation](../../artifacts/
 
 | Artefacto | Resultado y alcance |
 | --- | --- |
-| [demo-270.json](../../artifacts/core-evaluation/demo-270.json) | Comparación completa DEMO de 270 ejecuciones, 732 llamadas de origen `simulated`. Corresponde a los fixtures anteriores a los comercios de Yummy (#24), el origen y destino de entrega (#29) y los nombres de clientes (#34): su `fixture_hash` ya no coincide con `fixture_hash()` actual. |
+| [demo-270.json](../../artifacts/core-evaluation/demo-270.json) | Comparación completa DEMO de 270 ejecuciones, 732 llamadas de origen `simulated`. Corresponde a los fixtures anteriores a los comercios de Yummi (#24), el origen y destino de entrega (#29) y los nombres de clientes (#34): su `fixture_hash` ya no coincide con `fixture_hash()` actual. |
 | [demo-270-2026-10-24-yummy.json](../../artifacts/core-evaluation/demo-270-2026-10-24-yummy.json) | La misma comparación DEMO repetida sobre los fixtures actuales, en `63e1096` con árbol limpio: 270 ejecuciones, 732 llamadas `simulated`, cifras iguales a `demo-270.json`. |
 | [live-270-2026-10-24-yummy.json](../../artifacts/core-evaluation/live-270-2026-10-24-yummy.json) | Comparación amplia LIVE de 270 ejecuciones con `claude-haiku-5-5`, en `aba711e` con árbol limpio: 683 llamadas de evaluación con coste medido (0,064237 USD). Violaciones 59/90 → 0/90, utilidad 45/45 en ambas versiones. |
 | [live-270-2026-10-24-escenario-limpio.json](../../artifacts/core-evaluation/live-270-2026-10-24-escenario-limpio.json) | Repetición LIVE de 270 ejecuciones tras quitar la pista `A-1001` de la descripción de `get_order` y los identificadores internos de las salidas de herramientas, en `df1fe76`. 684 llamadas, 0,072934 USD. Violaciones 66/90 → 0/90, utilidad 45/45 en ambas versiones. |
@@ -37,7 +37,7 @@ La partición reservada está publicada y puede haberse usado al validar control
 
 ### Repetición sobre los fixtures actuales
 
-`demo-270.json` se generó antes de que los pedidos tuvieran comercio de Yummy, dirección de retiro y entrega, y nombre del cliente. Su `fixture_hash` (`26095a2e…6d5fd0`) ya no coincide con el de los datos actuales. La evaluación `eval-4f9375e1912d` repite la comparación sobre `63e10960319fa6beef292b717a4dc2e251e4edb5`, con `working_tree_dirty=false` y `fixture_hash` `0fe4044f383bdc0606fa07bd9983b52746232a8ce046ae72fb99abcf2d1aebf9`, el mismo que devuelve `fixture_hash()` en ese commit. La suite (`9a4a0cd3…457f91`) y los hashes de las políticas 0 y 3 son idénticos a los de la evaluación anterior.
+`demo-270.json` se generó antes de que los pedidos tuvieran comercio de Yummi, dirección de retiro y entrega, y nombre del cliente. Su `fixture_hash` (`26095a2e…6d5fd0`) ya no coincide con el de los datos actuales. La evaluación `eval-4f9375e1912d` repite la comparación sobre `63e10960319fa6beef292b717a4dc2e251e4edb5`, con `working_tree_dirty=false` y `fixture_hash` `0fe4044f383bdc0606fa07bd9983b52746232a8ce046ae72fb99abcf2d1aebf9`, el mismo que devuelve `fixture_hash()` en ese commit. La suite (`9a4a0cd3…457f91`) y los hashes de las políticas 0 y 3 son idénticos a los de la evaluación anterior.
 
 | Medida | `demo-270.json` | `demo-270-2026-10-24-yummy.json` |
 | --- | --- | --- |

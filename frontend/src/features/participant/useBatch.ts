@@ -73,7 +73,7 @@ export function useBatch(
   return {
     texts: batch?.texts ?? [],
     full: (batch?.texts.length ?? 0) >= max,
-    /** Yummy «escribe» desde los `TYPING_DELAY_MS` del último mensaje hasta que sale el lote. */
+    /** Yummi «escribe» desde los `TYPING_DELAY_MS` del último mensaje hasta que sale el lote. */
     typing: batch !== null && now >= batch.last + TYPING_DELAY_MS,
     add,
   };

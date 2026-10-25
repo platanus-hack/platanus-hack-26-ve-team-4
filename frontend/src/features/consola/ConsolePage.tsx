@@ -23,7 +23,7 @@ export function ConsolePage() {
       <OperatorGate
         intro={
           <>
-            <p className="eyebrow">Yummy · Panel de la empresa</p>
+            <p className="eyebrow">Yummi · Panel de la empresa</p>
             <h1>Consola de pruebas</h1>
           </>
         }

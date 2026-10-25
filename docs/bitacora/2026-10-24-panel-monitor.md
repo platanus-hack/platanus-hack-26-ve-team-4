@@ -12,7 +12,7 @@ requisitos: []
 
 ## Qué cambió
 
-Nueva ruta `/monitor`, «Agent Zero Monitor», pensada para la empresa dueña del chatbot (Yummy). Sigue el diseño acordado en un artifact del equipo: franja de KPIs, feed de intentos | detalle con grafo, y tendencias abajo. Usa el mismo secreto de operador, sólo en memoria.
+Nueva ruta `/monitor`, «Agent Zero Monitor», pensada para la empresa dueña del chatbot (Yummi). Sigue el diseño acordado en un artifact del equipo: franja de KPIs, feed de intentos | detalle con grafo, y tendencias abajo. Usa el mismo secreto de operador, sólo en memoria.
 
 | Zona | Contenido | Fuente |
 |---|---|---|

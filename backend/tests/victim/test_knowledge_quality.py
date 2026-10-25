@@ -39,7 +39,7 @@ CASES: tuple[tuple[str, frozenset[str]], ...] = tuple(
         ),
         ("¿por qué me cancelaron el pedido?", {"oficial/motivos-de-cancelacion"}),
         (
-            "¿en qué ciudades hay servicio de Yummy?",
+            "¿en qué ciudades hay servicio de Yummi?",
             {"oficial/servicios-y-cobertura", "oficial/como-hacer-un-pedido"},
         ),
         ("¿dónde veo en qué estado va mi pedido?", {"oficial/seguimiento-y-cambios-de-pedido"}),

@@ -4,7 +4,7 @@ Estado: implementado, versión 2 del esquema (`schema_version: 2`), fijado por p
 
 ## Por qué la traza es el centro
 
-La víctima es el asistente de soporte de Yummy que la audiencia intenta engañar. Su texto no prueba nada: un modelo puede decir «listo, reembolsé» sin haberlo hecho, o filtrar un dato y ocultarlo después. Lo único que el sistema acepta como evidencia es la **traza de herramientas**: qué herramienta propuso el modelo, con qué argumentos, qué decidió el gateway y qué cambio de estado quedó en el entorno.
+La víctima es el asistente de soporte de Yummi que la audiencia intenta engañar. Su texto no prueba nada: un modelo puede decir «listo, reembolsé» sin haberlo hecho, o filtrar un dato y ocultarlo después. Lo único que el sistema acepta como evidencia es la **traza de herramientas**: qué herramienta propuso el modelo, con qué argumentos, qué decidió el gateway y qué cambio de estado quedó en el entorno.
 
 Todo lo que viene después lee esa traza:
 
@@ -223,7 +223,7 @@ Los runs persistidos antes de la v2 tienen eventos sin `schema_version`, con `ou
 | `effect` con el cambio de estado. | La traza expresa «antes y después», como pide #8, sin depender de `output`. |
 | Evento `tool_failed`. | Toda operación termina con un evento. |
 | Traza ilegible → `inconclusive`. | Falla cerrada. |
-| `tool_denied` sin repetir `attempt_id` ni `policy_version`; región del escenario `ve`. | Sin duplicados; la región corresponde a Yummy en Venezuela. |
+| `tool_denied` sin repetir `attempt_id` ni `policy_version`; región del escenario `ve`. | Sin duplicados; la región corresponde a Yummi en Venezuela. |
 
 El cambio de región sube los manifiestos de la arena, el Prober y el analizador a **2.2.0** (`ARENA_VERSION`). La 2.1.0, que agregó las herramientas cebo del [señuelo](./decoy.md), todavía declaraba `cl`. El registro conserva una versión ya publicada, así que una base con 2.0.0 o 2.1.0 publica y aprueba la 2.2.0 al arrancar en vez de quedarse con la región vieja. Las herramientas cebo declaran `{"kind": "none"}`: fabrican datos y honeytokens sin cambiar estado protegido.
 

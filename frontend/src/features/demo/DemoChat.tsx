@@ -68,7 +68,7 @@ export function DemoChat({ item, run, live, verdict }: Props) {
                   ) : null}
                 </div>
               ) : (
-                !settled && <p className="demo-typing">Yummy está respondiendo…</p>
+                !settled && <p className="demo-typing">Yummi está respondiendo…</p>
               )}
             </div>
           );

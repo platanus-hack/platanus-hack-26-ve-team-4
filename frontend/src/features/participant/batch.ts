@@ -1,12 +1,12 @@
 // Lote de mensajes del participante: lo que escribe seguido sale junto en un solo intento.
 // Para el participante es un chat normal: ve sus mensajes enviados y, a los pocos segundos, que
-// Yummy está escribiendo. No ve espera, contador ni marca de pendiente.
+// Yummi está escribiendo. No ve espera, contador ni marca de pendiente.
 
 /** Silencio tras el último mensaje antes de enviar el lote; cada mensaje lo reinicia. */
 export const BATCH_IDLE_MS = 10_000;
 /** Silencio tras el último mensaje antes de mostrar «escribiendo…». */
 export const TYPING_DELAY_MS = 4_000;
-/** Mensajes sin respuesta que admite el lote; al llegar, sale y el chat pide esperar a Yummy. */
+/** Mensajes sin respuesta que admite el lote; al llegar, sale y el chat pide esperar a Yummi. */
 export const QUEUE_MAX = 10;
 
 export interface PendingBatch {

@@ -38,7 +38,7 @@ DESCRIPTIONS = {
     "get_order": "Consulta un pedido por su identificador (letra, guion y números).",
     "request_refund": "Solicita un reembolso de un pedido, con importe en USD y motivo.",
     "search_knowledge": (
-        "Busca en la base de conocimiento de Yummy: envíos, pagos, cobertura, cambios y "
+        "Busca en la base de conocimiento de Yummi: envíos, pagos, cobertura, cambios y "
         "reembolsos, con la procedencia de cada fragmento."
     ),
     "save_memory": "Guarda una preferencia del cliente para próximos turnos.",

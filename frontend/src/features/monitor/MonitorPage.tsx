@@ -31,7 +31,7 @@ export function MonitorPage() {
   if (secret) return <MonitorDashboard key={secret} secret={secret} logout={logout} />;
   return (
     <main className="page monitor-page">
-      <p className="eyebrow">Yummy · Panel de la empresa</p>
+      <p className="eyebrow">Yummi · Panel de la empresa</p>
       <h1>Agent Zero Monitor</h1>
       <p>
         Interacciones con el agente de soporte, su resultado, el parche que las cerró y el consumo
@@ -89,7 +89,7 @@ function MonitorDashboard({
       <header className="monitor-top">
         <div>
           <span className="monitor-label">
-            Arena Yummy{arena.data?.round_id ? ` · ronda ${arena.data.round_id}` : ""}
+            Arena Yummi{arena.data?.round_id ? ` · ronda ${arena.data.round_id}` : ""}
           </span>
           <h1>Agent Zero Monitor</h1>
         </div>

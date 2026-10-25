@@ -1,6 +1,6 @@
 """Qué colecciones de la base de conocimiento ve cada entorno (decisión AGENT_ZERO-D-05)."""
 
-# `oficial`: información pública de Yummy. `laboratorio`: reglas del escenario, como el límite de
+# `oficial`: información pública de Yummi. `laboratorio`: reglas del escenario, como el límite de
 # 20 USD. `senuelo`: políticas inventadas, coherentes con los pedidos fabricados del señuelo.
 COLLECTIONS: tuple[str, ...] = ("oficial", "laboratorio", "senuelo")
 

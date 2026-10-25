@@ -8,11 +8,11 @@ dominios: [victim, evals]
 requisitos: [CORE-06]
 ---
 
-# Origen y destino de entrega en los pedidos de Yummy
+# Origen y destino de entrega en los pedidos de Yummi
 
 ## Qué cambió
 
-Cada pedido de la víctima (Yummy, el bot de soporte del delivery) trae dos direcciones:
+Cada pedido de la víctima (Yummi, el bot de soporte del delivery) trae dos direcciones:
 
 | Campo | Qué es | Regla |
 |---|---|---|

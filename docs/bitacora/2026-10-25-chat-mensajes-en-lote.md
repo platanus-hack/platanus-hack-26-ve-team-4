@@ -12,7 +12,7 @@ requisitos: []
 
 ## Qué cambió
 
-Antes, cada mensaje del chat era un intento aparte y el envío se bloqueaba («Esperando respuesta…») mientras Yummy respondía. Ahora «Enviar» o Enter agrega el mensaje a un lote pendiente, que se ve en el chat como burbuja propia atenuada con la marca «Pendiente». El lote sale como un solo intento con lo primero que ocurra:
+Antes, cada mensaje del chat era un intento aparte y el envío se bloqueaba («Esperando respuesta…») mientras Yummi respondía. Ahora «Enviar» o Enter agrega el mensaje a un lote pendiente, que se ve en el chat como burbuja propia atenuada con la marca «Pendiente». El lote sale como un solo intento con lo primero que ocurra:
 
 | Condición | Constante (`frontend/src/features/participant/batch.ts`) |
 |---|---|
@@ -25,7 +25,7 @@ Antes, cada mensaje del chat era un intento aparte y el envío se bloqueaba («E
 |---|---|
 | Cuerpo del POST | Un único POST a `/api/attempts` con `messages: [texto]`, los mensajes unidos con saltos de línea. Si el texto unido supera `limits.message_max_length` (4000 por defecto), `messages` lleva los mensajes por separado (hasta 4). |
 | Vista tras el envío | Las burbujas siguen separadas: la entrada guarda `parts` (lo escrito) además de `messages` (lo enviado) y `mergeHistory` las conserva. |
-| Yummy está respondiendo | Se puede seguir escribiendo; los mensajes arman el lote siguiente y su contador corre. Si vence antes, la barra dice «Se envía cuando Yummy termine de responder» y el lote sale al terminar el intento anterior. El servidor sigue admitiendo una ejecución pendiente por sesión. |
+| Yummi está respondiendo | Se puede seguir escribiendo; los mensajes arman el lote siguiente y su contador corre. Si vence antes, la barra dice «Se envía cuando Yummi termine de responder» y el lote sale al terminar el intento anterior. El servidor sigue admitiendo una ejecución pendiente por sesión. |
 | Lote lleno mientras espera | «Enviar» se desactiva; el texto queda en el campo hasta que el lote salga. |
 | Ronda cerrada | El lote espera a que se reabran las entradas. |
 | Envío sin confirmar (red o 429) | El lote siguiente espera a que se reintente; la clave idempotente y `Retry-After` no cambian. |
@@ -33,7 +33,7 @@ Antes, cada mensaje del chat era un intento aparte y el envío se bloqueaba («E
 
 ## Por qué
 
-Fernando pidió que la persona pueda mandar varios mensajes seguidos, como en un chat de mensajería, sin quedar bloqueada mientras Yummy responde. Juntar la ráfaga en un intento también evita gastar un intento por cada línea suelta del límite de frecuencia.
+Fernando pidió que la persona pueda mandar varios mensajes seguidos, como en un chat de mensajería, sin quedar bloqueada mientras Yummi responde. Juntar la ráfaga en un intento también evita gastar un intento por cada línea suelta del límite de frecuencia.
 
 ## Archivos
 
@@ -42,7 +42,7 @@ Fernando pidió que la persona pueda mandar varios mensajes seguidos, como en un
 | `frontend/src/features/participant/batch.ts` | Constantes, `addToBatch`, `dueAt`, `isDue`, `packBatch` y validación `isBatch`. |
 | `frontend/src/features/participant/useBatch.ts` | Hook del lote: copia síncrona, contador de 250 ms, envío al vencer cuando se puede, «Enviar ahora» y persistencia. |
 | `frontend/src/features/participant/BatchPreview.tsx` | Burbujas pendientes y barra con la cuenta regresiva (`role="timer"`) y «Enviar ahora». |
-| `frontend/src/features/participant/AttemptChat.tsx` | Usa el lote; el campo y «Enviar» ya no se bloquean mientras Yummy responde; copia síncrona del borrador contra el doble envío. |
+| `frontend/src/features/participant/AttemptChat.tsx` | Usa el lote; el campo y «Enviar» ya no se bloquean mientras Yummi responde; copia síncrona del borrador contra el doble envío. |
 | `frontend/src/features/participant/useConversation.ts` | `submit` recibe los textos del lote y arma `messages` con `packBatch`; expone `idle`; `mergeHistory` conserva `parts`. |
 | `frontend/src/features/participant/storage.ts`, `types.ts` | `loadBatch`/`saveBatch`, borrado del lote con la pulsera, `parts` opcional y validado en el historial. |
 | `frontend/src/features/participant/chat.css` | Estilo de la burbuja pendiente y de la barra del lote. |

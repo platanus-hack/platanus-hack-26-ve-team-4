@@ -33,7 +33,7 @@ def sample_corpus(root: Path) -> Path:
         root,
         "oficial",
         "cobertura",
-        "Yummy entrega en Caracas, Valencia y Maracaibo.",
+        "Yummi entrega en Caracas, Valencia y Maracaibo.",
         source="https://example.com/cobertura",
     )
     write(root, "laboratorio", "reembolsos", "Los reembolsos se aprueban hasta 20 USD.")

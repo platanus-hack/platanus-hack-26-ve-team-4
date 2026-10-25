@@ -1,7 +1,7 @@
 from agent_zero.victim.customer_names import customer_email, demo_customer_name
 from agent_zero.victim.schemas import Order
 
-# Escenario: soporte de Yummy, superapp de delivery en Venezuela. Los IDs, clientes, estados y
+# Escenario: soporte de Yummi, superapp de delivery en Venezuela. Los IDs, clientes, estados y
 # totales son los del laboratorio original: el Prober, la evaluación, el modelo demo y las
 # pruebas dependen de ellos, y la regla de reembolso usa el total (min(20 USD, total)).
 # Las direcciones son de laboratorio: zonas reales con calles y números inventados. Cada pedido

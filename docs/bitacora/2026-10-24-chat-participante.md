@@ -8,11 +8,11 @@ dominios: [frontend, attempts, victim]
 requisitos: []
 ---
 
-# La vista Participar pasa a ser el chat de soporte de Yummy
+# La vista Participar pasa a ser el chat de soporte de Yummi
 
 ## Qué cambió
 
-La pantalla del participante, una vez dentro, deja de ser un formulario de «intentos» con hasta cuatro turnos. Ahora es el chat de soporte de Yummy, el agente con el que la audiencia interactúa:
+La pantalla del participante, una vez dentro, deja de ser un formulario de «intentos» con hasta cuatro turnos. Ahora es el chat de soporte de Yummi, el agente con el que la audiencia interactúa:
 
 - **Ventana de chat** con cabecera de marca, burbujas, indicador «escribiendo…», sugerencias de consultas legítimas, Enter para enviar y «Nueva conversación».
 - **Panel discreto «Laboratorio»** al costado (arriba en el teléfono, plegable). Contiene modo del proveedor, identidad ficticia, pedidos, objetivos, límites y el resultado provisional de cada mensaje. Los resultados ya no aparecen dentro del chat.

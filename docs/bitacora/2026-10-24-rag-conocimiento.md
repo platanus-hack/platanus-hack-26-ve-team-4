@@ -8,7 +8,7 @@ dominios: [victim, infraestructura]
 requisitos: [CORE-08]
 ---
 
-# Base de conocimiento de Yummy con búsqueda híbrida
+# Base de conocimiento de Yummi con búsqueda híbrida
 
 ## Qué cambió
 
@@ -24,7 +24,7 @@ El corpus son archivos Markdown en `backend/src/agent_zero/victim/knowledge_docs
 
 | Colección | Contenido | Lo ven |
 |---|---|---|
-| `oficial` | 8 documentos públicos de Yummy (`yummysuperapp.com`, `ayuda.yummysuperapp.com`), con URL y fecha de captura | protegido, validación, señuelo |
+| `oficial` | 8 documentos públicos de Yummi (`yummysuperapp.com`, `ayuda.yummysuperapp.com`), con URL y fecha de captura | protegido, validación, señuelo |
 | `laboratorio` | Los 3 artículos de `KNOWLEDGE`, con el mismo texto y los mismos `source` | protegido, validación |
 | `senuelo` | Políticas inventadas de envíos, reembolsos y cambios | señuelo |
 
@@ -36,7 +36,7 @@ La siembra corre al arrancar. Es idempotente, toma un lock consultivo propio, so
 
 ## Por qué
 
-Una pregunta natural rara vez repite las palabras exactas de un artículo. Además, la víctima necesitaba la información pública de Yummy separada de las reglas del laboratorio y del mundo falso del señuelo. Diseño aprobado: decisión AGENT_ZERO-D-05 (`investigacion/PLAN_RAG_YUMMY.md`).
+Una pregunta natural rara vez repite las palabras exactas de un artículo. Además, la víctima necesitaba la información pública de Yummi separada de las reglas del laboratorio y del mundo falso del señuelo. Diseño aprobado: decisión AGENT_ZERO-D-05 (`investigacion/PLAN_RAG_YUMMY.md`).
 
 ## Archivos
 

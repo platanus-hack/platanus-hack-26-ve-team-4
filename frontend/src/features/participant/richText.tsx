@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
-// Markdown mínimo de las respuestas de Yummy: **negrita** y viñetas «- » o «* ». Se arma con
+// Markdown mínimo de las respuestas de Yummi: **negrita** y viñetas «- » o «* ». Se arma con
 // elementos de React, sin HTML crudo, así que el texto del modelo nunca se interpreta como marcado.
 // Los saltos de línea los conserva `white-space: pre-wrap` de la burbuja.
 
