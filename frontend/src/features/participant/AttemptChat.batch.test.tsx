@@ -60,6 +60,12 @@ describe("AttemptChat lote invisible", () => {
     await open();
     write("uno");
     expect(within(queued() as HTMLElement).getByText("uno")).toBeInTheDocument();
+    // Misma estructura que un mensaje enviado: la burbuja del usuario queda a la derecha.
+    expect(
+      within(queued() as HTMLElement)
+        .getByText("uno")
+        .closest("li"),
+    ).toHaveClass("chat-exchange");
     expect(screen.queryByText("Pendiente")).toBeNull();
     expect(screen.queryByRole("timer")).toBeNull();
     expect(screen.queryByRole("button", { name: "Enviar ahora" })).toBeNull();
