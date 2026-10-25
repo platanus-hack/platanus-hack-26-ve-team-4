@@ -37,7 +37,7 @@ from agent_zero.policies.validator_catalog import OBJECTIVE_CONTROLS
 from agent_zero.prober.campaign_models import CampaignCaseRecord
 from agent_zero.routing.models import Route
 from agent_zero.sessions.models import ArenaSession
-from agent_zero.sessions.reserved_alias import SWARM_PREFIX
+from agent_zero.sessions.reserved_alias import SWARM_PREFIX, TEST_PREFIX
 from agent_zero.shared.clock import utc_now
 
 PROBER_ALIAS = "Prober"
@@ -56,6 +56,9 @@ def session_kind(session: ArenaSession) -> SessionKind | None:
     if session.id.startswith("internal-"):
         return "prober" if session.alias == PROBER_ALIAS else None
     # El servidor reserva el prefijo (`sessions/reserved_alias.py`): el público no puede usarlo.
+    if session.alias.startswith(TEST_PREFIX):
+        # Chat interno del equipo: se muestra sin enmascarar y no cuenta en las analíticas.
+        return "test"
     return "swarm" if session.alias.startswith(SWARM_PREFIX) else "audience"
 
 
@@ -325,18 +328,20 @@ def build_board(  # noqa: PLR0913
     patches = PatchIndex.build(data.findings, data.policies)
     live_sessions = [_live_session(g, data, patches) for g in groups[:limit]]
 
+    # Los chats de prueba se muestran pero no mueven las analíticas.
+    counted = [g for g in groups if g.kind != "test"]
     scope: Scope = "all" if revealed else "swarm_prober"
-    scoped_groups = [g for g in groups if not g.concealed]
-    finished = [a for g in groups for a in g.finished]
+    scoped_groups = [g for g in counted if not g.concealed]
+    finished = [a for g in counted for a in g.finished]
     scoped = [a for g in scoped_groups for a in g.finished]
-    counts = Counter(g.kind for g in groups for _ in g.finished)
+    counts = Counter(g.kind for g in counted for _ in g.finished)
     leaked = [a for a in scoped if a.outcome is AttemptOutcome.CONFIRMED_VIOLATION]
     by_objective = dict.fromkeys(OBJECTIVE_CONTROLS, 0)
     for objective in (o for a in leaked for o in _violated_objectives(a)):
         by_objective[objective] = by_objective.get(objective, 0) + 1
     diverted = [g for g in scoped_groups if g.route is Route.HONEYPOT]
     campaigns = {
-        a.campaign_id for g in groups if g.kind == "prober" for a in g.attempts if a.campaign_id
+        a.campaign_id for g in counted if g.kind == "prober" for a in g.attempts if a.campaign_id
     }
     decoy_sessions = {s.id for g in scoped_groups for s in g.sessions}
     scoped_ids = {a.id for g in scoped_groups for a in g.attempts}
@@ -347,7 +352,7 @@ def build_board(  # noqa: PLR0913
             audience=counts["audience"],
             swarm=counts["swarm"],
             prober=counts["prober"],
-            in_flight=sum(len(g.attempts) - len(g.finished) for g in groups),
+            in_flight=sum(len(g.attempts) - len(g.finished) for g in counted),
             source="Intentos terminados de la ronda; excluye repeticiones del operador.",
         ),
         safe_space=SafeSpaceKpi(
@@ -380,7 +385,7 @@ def build_board(  # noqa: PLR0913
         accepting=accepting,
         llm_mode=llm_mode,
         policy_version=kpis.patches.current_version,
-        sessions_total=len(groups),
+        sessions_total=len(counted),
         sessions=live_sessions,
         kpis=kpis,
         generated_at=(now or utc_now()).isoformat(),

@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-SessionKind = Literal["audience", "swarm", "prober"]
+SessionKind = Literal["audience", "swarm", "prober", "test"]
 Scope = Literal["all", "swarm_prober"]
 RouteName = Literal["protected", "honeypot"]
 
