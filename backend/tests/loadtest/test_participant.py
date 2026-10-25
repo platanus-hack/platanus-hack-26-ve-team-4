@@ -52,3 +52,21 @@ def test_unfinished_attempts_time_out(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(participant, "ATTEMPT_TIMEOUT", 0.0)
     records = run(fake_arena(throttle_first=False), 1)
     assert records[0].status == "timeout"
+
+
+def test_deadline_stops_the_participant_and_honest_persona_never_attacks() -> None:
+    async def go() -> list[AttemptRecord]:
+        transport = fake_arena(throttle_first=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://arena") as client:
+            return await run_participant(client, "p", Pace(50, 0.0, 0.0), 1, "honest")
+
+    assert asyncio.run(go()) == []
+
+
+def test_honest_persona_is_recorded_as_honest() -> None:
+    async def go() -> list[AttemptRecord]:
+        transport = fake_arena(throttle_first=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://arena") as client:
+            return await run_participant(client, "p", Pace(3, 0.0), 7, "honest")
+
+    assert {record.kind for record in asyncio.run(go())} == {"honest"}

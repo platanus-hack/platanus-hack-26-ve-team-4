@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 
 from agent_zero.loadtest.guard_load import run_guard_load
+from agent_zero.loadtest.operator_api import operator_rows
 from agent_zero.loadtest.participant import Pace, run_participant
 from agent_zero.loadtest.report import guard_summary, load_summary, mission_summary
 
@@ -28,13 +29,6 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--insecure", action="store_true")
     parser.add_argument("--out", type=Path)
     return parser.parse_args()
-
-
-async def operator_rows(client: httpx.AsyncClient, secret: str, path: str) -> list[Any]:
-    response = await client.get(path, headers={"X-Operator-Secret": secret})
-    response.raise_for_status()
-    rows: list[Any] = response.json()
-    return rows
 
 
 async def settled_policies(client: httpx.AsyncClient, secret: str) -> list[Any]:
@@ -70,7 +64,7 @@ async def main() -> dict[str, Any]:
         replay_started = time.monotonic()
         replays = await asyncio.gather(
             *(
-                run_participant(client, f"replay-{index}", pace, index, True)
+                run_participant(client, f"replay-{index}", pace, index, "attacker")
                 for index in range(args.replay_participants)
             )
         )

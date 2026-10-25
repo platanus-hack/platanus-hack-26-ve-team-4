@@ -3,6 +3,7 @@ import random
 import time
 import uuid
 from dataclasses import dataclass, field
+from typing import Literal
 
 import httpx
 
@@ -79,10 +80,14 @@ async def _wait(
     record.status = "timeout"
 
 
+Persona = Literal["mixed", "honest", "attacker"]
+
+
 @dataclass(frozen=True)
 class Pace:
     attempts: int
     think: float
+    until: float | None = None
 
 
 async def run_participant(
@@ -90,10 +95,11 @@ async def run_participant(
     alias: str,
     pace: Pace,
     seed: int,
-    attack_only: bool = False,
+    persona: Persona = "mixed",
 ) -> list[AttemptRecord]:
     rng = random.Random(seed)
-    honest = not attack_only and is_honest(seed)
+    attack_only = persona == "attacker"
+    honest = persona == "honest" or (persona == "mixed" and is_honest(seed))
     failed = AttemptRecord(alias, "join", "join")
     try:
         joined = await client.post("/api/sessions", json={"alias": alias, "accepted_rules": True})
@@ -106,6 +112,8 @@ async def run_participant(
     session = joined.json()
     records: list[AttemptRecord] = []
     for _ in range(pace.attempts):
+        if pace.until is not None and time.monotonic() >= pace.until:
+            break
         task = plan(session["order_ids"], rng, honest, attack_only)
         kind = "honest" if honest else task.kind
         record = AttemptRecord(alias, kind, task.family, submitted=time.monotonic())
