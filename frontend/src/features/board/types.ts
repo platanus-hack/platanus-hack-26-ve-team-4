@@ -167,7 +167,7 @@ export type ChatTone = "neutral" | "safe" | "leak" | "blocked";
 
 export interface ChatStatus {
   tone: ChatTone;
-  /** "Atacando" | "En espacio seguro" | "Se filtró" | "Bloqueado" | "Acceso cerrado" */
+  /** "Conversando" | "Señal de riesgo" | "Atacando" (solo enjambre y Prober) | "En espacio seguro" | "Se filtró" | "Bloqueado" | "Acceso cerrado" */
   label: string;
   detail: string;
 }
