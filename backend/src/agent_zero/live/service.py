@@ -14,6 +14,7 @@ from agent_zero.attempts.models import Attempt, AttemptOutcome, AttemptStatus
 from agent_zero.events.models import EventRecord, EventType, Visibility
 from agent_zero.live.models import (
     AttackKpi,
+    DenialControl,
     LeakedKpi,
     LiveAttempt,
     LiveBoard,
@@ -364,12 +365,30 @@ def build_board(  # noqa: PLR0913
     )
 
 
+CONTROL_BY_VALIDATOR: dict[str, DenialControl] = {
+    "order_belongs_to_session_customer": "pedido_ajeno",
+    "refund_within_limit": "limite_reembolso",
+    "memory_key_allowlist": "memoria_protegida",
+    "require_provenance": "origen",
+    "order_exists": "pedido_inexistente",
+    "valid_call_context": "contexto",
+}
+
+
+def denial_control(validator: object) -> DenialControl | None:
+    """Traduce el validador a una categoría cerrada; el id nunca sale del servidor."""
+    if not isinstance(validator, str):
+        return None
+    if validator.startswith("flow:"):
+        return "regla_flujo"
+    return CONTROL_BY_VALIDATOR.get(validator, "otro")
+
+
 def _denial(data: dict[str, Any]) -> LiveDenial:
-    validator = data.get("validator")
     return LiveDenial(
         tool=str(data.get("tool", "")),
         reason=str(data.get("reason", "")),
-        validator=validator if isinstance(validator, str) else None,
+        control=denial_control(data.get("validator")),
     )
 
 

@@ -104,7 +104,7 @@ def test_limit_keeps_the_most_recent_sessions() -> None:
 def test_the_audience_is_shown_complete_before_the_reveal() -> None:
     hidden = board(
         revealed=False,
-        denials={"a1": [LiveDenial(tool="get_order", reason="rate_limited", validator=None)]},
+        denials={"a1": [LiveDenial(tool="get_order", reason="rate_limited", control=None)]},
     )
     audience = {s.kind: s for s in hidden.sessions}["audience"]
 
@@ -114,7 +114,7 @@ def test_the_audience_is_shown_complete_before_the_reveal() -> None:
     assert [a.route for a in audience.attempts] == ["protected", "honeypot"]
     assert audience.attempts[0].reply == SECRET_REPLY
     assert audience.attempts[0].denials == [
-        LiveDenial(tool="get_order", reason="rate_limited", validator=None)
+        LiveDenial(tool="get_order", reason="rate_limited", control=None)
     ]
     assert audience.attempts[0].violated_objectives == [OBJ]
     assert audience.attempts[0].messages == ["Mensaje."]
@@ -142,9 +142,7 @@ def test_the_sessions_do_not_change_when_the_reveal_happens() -> None:
 
 
 def test_denials_and_techniques_are_attached_to_their_attempts() -> None:
-    denial = LiveDenial(
-        tool="get_order", reason="business_rule_denied", validator="order_belongs_to_session"
-    )
+    denial = LiveDenial(tool="get_order", reason="business_rule_denied", control="pedido_ajeno")
     technique = LiveTechnique(family="tool_misuse", mutator="paraphrase_es")
     result = board(revealed=True, denials={"a3": [denial]}, techniques={"a4": technique})
     by_kind = {s.kind: s for s in result.sessions}

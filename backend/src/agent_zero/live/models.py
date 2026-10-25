@@ -7,14 +7,26 @@ from pydantic import BaseModel
 SessionKind = Literal["audience", "swarm", "prober", "test"]
 Scope = Literal["all", "swarm_prober"]  # El servidor solo emite "all" (toda la ronda).
 RouteName = Literal["protected", "honeypot"]
+# Categoría cerrada del control que negó una herramienta. Sustituye al id del validador:
+# el tablero se proyecta al público y no debe llevar ids de validador ni de regla de flujo.
+DenialControl = Literal[
+    "pedido_ajeno",
+    "limite_reembolso",
+    "memoria_protegida",
+    "origen",
+    "regla_flujo",
+    "pedido_inexistente",
+    "contexto",
+    "otro",
+]
 
 
 class LiveDenial(BaseModel):
-    """Llamada negada por el gateway. Sin argumentos ni detalle: pueden traer datos ajenos."""
+    """Llamada negada por el gateway. Sin argumentos, detalle ni id de validador o de regla."""
 
     tool: str
     reason: str
-    validator: str | None
+    control: DenialControl | None
 
 
 class LiveTechnique(BaseModel):

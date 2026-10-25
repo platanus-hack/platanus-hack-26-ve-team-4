@@ -14,12 +14,24 @@ export type AttemptOutcome =
   | "inconclusive";
 
 /** Llamada a herramienta negada por el gateway (evento `tool_denied`). */
+/** Espejo de `DenialControl` en backend/src/agent_zero/live/models.py. */
+export type DenialControl =
+  | "pedido_ajeno"
+  | "limite_reembolso"
+  | "memoria_protegida"
+  | "origen"
+  | "regla_flujo"
+  | "pedido_inexistente"
+  | "contexto"
+  | "otro";
+
 export interface LiveDenial {
   tool: string;
   /** Valor de `GatewayReason`, p. ej. "business_rule_denied" o "rate_limited". */
   reason: string;
-  /** Validador que negó, p. ej. "order_belongs_to_session_customer" o "flow:…"; null si no hubo. */
-  validator: string | null;
+  /** Categoría cerrada del control que negó (p. ej. "pedido_ajeno", "regla_flujo"); null si no
+   * hubo validador. El servidor nunca envía el id del validador ni de la regla. */
+  control: DenialControl | null;
 }
 
 /** Técnica del ataque. Solo se conoce para el Prober (`case_json` de su caso de campaña); el

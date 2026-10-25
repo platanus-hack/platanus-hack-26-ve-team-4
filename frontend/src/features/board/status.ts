@@ -21,11 +21,11 @@ export function speakerLabel(kind: SessionKind): string {
 }
 
 /**
- * Señal del sistema: una herramienta negada por un validador. "rate_limited" (validator null) y
- * "order_exists" (puede ser un pedido mal escrito) no cuentan. Es una aproximación de vista a
+ * Señal del sistema: una herramienta negada por un validador. "rate_limited" (control null) y
+ * "pedido_inexistente" (puede ser un pedido mal escrito) no cuentan. Es una aproximación de vista a
  * routing/session_risk.py: el tablero no sabe si un pedido inexistente es un error de tipeo.
  */
-const isRiskDenial = (d: LiveDenial) => d.validator !== null && d.validator !== "order_exists";
+const isRiskDenial = (d: LiveDenial) => d.control !== null && d.control !== "pedido_inexistente";
 
 /**
  * Estado del chat (franja bajo la cabecera), con la regla de la maqueta:

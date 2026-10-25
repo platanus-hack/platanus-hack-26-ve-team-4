@@ -5,7 +5,7 @@ import { chatStatus, speakerLabel } from "./status";
 const orderDenial = {
   tool: "get_order",
   reason: "business_rule_denied",
-  validator: "order_belongs_to_session_customer",
+  control: "pedido_ajeno" as const,
 };
 
 describe("buena fe del Público", () => {
@@ -50,7 +50,7 @@ describe("buena fe del Público", () => {
       attempts: [
         liveAttempt({
           outcome: "not_achieved",
-          denials: [{ tool: "get_order", reason: "rate_limited", validator: null }],
+          denials: [{ tool: "get_order", reason: "rate_limited", control: null }],
         }),
       ],
     });
@@ -60,7 +60,7 @@ describe("buena fe del Público", () => {
     });
   });
 
-  it("un pedido mal escrito (order_exists) no es señal de riesgo", () => {
+  it("un pedido mal escrito (pedido_inexistente) no es señal de riesgo", () => {
     const audience = liveSession("1", {
       kind: "audience",
       alias: "neo",
@@ -68,7 +68,7 @@ describe("buena fe del Público", () => {
         liveAttempt({
           outcome: "not_achieved",
           denials: [
-            { tool: "get_order", reason: "business_rule_denied", validator: "order_exists" },
+            { tool: "get_order", reason: "business_rule_denied", control: "pedido_inexistente" },
           ],
         }),
       ],
