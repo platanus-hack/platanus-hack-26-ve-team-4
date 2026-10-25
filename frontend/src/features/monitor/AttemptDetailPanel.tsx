@@ -2,8 +2,18 @@ import { useEffect, useState } from "react";
 import { errorMessage, requestJson } from "../../shared/api/http";
 import type { Replay } from "../arena/replay/types";
 import { operatorRequest } from "../operator/api";
+import { richText } from "../participant/richText";
 import { AttemptReplay } from "./AttemptReplay";
-import { clock, familyOf, NUMBER, ORIGINS, outcomeOf, patchDelay, tokensText } from "./labels";
+import {
+  clock,
+  familyOf,
+  NUMBER,
+  ORIGINS,
+  outcomeOf,
+  patchDelay,
+  signalLabel,
+  tokensText,
+} from "./labels";
 import type { AttemptDetail, MonitorAttempt } from "./types";
 
 function useDetail(secret: string, attempt: MonitorAttempt) {
@@ -62,6 +72,8 @@ export function AttemptDetailPanel({
         : `${attempt.duration_seconds.toLocaleString("es", { maximumFractionDigits: 2 })} s`,
     ],
   ];
+  if (attempt.signals?.length)
+    meta.splice(1, 0, ["Señales", attempt.signals.map(signalLabel).join(" · ")]);
   if (attempt.patch) {
     meta.push([
       "Parche",
@@ -69,11 +81,11 @@ export function AttemptDetailPanel({
     ]);
   }
   return (
-    <section className="monitor-panel" aria-label="Detalle del intento">
+    <section className="monitor-panel" aria-label="Detalle de la interacción">
       <div className="monitor-row">
         <div>
           <span className="monitor-label">
-            Intento {attempt.id} · {clock(attempt.created_at)}
+            Interacción {attempt.id} · {clock(attempt.created_at)}
           </span>
           <h2>{familyOf(attempt)}</h2>
         </div>
@@ -94,7 +106,7 @@ export function AttemptDetailPanel({
             {message}
           </p>
         ))}
-        {detail?.reply && <p className="monitor-bubble is-bot">{detail.reply}</p>}
+        {detail?.reply && <p className="monitor-bubble is-bot">{richText(detail.reply)}</p>}
       </div>
       {error !== null && <p role="alert">{errorMessage(error)}</p>}
       {detail && <AttemptReplay attempt={attempt} graph={detail.graph} replay={replay} />}

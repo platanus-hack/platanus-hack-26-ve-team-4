@@ -8,14 +8,18 @@ import {
 } from "react";
 import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { useArenaState } from "../arena/hooks/useArenaState";
-import { PendingBubbles } from "./BatchPreview";
+import { PendingBubbles, TypingBubble } from "./BatchPreview";
 import { LabPanel } from "./LabPanel";
+import { richText } from "./richText";
 import type { ArenaSession, ConversationEntry } from "./types";
 import { useBatch } from "./useBatch";
 import { active, useConversation } from "./useConversation";
 import "./chat.css";
 
 export { mergeHistory } from "./useConversation";
+
+/** El saludo usa el alias que eligió la persona; el chat de prueba no muestra su prefijo. */
+export const greetingName = (alias: string) => alias.replace(/^Interno-/, "") || alias;
 
 function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boolean }) {
   const attempt = entry.attempt;
@@ -30,17 +34,10 @@ function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boole
       {attempt?.reply ? (
         <p className="bubble bubble--bot">
           <span className="visually-hidden">Yummy: </span>
-          {attempt.reply}
+          {richText(attempt.reply)}
         </p>
       ) : active(attempt) && (attempt || pending) ? (
-        <p className="bubble bubble--bot bubble--typing" role="status">
-          <span aria-hidden="true" className="typing-dots">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="visually-hidden">Yummy está escribiendo…</span>
-        </p>
+        <TypingBubble />
       ) : null}
     </li>
   );
@@ -115,7 +112,9 @@ export function AttemptChat({
           </span>
           <div>
             <h2>Soporte Yummy</h2>
-            <p>{closed ? "Fuera de horario" : waiting ? "Escribiendo…" : "En línea"}</p>
+            <p>
+              {closed ? "Fuera de horario" : waiting || batch.typing ? "Escribiendo…" : "En línea"}
+            </p>
           </div>
           <button
             type="button"
@@ -128,7 +127,7 @@ export function AttemptChat({
         </header>
         <div className="chat-scroll">
           <p className="bubble bubble--bot">
-            ¡Hola, {session.customer_name}! Soy el asistente de Yummy. Puedo ayudarte con tus
+            ¡Hola, {greetingName(session.alias)}! Soy el asistente de Yummy. Puedo ayudarte con tus
             pedidos, reembolsos y envíos.
           </p>
           <ol className="chat-thread" aria-label="Conversación">
@@ -144,6 +143,7 @@ export function AttemptChat({
             ))}
           </ol>
           <PendingBubbles texts={batch.texts} />
+          {batch.typing && !waiting && <TypingBubble />}
           <div ref={end} />
         </div>
         <div className="chat-notices">

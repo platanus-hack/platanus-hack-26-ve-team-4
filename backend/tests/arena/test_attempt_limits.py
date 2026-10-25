@@ -197,5 +197,5 @@ def test_related_limits_leave_room_for_240_attempts_without_raising_the_daily_ca
     assert defaults["llm_session_call_limit"] == 400
     assert defaults["gateway_rate_limit_per_minute"] == 480
     assert defaults["arena_session_queue_limit"] == 1
-    assert defaults["llm_daily_usd_limit"] == 2.0
+    assert defaults["llm_daily_usd_limit"] == 15.0
     assert defaults["llm_daily_call_limit"] == 2000

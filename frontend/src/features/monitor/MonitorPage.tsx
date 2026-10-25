@@ -33,8 +33,8 @@ export function MonitorPage() {
       <p className="eyebrow">Yummy · Panel de la empresa</p>
       <h1>Agent Zero Monitor</h1>
       <p>
-        Intentos contra el agente de soporte, su resultado, el parche que los cerró y el consumo del
-        modelo. El secreto permanece solo en memoria durante esta visita.
+        Interacciones con el agente de soporte, su resultado, el parche que las cerró y el consumo
+        del modelo. El secreto permanece solo en memoria durante esta visita.
       </p>
       <form onSubmit={login}>
         <label htmlFor="monitor-secret">Secreto de operador</label>
@@ -124,9 +124,11 @@ function MonitorDashboard({
         {current ? (
           <AttemptDetailPanel key={current.id} secret={secret} attempt={current} />
         ) : (
-          <section className="monitor-panel" aria-label="Detalle del intento">
+          <section className="monitor-panel" aria-label="Detalle de la interacción">
             <p className="muted">
-              {monitor.data ? "Todavía no hay intentos en esta ronda." : "Cargando intentos…"}
+              {monitor.data
+                ? "Todavía no hay interacciones en esta ronda."
+                : "Cargando interacciones…"}
             </p>
           </section>
         )}

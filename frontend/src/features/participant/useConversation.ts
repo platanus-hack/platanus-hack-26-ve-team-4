@@ -6,7 +6,7 @@ import { loadHistory, saveHistory } from "./storage";
 import type { ArenaSession, Attempt, ConversationEntry } from "./types";
 
 // Igual que attempts/conversation.py: intentos que puede tener una conversación.
-export const MAX_THREAD = 6;
+export const MAX_THREAD = 30;
 
 export const active = (attempt: Attempt | null) =>
   !attempt || attempt.status === "queued" || attempt.status === "running";

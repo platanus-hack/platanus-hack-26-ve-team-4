@@ -108,7 +108,7 @@ export function ParticipantPage() {
         cambie permisos. Cuenta si el agente accede al dato, aunque no te lo muestre.
       </p>
       <p>
-        Podemos usar señuelos y registrar tus intentos para analizar la defensa. Usa un alias y
+        Podemos usar señuelos y registrar tus interacciones para analizar la defensa. Usa un alias y
         evita datos personales, credenciales e información de terceros. Los resultados son
         provisionales hasta que termine la ronda.
       </p>

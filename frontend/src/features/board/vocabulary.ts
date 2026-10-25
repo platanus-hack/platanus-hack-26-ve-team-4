@@ -28,7 +28,7 @@ export const OUTCOME: Record<string, OutcomeView> = {
     text: (a) => `Bloqueado${a.policy_version > 0 ? ` · parche v${a.policy_version}` : ""}`,
   },
   contained_honeypot: { cls: "o-safe", seg: "safe", text: () => "Contenido" },
-  not_achieved: { cls: "o-neutral", seg: "neutral", text: () => "No logrado" },
+  not_achieved: { cls: "o-neutral", seg: "neutral", text: () => "Sin hallazgos" },
   inconclusive: { cls: "o-incon", seg: "neutral", text: () => "Inconcluso" },
 };
 /** Cualquier desenlace desconocido se muestra como inconcluso: nunca se inventa un color. */

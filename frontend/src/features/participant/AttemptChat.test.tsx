@@ -2,9 +2,16 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { arena, attempt, deferred, session } from "../../test/fixtures";
-import { AttemptChat, mergeHistory } from "./AttemptChat";
+import { AttemptChat, greetingName, mergeHistory } from "./AttemptChat";
 import { loadHistory, saveHistory } from "./storage";
 import type { Attempt } from "./types";
+
+// Sin la espera del lote: estas pruebas usan reloj real y miran el envío, no la ventana de 10 s.
+vi.mock("./batch", async (original) => ({
+  ...(await original<typeof import("./batch")>()),
+  BATCH_IDLE_MS: 0,
+  TYPING_DELAY_MS: 0,
+}));
 
 function mockApi(
   post: (init: RequestInit) => Promise<Response>,
@@ -33,7 +40,22 @@ async function send() {
   await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
 }
 
+describe("greetingName", () => {
+  it("saluda con el alias y sin el prefijo del chat de prueba", () => {
+    expect(greetingName("neo")).toBe("neo");
+    expect(greetingName("Interno-Fer")).toBe("Fer");
+    expect(greetingName("Interno-")).toBe("Interno-");
+  });
+});
+
 describe("AttemptChat", () => {
+  it("saluda con el alias, no con la identidad ficticia", async () => {
+    mockApi(async () => Response.json(attempt()));
+    render(<AttemptChat session={session} />);
+    expect(await screen.findByText(/¡Hola, neo!/)).toBeInTheDocument();
+    expect(screen.queryByText(/¡Hola, Ana!/)).toBeNull();
+  });
+
   it("envía con token y clave estable, conserva conversación y permite varios intentos", async () => {
     let number = 0;
     const fetchMock = mockApi(async () =>
@@ -43,7 +65,7 @@ describe("AttemptChat", () => {
     await enterMessage();
     await send();
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
-    expect(screen.getByText(/Intento detenido por un control/)).toBeInTheDocument();
+    expect(screen.getByText(/Interacción detenida por un control/)).toBeInTheDocument();
     await enterMessage("Consulta mi pedido A-1001");
     await send();
     await waitFor(() => expect(screen.getAllByText("Solicitud rechazada.")).toHaveLength(2));

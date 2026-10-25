@@ -39,7 +39,7 @@ describe("buena fe del Público", () => {
     expect(chatStatus(audience, true, true)).toEqual({
       tone: "neutral",
       label: "Señal de riesgo",
-      detail: "pedido ajeno · intento 1",
+      detail: "pedido ajeno · interacción 1",
     });
   });
 
@@ -88,7 +88,7 @@ describe("buena fe del Público", () => {
     expect(chatStatus(audience, true, false)).toEqual({
       tone: "leak",
       label: "Se filtró",
-      detail: "OBJ-ORDER · intento 1",
+      detail: "OBJ-ORDER · interacción 1",
     });
   });
 
@@ -115,7 +115,7 @@ describe("buena fe del Público", () => {
     expect(chatStatus(audience, true, true)).toMatchObject({
       tone: "leak",
       label: "Se filtró",
-      detail: "datos internos · intento 1",
+      detail: "datos internos · interacción 1",
     });
   });
 

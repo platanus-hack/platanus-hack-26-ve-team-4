@@ -6,11 +6,12 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 
 | Entrada | Función |
 | --- | --- |
-| [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor`, `/auditoria` y `/operator`. |
+| [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor`, `/auditoria`, `/consola` y `/operator`. |
 | [ParticipantPage.tsx](../../frontend/src/features/participant/ParticipantPage.tsx) | Consentimiento, alta y recuperación mediante `/api/sessions/me`. |
-| [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Cada mensaje sale en el momento; lo escrito mientras Yummy responde sale junto en el intento siguiente, que continúa la conversación en curso (`continues`). |
-| [batch.ts](../../frontend/src/features/participant/batch.ts) | Tope de la cola (`QUEUE_MAX = 10`) y armado del cuerpo (`packBatch`). |
-| [useBatch.ts](../../frontend/src/features/participant/useBatch.ts), [BatchPreview.tsx](../../frontend/src/features/participant/BatchPreview.tsx) | Cola de mensajes sin respuesta: envío apenas se puede, persistencia y burbujas que se ven como enviadas. |
+| [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Los mensajes seguidos salen juntos en un lote invisible a los 10 s del último; cada lote es un intento que continúa la conversación en curso (`continues`). |
+| [richText.tsx](../../frontend/src/features/participant/richText.tsx) | Markdown mínimo de las respuestas de Yummy: `**negrita**` y viñetas `- ` o `* ` como «•», armado con elementos de React y sin HTML crudo. |
+| [batch.ts](../../frontend/src/features/participant/batch.ts) | Tiempos del lote (`BATCH_IDLE_MS`, `TYPING_DELAY_MS`), tope (`QUEUE_MAX = 10`), vencimiento y armado del cuerpo (`packBatch`). |
+| [useBatch.ts](../../frontend/src/features/participant/useBatch.ts), [BatchPreview.tsx](../../frontend/src/features/participant/BatchPreview.tsx) | Lote sin enviar: alarmas de 4 s y 10 s, persistencia, burbujas que se ven como enviadas y «escribiendo…». |
 | [useConversation.ts](../../frontend/src/features/participant/useConversation.ts) | Envío durable, reconciliación del historial, conversaciones (`threadsOf`), reintento y espera de 429. |
 | [LabPanel.tsx](../../frontend/src/features/participant/LabPanel.tsx) | Panel discreto del laboratorio: modo, identidad ficticia, pedidos, objetivos, límites y resultado provisional de cada mensaje. |
 | [storage.ts](../../frontend/src/features/participant/storage.ts) | Sesión, historial pendiente y lote sin enviar en `localStorage`, con validación al leer; descarta la pulsera vencida y migra la que haya quedado en `sessionStorage`. |
@@ -32,15 +33,19 @@ Antes del POST se guarda una entrada con mensajes exactos y una clave aleatoria 
 
 El chat envía un lote por intento con `continues` igual al último intento terminado de la conversación en curso. «Nueva conversación», o llegar a 6 intentos, envía el siguiente sin `continues`. Si el servidor rechaza la continuación con 404 o 409, el texto vuelve al campo y el mensaje siguiente abre una conversación nueva. Los resultados no aparecen en el chat, sino en el panel del laboratorio; antes de revelar, una violación y un éxito en el señuelo se ven igual.
 
-### Envío directo y cola
+### Lote invisible
 
-«Enviar» (o Enter) manda el mensaje en el momento: un POST a `/api/attempts` con una clave idempotente nueva. El participante no ve contador, marca de pendiente ni «Enviar ahora».
+«Enviar» (o Enter) muestra el mensaje en el chat como cualquier mensaje enviado, sin marca de pendiente, contador ni «Enviar ahora». Por dentro, los mensajes seguidos se juntan en un lote:
 
-Mientras Yummy responde se puede seguir escribiendo. Como el servidor admite una sola ejecución pendiente por sesión, esos mensajes quedan en una cola que se ve en el chat como burbujas ya enviadas, y salen juntos en un solo intento apenas termina el anterior. `messages` lleva los textos unidos por saltos de línea; si no caben en `limits.message_max_length` (4000 por defecto), se agrupan en varios textos sin pasar ese largo. En el chat siguen viéndose como burbujas separadas: la entrada guarda `parts` además de `messages`, y la reconciliación las conserva.
+| Momento | Qué pasa | Constante en `batch.ts` |
+| --- | --- | --- |
+| 4 s sin un mensaje nuevo | Aparece «escribiendo…» y el encabezado dice «Escribiendo…». | `TYPING_DELAY_MS = 4_000` |
+| 10 s sin un mensaje nuevo | El lote sale en un solo POST a `/api/attempts`. Cada mensaje nuevo reinicia la espera. | `BATCH_IDLE_MS = 10_000` |
+| 10 mensajes sin respuesta | El lote sale sin esperar; si Yummy todavía responde, «Enviar» se desactiva, el texto queda en el campo y el chat pide esperar unos segundos. | `QUEUE_MAX = 10` |
 
-Con 10 mensajes sin respuesta (`QUEUE_MAX`), «Enviar» se desactiva, el texto queda en el campo y el chat dice «Espera unos segundos a que Yummy responda para seguir escribiendo». Con la ronda cerrada, la cola espera a que se reabran las entradas. Un envío sin confirmar (fallo de red o 429) también retiene la cola hasta reintentarlo.
+Si al vencer el lote Yummy todavía responde al anterior, el lote sale apenas termina, porque el servidor admite una sola ejecución pendiente por sesión. `messages` lleva los textos unidos por saltos de línea; si no caben en `limits.message_max_length` (4000 por defecto), se agrupan en varios textos sin pasar ese largo. En el chat siguen viéndose como burbujas separadas: la entrada guarda `parts` además de `messages`, y la reconciliación las conserva. Si el navegador demora una alarma (pestaña en segundo plano), al volver se pone al día con la hora real. Con la ronda cerrada, el lote espera a que se reabran las entradas. Un envío sin confirmar (fallo de red o 429) también retiene el lote hasta reintentarlo.
 
-La cola se guarda en `localStorage` (`agent-zero:batch:<sesión>`): sobrevive a una recarga y se borra al salir el POST o al invalidar la pulsera. La entrada del intento se guarda antes del POST y la cola se borra en el mismo paso síncrono, así que una recarga no puede enviarla dos veces.
+El lote se guarda en `localStorage` (`agent-zero:batch:<sesión>`) con la hora del último mensaje: sobrevive a una recarga y se borra al salir el POST o al invalidar la pulsera. La entrada del intento se guarda antes del POST y el lote se borra en el mismo paso síncrono, así que una recarga no puede enviarlo dos veces.
 
 ### Concurrencia y errores
 
@@ -58,7 +63,47 @@ La repetición del ataque vive en [replay/](../../frontend/src/features/arena/re
 
 El panel de [monitor/](../../frontend/src/features/monitor/) usa el mismo secreto de operador en memoria y consulta `GET /api/operator/monitor` y `/api/operator/policies` cada 4 s. El detalle pide `GET /api/operator/attempts/{id}` y dibuja `graph` con `AttackGraph`. Si el intento es una violación cuyo parche tiene repetición, muestra la pantalla dividida de `/api/arena/replay/{version}` con las tareas legítimas. Las violaciones por versión cuentan sólo la ruta protegida con veredicto. Sin llamadas LIVE, los tokens se muestran como «sin medir» y el coste como «simulado».
 
-La [auditoría](../../frontend/src/features/audit/) consulta `GET /api/operator/audit/rounds`, `/audit/chats` y `/audit/chats/{sesión}`. En la ronda en curso refresca cada 5 s; una ronda archivada no cambia y se lee una vez. Cada mensaje muestra las burbujas del chat de Yummy (`participant/chat.css`) con resultado, ruta, política y duración, los objetivos vulnerados y una traza plegable con cada llamada a herramienta. Antes del primer mensaje atendido en el señuelo aparece el aviso del desvío con su motivo.
+La [auditoría](../../frontend/src/features/audit/) consulta `GET /api/operator/audit/rounds`, `/audit/chats` y `/audit/chats/{sesión}`. En la ronda en curso refresca cada 5 s; una ronda archivada no cambia y se lee una vez. Cada mensaje muestra las burbujas del chat de Yummy (`participant/chat.css`) con resultado, ruta, política y duración, los objetivos vulnerados y una traza plegable con cada llamada a herramienta. Antes del primer mensaje atendido en el señuelo aparece el aviso del desvío con su motivo. El mensaje y cada paso de la traza son los componentes compartidos [audit/Exchange.tsx](../../frontend/src/features/audit/Exchange.tsx) y [audit/ToolStep.tsx](../../frontend/src/features/audit/ToolStep.tsx), que también usa la consola.
+
+### Consola de pruebas (`/consola`)
+
+Ruta protegida con `OperatorGate` (secreto de operador solo en memoria) y enlace «Consola» en la navegación de [App.tsx](../../frontend/src/app/App.tsx). Junta en una pantalla un chat de prueba y su auditoría en vivo, para probar mensajes y ver cómo los clasifica el agente.
+
+| Archivo | Función |
+| --- | --- |
+| [ConsolePage.tsx](../../frontend/src/features/consola/ConsolePage.tsx) | Encabezado con «Nueva sesión», selector de sesiones anteriores, «Abrir en Auditoría» y «Salir». A la izquierda `AttemptChat`; a la derecha `LiveAudit`. |
+| [consoleSession.ts](../../frontend/src/features/consola/consoleSession.ts) | Sesión actual y lista de sesiones previas, en su propio almacenamiento. |
+| [LiveAudit.tsx](../../frontend/src/features/consola/LiveAudit.tsx) | Auditoría de la sesión que se refresca sola. |
+| [consola.css](../../frontend/src/features/consola/consola.css) | Disposición de dos columnas; en pantallas angostas se apilan. |
+
+- **Sesión.** Si no hay una guardada, al entrar se crea una sesión `Interno-consola-<sufijo>` con `POST /api/sessions` y el secreto de operador (`testAlias` la recorta a 40 caracteres). Se guarda en `localStorage` con la clave `agent-zero:consola:v1`, separada de la pulsera del participante (`agent-zero:participant:v1`): abrir la consola no reemplaza la sesión del participante. Si la sesión vence, la consola crea otra.
+- **Nueva sesión.** Crea una sesión nueva y archiva la anterior en `agent-zero:consola:past:v1`: hasta 20, la más reciente primero, con id, alias y fecha. El historial local de la sesión anterior (`agent-zero:history:<id>`) no se borra.
+- **Sesiones anteriores.** El selector abre `/auditoria?chat=<id>` en otra pestaña. Esa ruta busca el chat en la ronda en curso. Una sesión de una ronda archivada necesita además `ronda=<archive_id>` en la URL, y la consola todavía no lo añade.
+- **Chat.** `AttemptChat` se reutiliza sin cambios, con la sesión de la consola. El envío, el lote y «Nueva conversación» funcionan como en el participante.
+- **Auditoría en vivo.** `LiveAudit` consulta `GET /api/operator/audit/chats/{id}` cada 1,5 s con `usePolling` y `X-Operator-Secret`. Un chat sin mensajes responde 404 y se muestra una guía, no un error. Arriba aparecen la ruta, el riesgo (`risk_score`), las violaciones, la cantidad de mensajes, las señales de riesgo (`risk_signals`, validador y veces) y el desvío al señuelo. Debajo, una tarjeta `Exchange` por mensaje, con el más reciente primero, que muestra:
+  - el desenlace y el estado del intento;
+  - familia, ruta y los validadores que negaron llamadas («Negado por …»);
+  - lo escrito y la respuesta de Yummy, con el objetivo vulnerado si lo hubo;
+  - la traza abierta, con cada paso de herramienta. En los pasos denegados, el motivo de Armor con su etapa y su detalle, cuando el evento los trae.
+- **Clasificación.** Las sesiones de la consola salen como «Prueba interna» en el tablero y en la auditoría. No cuentan en las KPI, en `sessions_total` ni en la clasificación (ver [Arena](./arena.md)).
+
+### Chats automáticos (`/demo`)
+
+Ruta protegida con `OperatorGate` y enlace «Chats automáticos» en la navegación. La Arena en vivo trae el mismo lanzador en su cabecera, en el botón «Chat interno» junto a «Modelo» ([InternalChatButton.tsx](../../frontend/src/features/demo/InternalChatButton.tsx)): el diálogo se abre encima del escenario y los chats aparecen en el carrusel como «Prueba interna». Lanza a la vez hasta 6 chats guionizados contra el entorno en el que corre y muestra cada conversación en vivo, con su ruta y su veredicto. Los casos salen de la escala de intención humana 0–5: los niveles 0 a 2 son clientes legítimos y los niveles 3 a 5, atacantes.
+
+| Archivo | Función |
+| --- | --- |
+| [catalog.ts](../../frontend/src/features/demo/catalog.ts) | Tipos, nombres de nivel, los 6 recomendados (`N0-2`, `N1-1`, `N2-1`, `N3-2`, `N4-2`, `N5-1`) y el tope de 6 chats. |
+| [casesLegit.ts](../../frontend/src/features/demo/casesLegit.ts) y [casesAttack.ts](../../frontend/src/features/demo/casesAttack.ts) | 16 casos con sus turnos. Quedan fuera N5-2 y N5-3: necesitan fixtures controlados que solo instala el Prober. |
+| [fill.ts](../../frontend/src/features/demo/fill.ts) | Rellena `{own}`, `{own_delivered}`, `{f}`, `{g_delivered}` y demás con los pedidos de la sesión y los de un cliente semilla ajeno. Si la sesión es de Carla o de Bruno, cambia de cliente ajeno. |
+| [runner.ts](../../frontend/src/features/demo/runner.ts) | Un chat: crea la sesión `Interno-<caso>-<persona>-<n>` con el secreto, manda cada turno con `continues` al anterior y espera el desenlace con `GET /api/attempts/{id}`. Reintenta los 429. |
+| [useSwarm.ts](../../frontend/src/features/demo/useSwarm.ts) | Arranca todos los chats a la vez y los detiene con un `AbortController`. |
+| [verdict.ts](../../frontend/src/features/demo/verdict.ts) | Veredicto por chat y resumen con los datos de `GET /api/operator/live`. Para un legítimo, el desvío al señuelo es un falso positivo; para un atacante, el desvío o el cierre sin filtración cuentan como contenido. Una `confirmed_violation` es filtración en ambos. |
+| [DemoPage.tsx](../../frontend/src/features/demo/DemoPage.tsx), [LaunchDialog.tsx](../../frontend/src/features/demo/LaunchDialog.tsx), [DemoChat.tsx](../../frontend/src/features/demo/DemoChat.tsx), [DemoSummary.tsx](../../frontend/src/features/demo/DemoSummary.tsx) | Botón «Lanzar chats automáticos», diálogo (cuántos chats y qué caso lleva cada uno), cuadrícula de chats y franja de resultado con cronómetro contra la meta de 90 s. |
+
+- **Datos en vivo.** La ruta, el desenlace y las negaciones del gateway vienen de `GET /api/operator/live?sessions=12`, que consulta cada 1,5 s. Las sesiones `Interno-` llegan sin enmascarar, y la respuesta de Yummy también llega por el intento del participante.
+- **Clasificación.** Son pruebas internas: salen como «Prueba interna» en la Arena en vivo y no cuentan en las KPI ni en la clasificación. Cada chat ocupa una identidad sintética de la ronda.
+- **Modo.** El encabezado muestra `llm_mode`. En `demo` responde el motor de reglas, así que el texto de los casos solo se lee natural en `live`.
 
 [JoinCode.tsx](../../frontend/src/features/arena/JoinCode.tsx) genera SVG local con `qrcode`. Acepta HTTP/HTTPS sin usuario ni contraseña y normaliza el enlace a la raíz del origen. Usa `VITE_PUBLIC_PARTICIPANT_URL` de build o el origen actual; también se puede editar en la tarjeta. Ese cambio no publica un despliegue. `JoinQr` dibuja el mismo QR, compacto, en la cabecera de la Arena en vivo.
 
@@ -97,10 +142,12 @@ pnpm exec vitest run src/features/board src/shared/api
 | --- | --- |
 | [ParticipantPage.test.tsx](../../frontend/src/features/participant/ParticipantPage.test.tsx), [storage.test.ts](../../frontend/src/features/participant/storage.test.ts) | Consentimiento, alta, recuperación, expiración/reset, JSON corrupto y almacenamiento no disponible. |
 | [AttemptChat.test.tsx](../../frontend/src/features/participant/AttemptChat.test.tsx), [AttemptChat.compose.test.tsx](../../frontend/src/features/participant/AttemptChat.compose.test.tsx) | Respuesta perdida, recarga, reconciliación sin duplicar, cuatro turnos, doble envío, frecuencia, revelación sin filtrar ruta y redacción mientras Yummy responde. |
-| [AttemptChat.batch.test.tsx](../../frontend/src/features/participant/AttemptChat.batch.test.tsx), [batch.test.ts](../../frontend/src/features/participant/batch.test.ts) | Envío directo sin contador, cola mientras Yummy responde, tope de 10 mensajes, agrupación por largo y recarga con la cola pendiente. |
+| [AttemptChat.batch.test.tsx](../../frontend/src/features/participant/AttemptChat.batch.test.tsx), [batch.test.ts](../../frontend/src/features/participant/batch.test.ts) | Lote invisible con reloj falso: «escribiendo…» a los 4 s, envío a los 10 s del último mensaje, espera a que Yummy termine, tope de 10 mensajes, agrupación por largo y recarga. |
 | [OperatorPage.test.tsx](../../frontend/src/features/operator/OperatorPage.test.tsx) | Autorización, secreto no persistido, acciones seriales, evidencia, reset y evaluación explícita. |
 | [board/](../../frontend/src/features/board/) (`BoardPage`, `ChatTile`, `Carousel`, `KpiColumn`, `slots`), [App.test.tsx](../../frontend/src/app/App.test.tsx) | Arena en vivo: acceso, carrusel, Público completo en vivo, Marcador provisional/final, mapas de desenlace y negación, KPI honestas, «Cerrar acceso» y la ruta `/arena`. |
 | [AuditPage.test.tsx](../../frontend/src/features/audit/AuditPage.test.tsx) | Auditoría: acceso, filtros y búsqueda, historial con veredicto, traza y aviso de desvío, enlace directo a un chat y cambio a una ronda archivada. |
+| [Exchange.test.tsx](../../frontend/src/features/audit/Exchange.test.tsx) | Mensaje de la auditoría con y sin el modo `live`: clasificación, negaciones de validador y motivo de Armor en los pasos denegados. |
+| [consoleSession.test.ts](../../frontend/src/features/consola/consoleSession.test.ts), [ConsolePage.test.tsx](../../frontend/src/features/consola/ConsolePage.test.tsx), [LiveAudit.test.tsx](../../frontend/src/features/consola/LiveAudit.test.tsx) | Clave propia de la consola, lista de sesiones previas (máximo 20), «Nueva sesión» y la auditoría en vivo. |
 | [http.test.ts](../../frontend/src/shared/api/http.test.ts), [usePolling.test.ts](../../frontend/src/shared/api/usePolling.test.ts) | Timeout/cancelación, `Retry-After`, datos previos, ausencia de solapamiento y respuestas antiguas. |
 
 La ejecución previa aprobó 47 pruebas, lint, TypeScript y build. El proxy y el ejercicio completo se verificaron con imágenes Docker reales. Esas verificaciones son DOM/HTTP; no hubo revisión visual de navegador disponible. La [guía de evidencias](../pruebas/evidencias.md) conserva la diferencia.

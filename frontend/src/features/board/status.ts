@@ -29,7 +29,7 @@ const isRiskDenial = (d: LiveDenial) => d.control !== null && d.control !== "ped
 
 /**
  * Estado del chat (franja bajo la cabecera), con la regla de la maqueta:
- * "Bloqueado" solo con un `prevented` o un parche vigente; "No logrado" e "Inconcluso" no son
+ * "Bloqueado" solo con un `prevented` o un parche vigente; "Sin hallazgos" e "Inconcluso" no son
  * mérito de la defensa.
  * Buena fe: a una persona (Público) se la presume de buena fe; "Atacando" solo describe al
  * enjambre y al Prober, y el Público pasa a "Señal de riesgo" únicamente con una negación de validador.
@@ -42,7 +42,7 @@ export function chatStatus(
   const { attempts } = session;
   const busy = attempts.some(isPending);
   if (session.kind !== "prober" && !accepting && !revealed && !busy)
-    return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
+    return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevas interacciones" };
   const done = attempts.filter((attempt) => !isPending(attempt));
   const leak = [...done].reverse().find((a) => a.outcome === "confirmed_violation");
   if (leak && !leak.patched_by) {
@@ -50,7 +50,7 @@ export function chatStatus(
     return {
       tone: "leak",
       label: "Se filtró",
-      detail: `${objective ? `${objective} · ` : ""}intento ${leak.number}`,
+      detail: `${objective ? `${objective} · ` : ""}interacción ${leak.number}`,
     };
   }
   if (session.route === "honeypot") {
@@ -85,7 +85,7 @@ export function chatStatus(
       return {
         tone: "neutral",
         label: "Señal de riesgo",
-        detail: `${denialLabel(denial)} · intento ${signal.number}`,
+        detail: `${denialLabel(denial)} · interacción ${signal.number}`,
       };
     return { tone: "neutral", label: "Conversando", detail: "Sin señales de riesgo" };
   }

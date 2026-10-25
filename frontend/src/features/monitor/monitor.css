@@ -155,50 +155,86 @@ fieldset.monitor-filters {
   border-radius: 8px;
 }
 .monitor-feed {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   max-height: 640px;
   overflow-y: auto;
+  padding-right: 4px;
 }
 .monitor-item {
-  display: grid;
-  gap: 4px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
-  padding: 10px 10px 10px 12px;
+  padding: 12px 14px;
   text-align: left;
   font: inherit;
   color: var(--color-text);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-left: 4px solid var(--tone);
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
 }
-.monitor-item:hover,
-.monitor-item[aria-current="true"] {
+.monitor-item:hover {
   background: var(--color-raised);
+  transform: translateX(2px);
 }
 .monitor-item[aria-current="true"] {
+  background: color-mix(in srgb, var(--tone) 10%, var(--color-raised));
   border-color: var(--tone);
 }
 .monitor-item-top {
   display: flex;
-  justify-content: space-between;
+  align-items: baseline;
   gap: 8px;
-  font: 400 0.72rem var(--mono);
+  font: 400 0.72rem / 1.2 var(--mono);
   color: var(--color-muted);
 }
-.monitor-item-msg {
-  font-size: 0.84rem;
+.monitor-item-time {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.monitor-item-origin {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.monitor-item-id {
+  opacity: 0.7;
+}
+.monitor-item-msg {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.monitor-item-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.monitor-item-family {
+  font-size: 0.76rem;
+  color: var(--color-muted);
+}
 .monitor-pill {
   display: inline-block;
-  font: 500 0.66rem / 1 var(--mono);
-  padding: 4px 6px;
-  border-radius: 4px;
+  font: 500 0.7rem / 1 var(--mono);
+  padding: 5px 9px;
+  border-radius: 999px;
   color: var(--tone);
   background: color-mix(in srgb, var(--tone) 18%, transparent);
   white-space: nowrap;

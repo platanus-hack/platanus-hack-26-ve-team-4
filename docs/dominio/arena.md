@@ -14,6 +14,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 | [operator_router.py](../../backend/src/agent_zero/arena/operator_router.py) | Evidencia, repetición, reversión y controles de ronda. |
 | [round_service.py](../../backend/src/agent_zero/arena/round_service.py) | Archivado, reset y recuperación de un reset interrumpido. |
 | [round_snapshot.py](../../backend/src/agent_zero/arena/round_snapshot.py) | Define tablas de la ronda y el hash del snapshot. |
+| [audit_signals.py](../../backend/src/agent_zero/arena/audit_signals.py) | Señales de la auditoría: etapa, motivo y detalle de cada paso denegado, familia del intento y riesgo de la sesión. |
 | [reset_router.py](../../backend/src/agent_zero/arena/reset_router.py) | Serializa mantenimiento y coordina la parada/reanudación de workers. |
 
 ## Estado persistido y contratos
@@ -36,10 +37,21 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. El arranque 
 | `GET /api/operator/monitor` | Operador: vista de la empresa ([monitor_view.py](../../backend/src/agent_zero/arena/monitor_view.py)). Por intento: resultado, ruta, familia (de la campaña o, si no hay, del analizador), hallazgo, parche que lo cerró (`version`, `activated_at`, `replay`), duración y uso de modelo (`calls`, `measured_calls`, tokens y coste) agregado desde el ledger LLM por `scope.attempt_id`. Más `totals` de los intentos de la ronda y `llm_mode`. |
 | `GET /api/operator/audit/rounds` | Operador: la ronda en curso (`id: null`, `current: true`) y las rondas archivadas completas, para elegir qué auditar ([audit_router.py](../../backend/src/agent_zero/arena/audit_router.py)). |
 | `GET /api/operator/audit/chats?round=` | Operador: todas las sesiones de la ronda (o del archivo `round`), con tipo (`audience`, `swarm`, `prober`, `test`, `replay`), ruta, desvío al señuelo y su motivo, cantidad de mensajes y conversaciones, violaciones y vista previa. Una ronda archivada se lee de su `snapshot` tras comprobar el hash. |
-| `GET /api/operator/audit/chats/{session_id}?round=` | Operador: historial completo de la sesión agrupado en conversaciones por `attempt_links`. Cada mensaje trae lo escrito, la respuesta tal como la vio el participante (canarios redactados), resultado, ruta, política, veredictos y la traza de herramientas (propuesta, denegada con su control, ejecutada con efecto, argumentos, procedencia y salida). 404 si la sesión no existe en esa ronda. |
+| `GET /api/operator/audit/chats/{session_id}?round=` | Operador: historial completo de la sesión agrupado en conversaciones por `attempt_links`. Cada mensaje trae lo escrito, la respuesta tal como la vio el participante (canarios redactados), resultado, ruta, política, veredictos y la traza de herramientas (propuesta, denegada con su control, ejecutada con efecto, argumentos, procedencia y salida). Cada paso trae además `stage`, `reason` y `detail`; cada intento, `family`; y el detalle del chat, `risk_score` y `risk_signals`. 404 si la sesión no existe en esa ronda. |
 | `GET /api/operator/attempts/{id}` | Operador: evidencia del intento con sus eventos y `graph`, el grafo de sus propias llamadas (efecto indebido según los veredictos, o denegación con su control). |
 
 El operador usa `X-Operator-Secret`; un token Bearer de participante no concede estas operaciones. El estado público es un snapshot leído en una transacción. Los eventos recientes del navegador no son la fuente del marcador.
+
+### Datos nuevos de la auditoría
+
+Se calculan en [audit_signals.py](../../backend/src/agent_zero/arena/audit_signals.py) a partir de las filas planas que ya usa `audit_view`, de modo que la ronda en curso y una archivada devuelven lo mismo. Los campos son aditivos: los contratos existentes no cambian.
+
+| Clave | Origen |
+| --- | --- |
+| `threads[].attempts[].tools[].stage`, `reason`, `detail` | Evento `tool_denied` de la sesión: `data.stage` (etapa de `GatewayStage`), `data.reason` (p. ej. `input_blocked` y `output_blocked` de Model Armor) y `data.detail`, cuando el control lo informa. Son cadenas vacías en los pasos que no son `tool_denied`. `oracles/trace_reader.py` no cambia; la auditoría lee los eventos directamente. |
+| `threads[].attempts[].family` | `campaign_cases.case_json["family"]`, unido por `attempt_id`. Es `null` si el intento no vino de una campaña. La tabla `campaign_cases` forma parte de `ROUND_TABLES`, así que una ronda archivada también la trae en su `snapshot`. |
+| `risk_score` | `routing/session_risk.risk_score` sobre los `tool_denied` y `tool_completed` de la sesión y los pedidos propios de su cliente (`victim/fixtures.orders_for_customer`). Suma los puntos de cada denegación según su validador (pesos de `DENIAL_WEIGHTS`; un pedido inexistente cuenta 1, salvo una errata cercana a un pedido propio, que cuenta 0; los flujos cuentan 2) y dos puntos más si la sesión consultó tres o más pedidos ajenos distintos. No tiene ventana de tiempo. |
+| `risk_signals` | Lista `{validator, count}` con las denegaciones de la sesión por validador, de mayor a menor. |
 
 ## Clasificación e invariantes
 

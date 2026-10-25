@@ -11,6 +11,7 @@ from typing import Any
 
 from fastapi.encoders import jsonable_encoder
 
+from agent_zero.arena.audit_signals import denial_info, family_map, session_risk, tool_step
 from agent_zero.attempts.conversation import public_reply
 from agent_zero.events.models import EventType
 from agent_zero.events.schemas import TraceEvent
@@ -125,22 +126,12 @@ def chat_index(tables: Tables) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: str(row["last_activity"]), reverse=True)
 
 
-def _tool_step(item: Any) -> dict[str, Any]:
-    return {
-        "event_id": item.event_id,
-        "kind": item.kind,
-        "tool": item.tool,
-        "arguments": item.arguments,
-        "provenance": item.provenance,
-        "validator": item.validator,
-        "effect": item.effect,
-        "output": item.output,
-    }
-
-
-def audit_attempt(attempt: Row, events: Sequence[Row], position: int) -> dict[str, Any]:
+def audit_attempt(
+    attempt: Row, events: Sequence[Row], position: int, family: str | None = None
+) -> dict[str, Any]:
     trace = [TraceEvent.model_validate(event) for event in events]
     assessment = attempt.get("assessment") or {}
+    denials = denial_info(events)
     return {
         "id": attempt["id"],
         "position": position,
@@ -154,12 +145,13 @@ def audit_attempt(attempt: Row, events: Sequence[Row], position: int) -> dict[st
         "origin": attempt.get("origin", "audience"),
         "objective_id": attempt.get("objective_id"),
         "campaign_id": attempt.get("campaign_id"),
+        "family": family,
         "messages": attempt["messages"],
         # Lo que vio el participante: canarios redactados, como en su chat.
         "reply": public_reply(str(attempt.get("reply") or "")),
         "verdicts": assessment.get("verdicts", []),
         "detail": assessment.get("detail", ""),
-        "tools": [_tool_step(item) for item in tool_evidence(trace)],
+        "tools": [tool_step(item, denials.get(item.event_id, {})) for item in tool_evidence(trace)],
     }
 
 
@@ -182,12 +174,25 @@ def chat_detail(tables: Tables, session_id: str) -> dict[str, Any] | None:
     for event in events:
         if event.get("attempt_id"):
             by_attempt.setdefault(str(event["attempt_id"]), []).append(event)
+    families = family_map(tables.get("campaign_cases", []))
     position = 0
     threads: list[dict[str, Any]] = []
     for thread in conversations(attempts, links):
         rows = []
         for attempt in thread:
             position += 1
-            rows.append(audit_attempt(attempt, by_attempt.get(str(attempt["id"]), []), position))
+            rows.append(
+                audit_attempt(
+                    attempt,
+                    by_attempt.get(str(attempt["id"]), []),
+                    position,
+                    families.get(str(attempt["id"])),
+                )
+            )
         threads.append({"index": len(threads) + 1, "attempts": rows})
-    return chat_summary(session, attempts, links, events) | {"threads": threads}
+    score, signals = session_risk(events, str(session["customer_id"]))
+    return chat_summary(session, attempts, links, events) | {
+        "threads": threads,
+        "risk_score": score,
+        "risk_signals": signals,
+    }

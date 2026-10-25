@@ -44,7 +44,7 @@ describe("Arena en vivo", () => {
     expect(chats).toHaveLength(8);
     expect(chats.filter((chat) => !chat.hasAttribute("inert"))).toHaveLength(3);
     expect(screen.getByLabelText("Analíticas").querySelectorAll(".av-tile")).toHaveLength(5);
-    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 3 de 8 chats · 18 sesiones");
+    expect(screen.getByText(/chats ·/)).toHaveTextContent("3 de 8 chats · 18 sesiones");
     expect(screen.getByText("En vivo")).toBeInTheDocument();
     expect(screen.getByText("Ronda en vivo")).toBeInTheDocument();
     expect(screen.getByText("Todo visible en tiempo real")).toBeInTheDocument();

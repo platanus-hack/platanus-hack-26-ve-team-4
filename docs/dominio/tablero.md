@@ -144,7 +144,8 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 - **Cabecera.** Lleva:
   - La marca.
   - La píldora de estado: «En vivo», «Acceso cerrado» o «Ronda revelada».
-  - «Mostrando 3 de 8 chats · N sesiones».
+  - «3 de 8 chats · N sesiones».
+  - Botón «Chat interno», junto a «Modelo»: abre el diálogo de los chats automáticos y los lanza a la vez desde la Arena (ver [Frontend](./frontend.md)).
   - El modelo y el recuadro de revelación.
   - El QR (`JoinQr`).
   - «Cerrar acceso» o «Reabrir acceso», y «Salir».
@@ -152,7 +153,7 @@ AGENT_ZERO_OPERATOR_SECRET=... uv run python scripts/attack_swarm.py --base-url 
 - **Carrusel.** Navega con las flechas, los 8 indicadores (alias corto y punto de color), el marco deslizante, las teclas ← y → (salvo en un campo editable), el arrastre horizontal y el desplazamiento horizontal explícito: `deltaX` del trackpad o Shift+rueda, un chat por gesto. La rueda vertical sobre un chat no mueve el carrusel: es de la conversación. Sobre la barra de navegación la rueda vertical sí pasa un chat por gesto. Un arrastre con mouse que empieza vertical no mueve el carrusel. Los chats fuera de vista llevan `inert`. Se pueden fijar hasta 2: van a la izquierda y, al fijar un tercero, se suelta el más antiguo y se anuncia cuál.
 - **Chat.** Tiene la cabecera con alias, quién ataca, la ruta y el botón «Fijar». Debajo:
   - La franja de estado: «Conversando», «Señal de riesgo», «Atacando» (solo enjambre y Prober), «En espacio seguro», «Se filtró», «Bloqueado» o «Acceso cerrado». «Bloqueado» solo aparece con un `prevented` o un parche vigente.
-  - Buena fe: a una persona (Público) se la presume de buena fe. «Señal de riesgo» aparece solo con una herramienta negada por un control de negocio (`control` no nulo), sin contar `pedido_inexistente`; sin esa señal, la franja dice «Conversando · Sin señales de riesgo». Las burbujas del Público dicen «Participante» y las del enjambre y el Prober «Atacante». El KPI se llama «Intentos».
+  - Buena fe: a una persona (Público) se la presume de buena fe. «Señal de riesgo» aparece solo con una herramienta negada por un control de negocio (`control` no nulo), sin contar `pedido_inexistente`; sin esa señal, la franja dice «Conversando · Sin señales de riesgo». Las burbujas del Público dicen «Participante» y las del enjambre y el Prober «Atacante». El KPI se llama «Interacciones»: en el Monitor, la Arena en vivo y el chat, cada mensaje (o lote) con su respuesta es una interacción, no un intento de ataque.
   - La conversación con todos los intentos recibidos (el servidor manda los últimos 30). Se desplaza en vertical con la rueda, el arrastre táctil o, con foco, ↑ ↓ Inicio Fin AvPág RePág, hasta el primer mensaje, sin que el desplazamiento se escape al carrusel ni a la página. Sigue al último mensaje mientras el usuario está abajo (margen de 24 px). Si subió a leer no se le mueve: aparece la píldora «↓ N nuevos», que vuelve al final al hacer clic y desaparece también al volver abajo a mano. El degradado superior solo aparece cuando hay contenido arriba. La lógica vive en `useConversationScroll`.
   - Las burbujas, con la técnica cuando se conoce.
   - El chip «Herramienta negada · …» con los mapas `CONTROL` (categoría del validador) y `DENIAL` (motivo del gateway). Si no conoce el motivo, cae a un texto legible.
@@ -185,3 +186,7 @@ jsdom no calcula el diseño, así que las medidas (448 × 856, sin desbordes) se
 - La prueba de punta a punta con el stack en modo `demo`, el enjambre y una campaña del Prober.
 - Los tokens seguirán «no medidos» en modo `demo`; para ver cifras hay que ensayar con `live`, `record` o `replay`.
 - Con mucho tráfico del público, el agregado debería calcularse en SQL en lugar de leer todos los intentos en cada consulta.
+
+### Código QR de la cabecera
+
+El QR de la cabecera lleva a la URL pública de la arena (`VITE_PUBLIC_PARTICIPANT_URL`, o el origen actual) para que el público entre al chat desde el teléfono. Es un botón: al hacerle clic se agranda al centro (`QrZoom.tsx`) con su URL, y se cierra con «Cerrar», con un clic en el fondo o con Escape.

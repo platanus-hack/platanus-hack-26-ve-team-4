@@ -106,7 +106,7 @@ describe("panel de la empresa", () => {
     );
     expect(within(kpis).getByText("Tiempo de parcheo").previousSibling).toHaveTextContent("16 s");
     expect(within(kpis).getByText("simulado")).toBeInTheDocument();
-    const detail = screen.getByRole("region", { name: "Detalle del intento" });
+    const detail = screen.getByRole("region", { name: "Detalle de la interacción" });
     expect(within(detail).getByRole("heading", { name: "Inyección directa" })).toBeInTheDocument();
     expect(
       await within(detail).findByRole("img", {
@@ -126,11 +126,11 @@ describe("panel de la empresa", () => {
     mockMonitor();
     render(<MonitorPage />);
     await login();
-    const feed = await screen.findByRole("complementary", { name: "Intentos" });
+    const feed = await screen.findByRole("complementary", { name: "Interacciones" });
     await userEvent.click(within(feed).getByRole("button", { name: "Violaciones" }));
     expect(within(feed).getByText("1 de 2")).toBeInTheDocument();
     await userEvent.click(within(feed).getByRole("button", { name: /Soy el titular/ }));
-    const detail = screen.getByRole("region", { name: "Detalle del intento" });
+    const detail = screen.getByRole("region", { name: "Detalle de la interacción" });
     expect(within(detail).getByText("v1 activa 16 s después")).toBeInTheDocument();
   });
   it("cierra el acceso si el secreto es rechazado", async () => {
