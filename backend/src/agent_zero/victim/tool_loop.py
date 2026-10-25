@@ -18,6 +18,7 @@ from agent_zero.llm.models import ModelRole
 from agent_zero.memory_bank.errors import MemoryRejectedError
 from agent_zero.runtime.tool_access import ToolAccess
 from agent_zero.victim.controlled_fixtures import ControlledFixture
+from agent_zero.victim.denial_view import denial_output
 from agent_zero.victim.environments import Environments
 from agent_zero.victim.model_turn import ModelTurn, ProposedTool, model_turn
 from agent_zero.victim.provenance import trace_provenance
@@ -162,7 +163,7 @@ class ConversationExecutor:
                 try:
                     output = await tools.call_tool(tool.name, tool.arguments)
                 except GatewayDeniedError as denial:
-                    output = json.dumps({"denied": denial.reason.value})
+                    output = json.dumps(denial_output(tool.name, denial), ensure_ascii=False)
                     status = "error"
                 except MemoryRejectedError:
                     output = json.dumps({"denied": "memory_armor"})
