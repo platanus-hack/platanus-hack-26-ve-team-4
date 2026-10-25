@@ -17,11 +17,13 @@ class PolicyEngine:
         spec: ToolSpec,
         grants: dict[str, ToolGrant] | None,
         data_region: str | None,
+        scope: str | None = None,
     ) -> GatewayReason | None:
         denial = self._static_denial(principal, spec, grants, data_region)
         if denial is not None:
             return denial
-        if not self._limiter.allow(principal.agent_id):
+        key = principal.agent_id if scope is None else f"{principal.agent_id}:{scope}"
+        if not self._limiter.allow(key):
             return GatewayReason.RATE_LIMITED
         return None
 

@@ -79,3 +79,16 @@ def test_denied_static_checks_do_not_consume_the_budget(engine: PolicyEngine) ->
     assert engine.evaluate(principal(), spec(), grants(), None) is None
     assert engine.evaluate(principal(), spec(), grants(), None) is None
     assert engine.evaluate(principal(), spec(), grants(), None) is GatewayReason.RATE_LIMITED
+
+
+@pytest.mark.requirement("GW-02")
+def test_each_scope_has_its_own_budget_and_unscoped_calls_share_the_agent_one(
+    engine: PolicyEngine,
+) -> None:
+    for _ in range(2):
+        assert engine.evaluate(principal(), spec(), grants(), None, "sess-a") is None
+    assert (
+        engine.evaluate(principal(), spec(), grants(), None, "sess-a") is GatewayReason.RATE_LIMITED
+    )
+    assert engine.evaluate(principal(), spec(), grants(), None, "sess-b") is None
+    assert engine.evaluate(principal(), spec(), grants(), None) is None

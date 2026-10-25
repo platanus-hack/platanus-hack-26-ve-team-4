@@ -69,7 +69,8 @@ class AgentGateway:
         with self._parts.tracer.span("call_tool", {attributes.TOOL: tool_name}) as root:
             try:
                 principal = await self._identity(token, tool_name)
-                tool = await self._policy(principal, tool_name, data_region, details)
+                scope = None if context is None else context.session_id
+                tool = await self._policy(principal, tool_name, data_region, details, scope)
                 if context is not None:
                     await self._check_business(context, tool_name, arguments, details)
                 result = await self._execute(tool, arguments, details, context, principal)
@@ -124,6 +125,7 @@ class AgentGateway:
         tool_name: str,
         data_region: str | None,
         details: dict[str, Any],
+        scope: str | None = None,
     ) -> RegisteredTool:
         with self._parts.tracer.span("policy", {attributes.AGENT_ID: principal.agent_id}):
             tool = self._parts.tools.get(tool_name)
@@ -131,7 +133,7 @@ class AgentGateway:
                 raise GatewayDeniedError(GatewayReason.TOOL_UNREGISTERED, GatewayStage.POLICY)
             grants = await self._parts.manifests.tool_grants(principal.agent_id, principal.version)
             details["data_region"] = data_region or tool.spec.region
-            reason = self._parts.policy.evaluate(principal, tool.spec, grants, data_region)
+            reason = self._parts.policy.evaluate(principal, tool.spec, grants, data_region, scope)
             if reason is not None:
                 raise GatewayDeniedError(reason, GatewayStage.POLICY)
             return tool

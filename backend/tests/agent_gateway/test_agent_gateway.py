@@ -3,6 +3,7 @@ from typing import Any
 
 import pytest
 
+from agent_zero.agent_gateway.business_policy import CallContext
 from agent_zero.agent_gateway.errors import GatewayDeniedError
 from agent_zero.agent_gateway.models import GatewayDecision, GatewayReason
 from agent_zero.identity.revocation_service import RevocationService
@@ -259,3 +260,30 @@ async def test_caller_controlled_region_never_reaches_the_audit_log_as_pii(
     assert "acme.com" not in raw
     assert "4111" not in raw
     assert last_entry(harness).reason == "region_not_allowed_for_agent"
+
+
+@pytest.mark.requirement("GW-02", "GW-03")
+async def test_rate_limit_is_counted_per_arena_session(harness: Harness) -> None:
+    credential = await harness.approve()
+
+    def session(name: str) -> CallContext:
+        return CallContext(
+            attempt_id=f"attempt-{name}",
+            session_id=name,
+            session_customer_id="cust-ana",
+            environment="protected",
+            policy_version=0,
+            run_id=f"run-{name}",
+        )
+
+    async def reason_for(context: CallContext) -> GatewayReason:
+        with pytest.raises(GatewayDeniedError) as denied:
+            await harness.gateway.call_tool(
+                credential.token, "get_order", {"order_id": "A-1001"}, call_context=context
+            )
+        return denied.value.reason
+
+    noisy = session("sess-ruidosa")
+    reasons = [await reason_for(noisy) for _ in range(4)]
+    assert reasons == [GatewayReason.BUSINESS_RULE_DENIED] * 3 + [GatewayReason.RATE_LIMITED]
+    assert await reason_for(session("sess-otra")) is GatewayReason.BUSINESS_RULE_DENIED
