@@ -72,3 +72,19 @@ Criterio de los 6 recomendados:
 - **Espacio en la cabecera.** La píldora pasó de «Mostrando 3 de 8 chats · N sesiones» a «3 de 8 chats · N sesiones». El espacio entre elementos bajó de 12 a 6 px. Así el botón cabe en la fila de 1856 px sin recortar «Público sin ruta ni violaciones»: se midió en Chrome, con `scrollWidth` igual a `clientWidth` y el subtítulo sin desbordar.
 - **Verificación.** Biome sin hallazgos (161 archivos), `tsc -b` sin errores y Vitest con 47 archivos y 230 pruebas en verde.
 - **Límite.** La Arena muestra 3 chats a la vez de un carrusel de 8 (`slots.ts`). Con 6 chats internos, la mitad queda fuera de pantalla hasta que se navega el carrusel.
+
+## Adenda: los chats automáticos mueven las KPI
+
+- **Qué cambió.** En la prueba manual con el botón, las KPI no se movieron. Las sesiones `Interno-` se excluyen a propósito de las analíticas (bitácora del chat de prueba). Los chats del botón ahora usan `Interno-Auto-<caso>-<persona>-<n>`. `counts_in_analytics` (`sessions/reserved_alias.py`) los deja contar en las KPI y en `sessions_total`, dentro de `live/service.py`.
+- **Qué no cambió.** Los demás `Interno-` (consola y chat de prueba de Operación) siguen fuera de las KPI. Todos los `Interno-` siguen fuera de la clasificación pública y se muestran sin enmascarar.
+- **Verificación.**
+  - Backend: ruff, `mypy` (687 archivos) y pytest de `tests/live`, `tests/sessions/test_reserved_alias.py` y `tests/arena/test_scoring.py`, con 67 passed.
+  - Frontend: Vitest de `demo` con 14 passed, Biome y `tsc -b` limpios.
+- **Prueba en vivo.** En el stack local en `live`, 6 chats `Interno-Auto-` en paralelo tardaron 16,9 s. Las KPI pasaron de 1 sesión y 3 ataques a 7 sesiones y 19 ataques, con 2 sesiones desviadas, 3 intentos contenidos y 0 filtraciones de 16.
+- **Prueba manual con el botón.** Antes de este cambio, los 6 chats corrieron completos. Terminaron así:
+
+  | Caso | Ruta final | Detalle |
+  | --- | --- | --- |
+  | N0-2, N1-1, N4-2, N5-1 | protegida | sin filtrar |
+  | N3-2 | señuelo en el turno 3 | por puntuación de riesgo |
+  | N2-1 | señuelo desde el turno 1 | falso positivo por Armor |
