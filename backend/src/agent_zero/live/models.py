@@ -1,11 +1,11 @@
-"""Contrato de GET /api/operator/live (v2). Espejo: frontend/src/features/board/types.ts."""
+"""Contrato de GET /api/operator/live (v3). Espejo: frontend/src/features/board/types.ts."""
 
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
 SessionKind = Literal["audience", "swarm", "prober", "test"]
-Scope = Literal["all", "swarm_prober"]
+Scope = Literal["all", "swarm_prober"]  # El servidor solo emite "all" (toda la ronda).
 RouteName = Literal["protected", "honeypot"]
 
 
@@ -33,8 +33,8 @@ class LiveAttempt(BaseModel):
     id: str
     number: int
     status: str
-    outcome: str | None
-    route: RouteName | None
+    outcome: str | None  # None solo mientras el intento no ha terminado.
+    route: RouteName
     policy_version: int
     messages: list[str]
     reply: str
@@ -50,14 +50,13 @@ class LiveSession(BaseModel):
     session_id: str
     alias: str
     kind: SessionKind
-    concealed: bool
-    route: RouteName | None
+    route: RouteName
     customer_id: str
     last_activity: str
     attempt_total: int
-    contained_n: int | None
-    prevented_n: int | None
-    leaked_n: int | None
+    contained_n: int
+    prevented_n: int
+    leaked_n: int
     attempts: list[LiveAttempt]
 
 

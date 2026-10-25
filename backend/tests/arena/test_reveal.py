@@ -28,7 +28,9 @@ def test_reveal_reconciles_apparent_points_with_confirmed_and_contained(
 
     provisional = arena_state(manual_client)
     assert provisional["scores"] == [{"alias": "neo", "score": 2}]
-    assert "confirmed_violations" not in provisional
+    # Los contadores públicos se emiten desde el primer intento, también antes de revelar.
+    assert provisional["confirmed_violations"] == 1
+    assert provisional["contained_honeypot"] == 2
 
     response = manual_client.post("/api/operator/arena/reveal", headers=OPERATOR)
     assert response.status_code == 200, response.text

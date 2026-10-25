@@ -27,7 +27,6 @@ def test_a_test_session_is_shown_unmasked_before_the_reveal() -> None:
 
     internal = live["sess-int"]
     assert internal.kind == "test"
-    assert internal.concealed is False
     assert internal.route == "protected"
     assert internal.attempts[0].outcome == "confirmed_violation"
 
