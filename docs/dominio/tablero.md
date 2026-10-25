@@ -191,3 +191,7 @@ jsdom no calcula el diseño, así que las medidas (448 × 856, sin desbordes) se
 - La prueba de punta a punta con el stack en modo `demo`, el enjambre y una campaña del Prober.
 - Los tokens seguirán «no medidos» en modo `demo`; para ver cifras hay que ensayar con `live`, `record` o `replay`.
 - Con mucho tráfico del público, el agregado debería calcularse en SQL en lugar de leer todos los intentos en cada consulta.
+
+### Código QR de la cabecera
+
+El QR de la cabecera lleva a la URL pública de la arena (`VITE_PUBLIC_PARTICIPANT_URL`, o el origen actual) para que el público entre al chat desde el teléfono. Es un botón: al hacerle clic se agranda al centro (`QrZoom.tsx`) con su URL, y se cierra con «Cerrar», con un clic en el fondo o con Escape.
