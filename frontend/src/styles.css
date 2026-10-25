@@ -230,29 +230,12 @@ code {
   border-top: 1px solid var(--color-border);
   padding-top: 16px;
 }
-.arena-header,
 .section-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-}
-.round-banner {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  border-block: 1px solid var(--color-border);
-  padding: 16px 0;
-  margin: 20px 0;
-  font-size: 0.9rem;
-}
-.round-banner strong {
-  color: var(--color-accent);
-}
-.round-banner time {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
 }
 .join-card {
   display: grid;
@@ -314,24 +297,6 @@ details label {
   font-size: 0.8rem;
   color: var(--color-muted);
 }
-.ranking {
-  padding: 0;
-  list-style-position: inside;
-}
-.ranking li {
-  padding: 12px;
-  border-top: 1px solid var(--color-border);
-}
-.ranking li > span {
-  margin-left: 12px;
-}
-.ranking li > strong {
-  float: right;
-}
-.ranking li > small {
-  display: block;
-  margin: 4px 0 0 12px;
-}
 .timeline {
   list-style: none;
   padding: 0;
@@ -373,12 +338,6 @@ progress {
   }
   nav.page {
     gap: 18px;
-  }
-  .arena-header {
-    display: block;
-  }
-  .round-banner {
-    gap: 10px 16px;
   }
   .join-card {
     grid-template-columns: 1fr;
@@ -434,47 +393,3 @@ progress {
   overflow-x: auto;
 }
 
-.coevolution {
-  margin: 24px 0;
-}
-.coevolution-plot {
-  width: 100%;
-  max-width: 560px;
-  height: auto;
-}
-.coevo-grid {
-  stroke: var(--color-border);
-  stroke-width: 1;
-}
-.coevo-line {
-  stroke: var(--color-danger);
-  stroke-width: 2;
-}
-.coevo-ci {
-  stroke: var(--color-danger);
-  stroke-width: 2;
-  opacity: 0.6;
-}
-.coevo-dot {
-  fill: var(--color-danger);
-  stroke: var(--color-bg);
-  stroke-width: 2;
-}
-.coevo-label {
-  fill: var(--color-muted);
-  font-size: 11px;
-}
-.coevo-counter {
-  font-variant-numeric: tabular-nums;
-}
-.coevo-table {
-  border-collapse: collapse;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-}
-.coevo-table th,
-.coevo-table td {
-  text-align: left;
-  padding: 4px 12px 4px 0;
-  border-bottom: 1px solid var(--color-border);
-}
