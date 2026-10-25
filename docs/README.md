@@ -14,6 +14,7 @@ Punto de entrada para continuar Agent Zero. La implementación y las evidencias 
 | Cambiar una parte del código | [Índice por dominio](./dominio/README.md): archivos, contratos, invariantes, pruebas y extensiones. |
 | Repetir o elegir pruebas | [Pruebas](./pruebas/README.md) y [matriz por dominio](./pruebas/por-dominio.md). |
 | Revisar qué se comprobó | [Evidencias y reproducción](./pruebas/evidencias.md). |
+| Publicar la arena en una VM con dominio y HTTPS | [Despliegue a producción](./despliegue.md). |
 | Preparar una presentación | [Demo](./demo.md); separar ensayo local de despliegue público. |
 | Cambiar reglas o medir eficacia | [Evaluación](./evaluacion.md) y [oráculos](./dominio/oracles.md). |
 | Coordinar revisión y contratos | [Equipo](./equipo.md), [desarrollo](./desarrollo.md) y [CODEOWNERS](../.github/CODEOWNERS). |
