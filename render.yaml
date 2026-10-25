@@ -1,0 +1,93 @@
+databases:
+  - name: agent-zero-db
+    plan: basic-1gb
+    region: virginia
+    databaseName: agent_zero
+    user: agent_zero
+    postgresMajorVersion: "17"
+    ipAllowList: []
+
+services:
+  - type: pserv
+    name: agent-zero-backend
+    runtime: docker
+    plan: standard
+    region: virginia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: false
+    disk:
+      name: agent-zero-data
+      mountPath: /data
+      sizeGB: 2
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: AGENT_ZERO_ENVIRONMENT
+        value: production
+      - key: AGENT_ZERO_DATA_DIR
+        value: /data
+      - key: AGENT_ZERO_DATABASE_URL
+        fromDatabase:
+          name: agent-zero-db
+          property: connectionString
+      - key: AGENT_ZERO_OPERATOR_SECRET
+        generateValue: true
+      - key: AGENT_ZERO_GUARD_API_KEY
+        generateValue: true
+      - key: AGENT_ZERO_IDENTITY_SIGNING_KEY
+        generateValue: true
+      - key: AGENT_ZERO_MEMORY_ENCRYPTION_KEY
+        generateValue: true
+      - key: AGENT_ZERO_LLM_MODE
+        value: demo
+      - key: AGENT_ZERO_LLM_API_KEY
+        sync: false
+      - key: AGENT_ZERO_LLM_MODEL
+        value: claude-haiku-5-5
+      - key: AGENT_ZERO_LLM_DAILY_USD_LIMIT
+        value: "2.0"
+      - key: AGENT_ZERO_LLM_DAILY_CALL_LIMIT
+        value: "5000"
+      - key: AGENT_ZERO_LLM_SESSION_CALL_LIMIT
+        value: "40"
+      - key: AGENT_ZERO_LLM_CAMPAIGN_CALL_LIMIT
+        value: "1200"
+      - key: AGENT_ZERO_LLM_CAMPAIGN_TOKEN_LIMIT
+        value: "1500000"
+      - key: AGENT_ZERO_ARENA_SESSION_LIMIT
+        value: "100"
+      - key: AGENT_ZERO_ARENA_QUEUE_LIMIT
+        value: "120"
+      - key: AGENT_ZERO_ARENA_SESSION_QUEUE_LIMIT
+        value: "1"
+      - key: AGENT_ZERO_ARENA_ATTEMPTS_PER_MINUTE
+        value: "12"
+      - key: AGENT_ZERO_ARENA_VALIDATION_CONCURRENCY
+        value: "8"
+      - key: AGENT_ZERO_RUNTIME_WORKER_CONCURRENCY
+        value: "8"
+      - key: AGENT_ZERO_DATABASE_POOL_SIZE
+        value: "10"
+      - key: AGENT_ZERO_DATABASE_MAX_OVERFLOW
+        value: "20"
+      - key: AGENT_ZERO_KNOWLEDGE_EMBEDDER
+        value: local
+
+  - type: web
+    name: agent-zero
+    runtime: docker
+    plan: starter
+    region: virginia
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: false
+    healthCheckPath: /healthz
+    envVars:
+      - key: BACKEND_HOSTPORT
+        fromService:
+          type: pserv
+          name: agent-zero-backend
+          property: hostport

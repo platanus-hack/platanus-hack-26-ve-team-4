@@ -86,6 +86,31 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u USUARIO --password-stdin
 
 Si `docker compose pull` responde `unauthorized` o `403`, falta este paso o el token no tiene el alcance. Cambiar la visibilidad es una decisión del equipo y se hace en la página del paquete en GitHub.
 
+## Render
+
+`render.yaml`, en la raíz, describe la misma pila como Blueprint de Render, sin Caddy porque Render termina TLS:
+
+| Recurso | Tipo y plan | Para qué |
+| --- | --- | --- |
+| `agent-zero-db` | Postgres 17, `basic-1gb`, región `virginia` | Base de la arena y las bases `_protected`, `_honeypot` y `_knowledge` que crea el backend |
+| `agent-zero-backend` | Servicio privado Docker, `standard` (2 GB), disco de 2 GB en `/data` | API, runtime, auditoría y modelo de embeddings. En local ocupa unos 860 MB, por eso no cabe en `starter` |
+| `agent-zero` | Servicio web Docker, `starter` | nginx con la aplicación; llega al backend por la red privada con `BACKEND_HOSTPORT` |
+
+- **Coste:** unos 51 USD al mes, prorrateados por segundo.
+- **Secretos:**
+  - Render genera el de operador, la clave de Guard, la firma de identidad y la clave de memoria.
+  - La clave de memoria no tiene formato Fernet, así que el backend deriva una con HKDF.
+  - `AGENT_ZERO_LLM_API_KEY` no se guarda en el repositorio: se escribe en el panel al crear el Blueprint.
+- **Modelo:** arranca en `demo`. Para pasar a `live`, primero se rota la clave de Anthropic y se fija `AGENT_ZERO_LLM_DAILY_USD_LIMIT`.
+- **Despliegues:** `autoDeploy` está desactivado. Cada despliegue se lanza a mano o con la herramienta de Render, después de ver el CI en verde.
+
+Pasos:
+
+1. En Render, abre **New → Blueprint** y elige `platanus-hack/platanus-hack-26-ve-team-4`, rama `main`.
+2. Escribe la clave de Anthropic, o déjala vacía para el modo `demo`, y aplica.
+3. Cuando `agent-zero` esté `live`, abre `https://<servicio>.onrender.com/readyz`; debe responder 200.
+4. Configura la URL pública en la arena («Configurar enlace público») para que el QR apunte a ella.
+
 ## Operación
 
 ### Rotar la clave de Anthropic

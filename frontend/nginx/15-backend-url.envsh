@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ -n "${BACKEND_HOSTPORT:-}" ]; then
+  export BACKEND_URL="http://${BACKEND_HOSTPORT}"
+fi

@@ -15,6 +15,7 @@ ENV PORT=8080 \
     BACKEND_URL=http://backend:8000
 COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --chmod=0755 nginx/15-backend-url.envsh /docker-entrypoint.d/15-backend-url.envsh
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
