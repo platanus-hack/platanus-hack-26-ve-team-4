@@ -41,6 +41,11 @@ export interface ToolStep {
   validator: string;
   effect: Record<string, unknown>;
   output: Record<string, unknown>;
+  /** Etapa de Armor que denegó el paso (solo en `tool_denied`). Opcional: las rondas archivadas no lo traen. */
+  stage?: string;
+  /** Motivo de Armor: `input_blocked` u `output_blocked`. */
+  reason?: string;
+  detail?: string;
 }
 
 export interface Verdict {
@@ -68,8 +73,11 @@ export interface AuditAttempt {
   verdicts: Verdict[];
   detail: string;
   tools: ToolStep[];
+  family?: string | null;
 }
 
 export interface ChatDetail extends ChatSummary {
   threads: { index: number; attempts: AuditAttempt[] }[];
+  risk_score?: number;
+  risk_signals?: { validator: string; count: number }[];
 }
