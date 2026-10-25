@@ -70,7 +70,7 @@ export function Carousel({ items, pinned, scale, renderChat }: Props) {
   const view = useRef<HTMLDivElement>(null);
   const nav = useRef<HTMLElement>(null);
   const target = useRef<number | null>(null);
-  const drag = useRef<{ x: number; left: number; id: number; on: boolean } | null>(null);
+  const drag = useRef<{ x: number; y: number; left: number; id: number; on: boolean } | null>(null);
   const suppressClick = useRef(false);
   const pulses = usePulses(items);
   const goTo = useRef((next: number) => setIndex(next));
@@ -111,13 +111,16 @@ export function Carousel({ items, pinned, scale, renderChat }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [start]);
 
-  // Rueda vertical = un chat por gesto; el desplazamiento horizontal del trackpad va nativo.
+  // Rueda sobre los chats: la vertical es de la conversación (el carrusel no se mueve). El carrusel se mueve con deltaX del trackpad (nativo con snap) o con Shift+rueda; sobre la barra, la rueda vertical sigue pasando un chat por gesto.
   useEffect(() => {
     let accumulated = 0;
     let lockUntil = 0;
     const onWheel = (event: WheelEvent) => {
       const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-      if (horizontal && event.currentTarget === view.current) return;
+      if (event.currentTarget === view.current) {
+        if (horizontal) return; // trackpad horizontal: scroll nativo
+        if (!event.shiftKey) return; // rueda vertical: la recibe la conversación; nunca el carrusel
+      }
       event.preventDefault();
       const now = Date.now();
       if (now < lockUntil) return;
@@ -148,8 +151,17 @@ export function Carousel({ items, pinned, scale, renderChat }: Props) {
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (event.pointerType === "touch" || event.button !== 0 || !view.current) return;
+    // Clic en la barra de desplazamiento de la conversación: no arrastra el carrusel.
+    const hit = event.target;
+    if (
+      hit instanceof HTMLElement &&
+      hit.classList.contains("av-conv") &&
+      event.nativeEvent.offsetX > hit.clientWidth
+    )
+      return;
     drag.current = {
       x: event.clientX,
+      y: event.clientY,
       left: view.current.scrollLeft,
       id: event.pointerId,
       on: false,
@@ -160,6 +172,12 @@ export function Carousel({ items, pinned, scale, renderChat }: Props) {
     const element = view.current;
     if (!state || !element || event.pointerId !== state.id) return;
     const dx = (event.clientX - state.x) / (scale || 1);
+    const dy = (event.clientY - state.y) / (scale || 1);
+    // Gesto vertical: es de la conversación; el carrusel no se arrastra.
+    if (!state.on && Math.abs(dy) > DRAG_START && Math.abs(dy) >= Math.abs(dx)) {
+      drag.current = null;
+      return;
+    }
     if (!state.on && Math.abs(dx) > DRAG_START) {
       state.on = true;
       target.current = null;
