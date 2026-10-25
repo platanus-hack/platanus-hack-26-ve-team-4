@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { concealedSession, liveAttempt, liveSession } from "./fixtures";
+import { audienceSession, liveAttempt, liveSession } from "./fixtures";
 import { chatStatus, speakerLabel } from "./status";
 
 const orderDenial = {
@@ -79,17 +79,29 @@ describe("buena fe del Público", () => {
     });
   });
 
-  it("un Público enmascarado conversa igual, aunque su intento traiga un desenlace", () => {
-    const hidden = concealedSession("1");
-    expect(chatStatus(hidden, true, false)).toEqual({
-      tone: "neutral",
-      label: "Conversando",
-      detail: "Oculto hasta revelar",
+  it("un Público con una violación confirmada sin parche da tono leak aun sin revelar", () => {
+    const audience = audienceSession("1", {
+      attempts: [
+        liveAttempt({ outcome: "confirmed_violation", violated_objectives: ["OBJ-ORDER"] }),
+      ],
     });
-    const leaked = concealedSession("1", {
-      attempts: [liveAttempt({ id: "att-1", outcome: "confirmed_violation", route: null })],
+    expect(chatStatus(audience, true, false)).toEqual({
+      tone: "leak",
+      label: "Se filtró",
+      detail: "OBJ-ORDER · intento 1",
     });
-    expect(chatStatus(leaked, true, false)).toEqual(chatStatus(hidden, true, false));
+  });
+
+  it("un Público con un intento frenado da tono blocked aun sin revelar", () => {
+    const audience = audienceSession("1", {
+      prevented_n: 1,
+      attempts: [liveAttempt({ outcome: "prevented" })],
+    });
+    expect(chatStatus(audience, true, false)).toEqual({
+      tone: "blocked",
+      label: "Bloqueado",
+      detail: "1 frenado",
+    });
   });
 
   it("un Público con una violación confirmada sin parche sigue como filtrado", () => {

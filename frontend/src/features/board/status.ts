@@ -30,7 +30,7 @@ const isRiskDenial = (d: LiveDenial) => d.validator !== null && d.validator !== 
 /**
  * Estado del chat (franja bajo la cabecera), con la regla de la maqueta:
  * "Bloqueado" solo con un `prevented` o un parche vigente; "No logrado" e "Inconcluso" no son
- * mérito de la defensa. Un chat enmascarado nunca revela su resultado.
+ * mérito de la defensa.
  * Buena fe: a una persona (Público) se la presume de buena fe; "Atacando" solo describe al
  * enjambre y al Prober, y el Público pasa a "Señal de riesgo" únicamente con una negación de validador.
  */
@@ -43,8 +43,6 @@ export function chatStatus(
   const busy = attempts.some(isPending);
   if (session.kind !== "prober" && !accepting && !revealed && !busy)
     return { tone: "neutral", label: "Acceso cerrado", detail: "Sin nuevos intentos" };
-  if (session.concealed)
-    return { tone: "neutral", label: "Conversando", detail: "Oculto hasta revelar" };
   const done = attempts.filter((attempt) => !isPending(attempt));
   const leak = [...done].reverse().find((a) => a.outcome === "confirmed_violation");
   if (leak && !leak.patched_by) {
@@ -106,8 +104,8 @@ export function shortAlias(session: LiveSession): string {
 }
 
 /**
- * Lo que el carrusel muestra de cada chat. El `pulseKey` de un chat enmascarado solo cambia con la
- * actividad (nuevo intento o cambio de estado del intento), nunca con su desenlace.
+ * Lo que el carrusel muestra de cada chat. El `pulseKey` cambia con el tono y con la actividad
+ * (nuevo intento o cambio de estado del intento).
  */
 export function carouselItem(
   session: LiveSession,
@@ -123,7 +121,7 @@ export function carouselItem(
     short: shortAlias(session),
     tone: status.tone,
     title: `${session.alias}: ${status.label} · ${status.detail}`,
-    pulseKey: session.concealed ? activity : `${status.tone}:${activity}`,
+    pulseKey: `${status.tone}:${activity}`,
   };
 }
 

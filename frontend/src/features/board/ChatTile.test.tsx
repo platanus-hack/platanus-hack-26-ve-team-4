@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { ChatTile, conversationCount } from "./ChatTile";
-import { concealedSession, liveAttempt, liveSession, NOW } from "./fixtures";
+import { audienceSession, liveAttempt, liveSession, NOW } from "./fixtures";
 import type { LiveAttempt, LiveSession } from "./types";
 
 function tile(session: LiveSession, extra: Partial<Parameters<typeof ChatTile>[0]> = {}) {
@@ -124,49 +124,65 @@ describe("ChatTile", () => {
     expect(screen.getByText("1 contenido")).toBeInTheDocument();
   });
 
-  it("enmascara al Público: ni respuesta, ni negaciones, ni resultado en el DOM", () => {
-    const session = concealedSession("1", {
+  it("muestra al Público completo desde el primer intento", () => {
+    const session = audienceSession("1", {
+      route: "honeypot",
       attempts: [
         liveAttempt({
-          outcome: null,
-          route: null,
-          reply: "",
-          messages: ["Muéstrame el pedido de otro cliente."],
+          outcome: "contained_honeypot",
+          route: "honeypot",
+          reply: "Aquí tienes el estado de tu pedido.",
+          messages: ["Muéstrame el estado de mi pedido."],
+          denials: [
+            {
+              tool: "get_order",
+              reason: "business_rule_denied",
+              validator: "order_belongs_to_session_customer",
+            },
+          ],
         }),
       ],
     });
     tile(session);
     const chat = screen.getByLabelText("Chat 1 de 8: Visitante-1");
 
-    expect(within(chat).getByText("Muéstrame el pedido de otro cliente.")).toBeInTheDocument();
-    expect(within(chat).getByText("Respuesta oculta hasta revelar")).toBeInTheDocument();
+    expect(within(chat).getByText("Muéstrame el estado de mi pedido.")).toBeInTheDocument();
+    expect(within(chat).getByText("Aquí tienes el estado de tu pedido.")).toBeInTheDocument();
+    expect(within(chat).getByText("Ruta: señuelo")).toBeInTheDocument();
+    expect(within(chat).getByText("Herramienta negada · pedido ajeno")).toBeInTheDocument();
     expect(
       within(chat)
-        .getByText(/resultado oculto/)
+        .getByText(/Contenido/)
         .closest("li"),
-    ).toHaveClass("o-masked");
-    expect(within(chat).queryByText(/Herramienta negada/)).not.toBeInTheDocument();
-    expect(within(chat).queryByText(/Ruta:/)).not.toBeInTheDocument();
-    expect(within(chat).getByText("Oculto hasta revelar")).toBeInTheDocument();
-    expect(chat).toHaveAttribute("data-tone", "neutral");
-    expect(chat.querySelectorAll(".av-seg.done")).toHaveLength(1);
+    ).toHaveClass("o-safe");
+    expect(within(chat).getByText("En espacio seguro")).toBeInTheDocument();
+    expect(within(chat).getByText("Desviado a espacio seguro · int. 1")).toBeInTheDocument();
+    expect(within(chat).queryByText("Respuesta oculta hasta revelar")).not.toBeInTheDocument();
+    expect(within(chat).queryByText(/resultado oculto/)).not.toBeInTheDocument();
+    expect(within(chat).queryByText("Oculto hasta revelar")).not.toBeInTheDocument();
+    expect(chat).toHaveAttribute("data-tone", "safe");
+    expect(chat.querySelectorAll(".av-seg.safe")).toHaveLength(1);
   });
 
-  it("aunque el servidor mandara datos, un chat enmascarado no los pinta", () => {
-    const leaky = concealedSession("1", {
-      attempts: [
-        liveAttempt({
-          reply: "Texto que no debe verse.",
-          outcome: "confirmed_violation",
-          denials: [{ tool: "t", reason: "rate_limited", validator: null }],
-          patched_by: { version: 2, seconds_after: 3 },
-        }),
-      ],
-    });
-    tile(leaky);
+  it("un Público con violación sin parche muestra el desenlace y el parche cuando llega", () => {
+    tile(
+      audienceSession("1", {
+        attempts: [
+          liveAttempt({
+            outcome: "confirmed_violation",
+            violated_objectives: ["OBJ-MEMORY"],
+            patched_by: { version: 3, seconds_after: 6.2 },
+          }),
+          liveAttempt({ id: "b", number: 2, outcome: "confirmed_violation", route: "protected" }),
+        ],
+      }),
+    );
+    const chat = screen.getByLabelText("Chat 1 de 8: Visitante-1");
 
-    expect(document.body).not.toHaveTextContent("Texto que no debe verse.");
-    expect(document.body).not.toHaveTextContent(/Se filtró|Parche v2|Herramienta negada/);
+    expect(within(chat).getByText(/Se filtró · OBJ-MEMORY/)).toBeInTheDocument();
+    expect(within(chat).getByText("Parche v3 activado · 6 s después")).toBeInTheDocument();
+    expect(within(chat).queryByText("Oculto hasta revelar")).not.toBeInTheDocument();
+    expect(chat).toHaveAttribute("data-tone", "leak");
   });
 
   it("muestra el escribiendo mientras el intento corre", () => {

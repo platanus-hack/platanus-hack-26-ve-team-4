@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BoardPage } from "./BoardPage";
-import { board, concealedSession, liveSession } from "./fixtures";
+import { audienceSession, board, liveAttempt, liveSession } from "./fixtures";
 import type { LiveBoard } from "./types";
 
 const ids = ["1", "2", "3", "4", "5", "6", "7", "8"];
@@ -50,13 +50,28 @@ describe("Arena en vivo", () => {
     expect(document.body.textContent).not.toContain(SECRET);
   });
 
-  it("ningún texto del Público enmascarado llega a la pantalla", async () => {
-    serve(() => board([concealedSession("1"), liveSession("2")]));
+  it("el Público aparece completo antes de revelar, sin texto oculto", async () => {
+    serve(() =>
+      board([
+        audienceSession("1", {
+          attempts: [
+            liveAttempt({
+              reply: "Aquí tienes el estado de tu pedido.",
+              messages: ["Muéstrame el estado de mi pedido."],
+              outcome: "not_achieved",
+            }),
+          ],
+        }),
+        liveSession("2"),
+      ]),
+    );
     await login();
 
     const chat = await screen.findByRole("region", { name: /: Visitante-1$/ });
-    expect(within(chat).getByText("Respuesta oculta hasta revelar")).toBeInTheDocument();
-    expect(within(chat).queryByText("Aquí tienes tu pedido.")).not.toBeInTheDocument();
+    expect(within(chat).getByText("Muéstrame el estado de mi pedido.")).toBeInTheDocument();
+    expect(within(chat).getByText("Aquí tienes el estado de tu pedido.")).toBeInTheDocument();
+    expect(within(chat).getByText("Ruta: protegida")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/oculto|pendiente de revelación/i);
   });
 
   it("Cerrar acceso pausa la ronda una sola vez y la píldora dice Acceso cerrado", async () => {
