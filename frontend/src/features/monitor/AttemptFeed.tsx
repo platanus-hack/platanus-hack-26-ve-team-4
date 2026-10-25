@@ -62,16 +62,16 @@ export function AttemptFeed({
               onClick={() => onSelect(attempt.id)}
             >
               <span className="monitor-item-top">
-                <span>
-                  {clock(attempt.created_at)} · {ORIGINS[attempt.origin] ?? attempt.origin} · v
-                  {attempt.policy_version}
+                <span className="monitor-item-time">{clock(attempt.created_at)}</span>
+                <span className="monitor-item-origin">
+                  {ORIGINS[attempt.origin] ?? attempt.origin} · v{attempt.policy_version}
                 </span>
-                <span>{attempt.id.slice(-6)}</span>
+                <span className="monitor-item-id">{attempt.id.slice(-6)}</span>
               </span>
-              <span className="monitor-item-msg">{attempt.messages[0] ?? ""}</span>
-              <span>
-                <span className="monitor-pill">{outcome.label}</span>{" "}
-                <span className="muted monitor-small">{familyOf(attempt)}</span>
+              <span className="monitor-item-msg">{attempt.messages[0] ?? "(sin texto)"}</span>
+              <span className="monitor-item-foot">
+                <span className="monitor-pill">{outcome.label}</span>
+                <span className="monitor-item-family">{familyOf(attempt)}</span>
               </span>
             </button>
           );
