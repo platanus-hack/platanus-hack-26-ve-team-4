@@ -208,6 +208,19 @@ describe("ChatTile", () => {
     expect(screen.getByText("Fijado").closest("button")).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("a una persona del Público se la rotula Participante y al enjambre Atacante", () => {
+    const { unmount } = tile(liveSession("1", { kind: "audience", alias: "neo" }));
+    const audience = screen.getByLabelText(/^Chat 1 de 8/);
+    expect(within(audience).getByText("Participante")).toBeInTheDocument();
+    expect(within(audience).queryByText("Atacante")).not.toBeInTheDocument();
+    unmount();
+
+    tile(liveSession("2"));
+    const swarm = screen.getByLabelText(/^Chat 1 de 8/);
+    expect(within(swarm).getByText("Atacante")).toBeInTheDocument();
+    expect(within(swarm).queryByText("Participante")).not.toBeInTheDocument();
+  });
+
   describe("conversación desplazable", () => {
     const attempts = (n: number, pendingLast = false): LiveAttempt[] =>
       Array.from({ length: n }, (_, k) =>
