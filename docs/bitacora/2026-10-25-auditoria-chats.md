@@ -14,7 +14,7 @@ requisitos: []
 
 - **Ruta nueva `/auditoria`** (secreto de operador, enlace «Auditoría» en el menú). Tiene tres partes:
   - **Selector de ronda:** la ronda en curso o cualquier ronda archivada completa.
-  - **Lista de chats:** todas las sesiones con búsqueda por alias, sesión, cliente o mensaje, y filtros por tipo (público, enjambre, Prober), violación y desvío.
+  - **Lista de chats:** todas las sesiones con búsqueda por alias, sesión, cliente o mensaje, y filtros por tipo (público, enjambre, Prober, pruebas internas), violación y desvío.
   - **Historial del chat elegido.** Cada mensaje trae:
     - las burbujas tal como las vio el participante;
     - resultado, ruta, política y duración;
@@ -53,7 +53,7 @@ requisitos: []
   - `tests/arena/test_audit_router.py`: 3 passed;
   - `ruff check`, `ruff format` y `mypy src tests` limpios (681 archivos);
   - suite completa: CI del PR #55 (backend y backend-postgres).
-- Frontend: `pnpm lint`, `pnpm typecheck`, `pnpm test` (172 pruebas, 30 archivos) y `pnpm build` en verde.
+- Frontend: `pnpm lint`, `pnpm typecheck`, `pnpm test` (187 pruebas, 34 archivos, tras rebasar sobre `main`) y `pnpm build` en verde.
 - Falta la revisión visual en navegador [SUPUESTO: solo se comprobó el DOM con jsdom].
 
 ## Riesgos y efectos en otros frentes

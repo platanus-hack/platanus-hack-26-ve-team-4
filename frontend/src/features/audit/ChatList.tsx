@@ -9,6 +9,7 @@ const FILTERS: [Filter, string][] = [
   ["audience", "Público"],
   ["swarm", "Enjambre"],
   ["prober", "Prober"],
+  ["test", "Pruebas"],
   ["violations", "Con violación"],
   ["honeypot", "Desviados"],
 ];

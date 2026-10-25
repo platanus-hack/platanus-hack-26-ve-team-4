@@ -15,7 +15,7 @@ from agent_zero.attempts.conversation import public_reply
 from agent_zero.events.models import EventType
 from agent_zero.events.schemas import TraceEvent
 from agent_zero.oracles.trace_reader import tool_evidence
-from agent_zero.sessions.reserved_alias import SWARM_PREFIX
+from agent_zero.sessions.reserved_alias import SWARM_PREFIX, TEST_PREFIX
 
 Row = Mapping[str, Any]
 Tables = Mapping[str, Sequence[Row]]
@@ -27,6 +27,8 @@ def session_kind(session: Row) -> str:
     """Como `live.service.session_kind`, pero conserva las repeticiones del operador."""
     if str(session["id"]).startswith("internal-"):
         return "prober" if session["alias"] == PROBER_ALIAS else "replay"
+    if str(session["alias"]).startswith(TEST_PREFIX):
+        return "test"
     return "swarm" if str(session["alias"]).startswith(SWARM_PREFIX) else "audience"
 
 
