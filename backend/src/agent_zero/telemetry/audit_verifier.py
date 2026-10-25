@@ -24,9 +24,15 @@ def _line_problem(line: str, index: int, expected_prev: str, key: bytes) -> str 
     return None
 
 
-def verify_lines(lines: list[str], key: bytes, anchor: AnchorStore) -> AuditVerification:
-    expected_prev = GENESIS_HASH
-    for index, line in enumerate(lines):
+def verify_lines(
+    lines: list[str],
+    key: bytes,
+    anchor: AnchorStore,
+    start: int = 0,
+    expected_prev: str = GENESIS_HASH,
+) -> AuditVerification:
+    for index in range(start, len(lines)):
+        line = lines[index]
         problem = _line_problem(line, index, expected_prev, key)
         if problem is not None:
             return _broken(len(lines), index, problem)

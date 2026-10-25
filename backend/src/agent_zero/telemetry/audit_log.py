@@ -43,6 +43,7 @@ class AuditLog:
         self._anchor = anchor
         self._clock = clock
         self._lock = threading.Lock()
+        self._verified: list[str] = []
         self._journal = (
             AuditJournal(store, anchor, key) if isinstance(store, FileAuditStore) else None
         )
@@ -66,12 +67,7 @@ class AuditLog:
             if self._journal is not None:
                 self._journal.recover()
             lines = self._store.read_lines()
-            verification = verify_lines(lines, self._key, self._anchor)
-            if not verification.ok:
-                raise AuditIntegrityError(verification.detail)
-            prev_hash = GENESIS_HASH
-            if lines:
-                prev_hash = AuditEntry.model_validate_json(lines[-1]).hash
+            prev_hash = self._verify_for_append(lines)
             draft = AuditEntry(
                 sequence=len(lines),
                 at=self._clock(),
@@ -89,11 +85,26 @@ class AuditLog:
             entry = draft.model_copy(update={"hash": compute_hash(draft, self._key)})
             if self._journal is not None:
                 self._journal.prepare(entry.model_dump_json())
-            self._store.append_line(entry.model_dump_json())
+            line = entry.model_dump_json()
+            self._store.append_line(line)
             self._anchor.write(sign_anchor(self._key, len(lines) + 1, entry.hash))
+            self._verified = [*lines, line]
             if self._journal is not None:
                 self._journal.clear()
             return entry
+
+    def _verify_for_append(self, lines: list[str]) -> str:
+        known = len(self._verified)
+        start, prev_hash = 0, GENESIS_HASH
+        if known and lines[:known] == self._verified:
+            start, prev_hash = known, AuditEntry.model_validate_json(lines[known - 1]).hash
+        verification = verify_lines(lines, self._key, self._anchor, start, prev_hash)
+        if not verification.ok:
+            self._verified = []
+            raise AuditIntegrityError(verification.detail)
+        if lines:
+            return AuditEntry.model_validate_json(lines[-1]).hash
+        return GENESIS_HASH
 
     def entries(self) -> list[AuditEntry]:
         with self._lock, self._store.locked():

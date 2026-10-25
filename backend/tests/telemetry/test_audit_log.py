@@ -6,10 +6,12 @@ from pathlib import Path
 import pytest
 
 from agent_zero.config import Settings
+from agent_zero.telemetry import audit_verifier
 from agent_zero.telemetry.audit_anchor import MemoryAnchor
 from agent_zero.telemetry.audit_log import AuditLog
 from agent_zero.telemetry.audit_schemas import GENESIS_HASH, AuditDecision, AuditEvent
 from agent_zero.telemetry.audit_store import MemoryAuditStore
+from agent_zero.telemetry.errors import AuditIntegrityError
 from agent_zero.telemetry.otel_setup import build_telemetry
 from agent_zero.telemetry.spans import traced_span
 
@@ -132,3 +134,37 @@ def test_concurrent_writes_keep_chain_valid(tmp_path: Path) -> None:
     result = log.verify()
     assert result.ok
     assert result.entries == 60
+
+
+@pytest.mark.requirement("OBS-02")
+def test_append_refuses_history_edited_after_it_was_verified(tmp_path: Path) -> None:
+    path = tmp_path / "a.jsonl"
+    log = AuditLog.for_file(path, KEY, _clock)
+    _fill(log, 4)
+    lines = path.read_text().splitlines()
+    record = json.loads(lines[1])
+    record["decision"] = "deny"
+    lines[1] = json.dumps(record)
+    path.write_text("\n".join(lines) + "\n")
+    with pytest.raises(AuditIntegrityError):
+        log.append(_event("must-not-extend"))
+    assert len(path.read_text().splitlines()) == 4
+
+
+def test_append_checks_only_lines_it_has_not_verified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    log = AuditLog.for_file(tmp_path / "a.jsonl", KEY, _clock)
+    _fill(log, 5)
+    checked: list[int] = []
+    original = audit_verifier._line_problem
+
+    def counting(line: str, index: int, expected_prev: str, key: bytes) -> str | None:
+        checked.append(index)
+        return original(line, index, expected_prev, key)
+
+    monkeypatch.setattr(audit_verifier, "_line_problem", counting)
+    log.append(_event("next"))
+    assert checked == []
+    assert log.verify().ok
+    assert checked == list(range(6))
