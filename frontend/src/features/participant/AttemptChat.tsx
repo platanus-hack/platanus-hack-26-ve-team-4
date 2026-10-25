@@ -10,6 +10,7 @@ import { errorMessage, isUnauthorized } from "../../shared/api/http";
 import { useArenaState } from "../arena/hooks/useArenaState";
 import { PendingBubbles, TypingBubble } from "./BatchPreview";
 import { LabPanel } from "./LabPanel";
+import { richText } from "./richText";
 import type { ArenaSession, ConversationEntry } from "./types";
 import { useBatch } from "./useBatch";
 import { active, useConversation } from "./useConversation";
@@ -33,7 +34,7 @@ function Exchange({ entry, pending }: { entry: ConversationEntry; pending: boole
       {attempt?.reply ? (
         <p className="bubble bubble--bot">
           <span className="visually-hidden">Yummy: </span>
-          {attempt.reply}
+          {richText(attempt.reply)}
         </p>
       ) : active(attempt) && (attempt || pending) ? (
         <TypingBubble />

@@ -9,6 +9,7 @@ Estado: implementación revisada sobre la base funcional `1d0e21d`. React y Type
 | [App.tsx](../../frontend/src/app/App.tsx) | Rutas `/` de participante, `/arena` (Arena en vivo, con secreto de operador), `/monitor`, `/auditoria` y `/operator`. |
 | [ParticipantPage.tsx](../../frontend/src/features/participant/ParticipantPage.tsx) | Consentimiento, alta y recuperación mediante `/api/sessions/me`. |
 | [AttemptChat.tsx](../../frontend/src/features/participant/AttemptChat.tsx) | Chat de soporte Yummy: burbujas, «escribiendo…», sugerencias y «Nueva conversación». Los mensajes seguidos salen juntos en un lote invisible a los 10 s del último; cada lote es un intento que continúa la conversación en curso (`continues`). |
+| [richText.tsx](../../frontend/src/features/participant/richText.tsx) | Markdown mínimo de las respuestas de Yummy: `**negrita**` y viñetas `- ` o `* ` como «•», armado con elementos de React y sin HTML crudo. |
 | [batch.ts](../../frontend/src/features/participant/batch.ts) | Tiempos del lote (`BATCH_IDLE_MS`, `TYPING_DELAY_MS`), tope (`QUEUE_MAX = 10`), vencimiento y armado del cuerpo (`packBatch`). |
 | [useBatch.ts](../../frontend/src/features/participant/useBatch.ts), [BatchPreview.tsx](../../frontend/src/features/participant/BatchPreview.tsx) | Lote sin enviar: alarmas de 4 s y 10 s, persistencia, burbujas que se ven como enviadas y «escribiendo…». |
 | [useConversation.ts](../../frontend/src/features/participant/useConversation.ts) | Envío durable, reconciliación del historial, conversaciones (`threadsOf`), reintento y espera de 429. |
