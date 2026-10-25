@@ -119,7 +119,7 @@ class ArenaService:
                 ),
                 "demo_mode": mode == "demo",
                 "scores": build_scores(scored, aliases, revealed=state.revealed),
-                **(reveal_counts(scored) if state.revealed else {}),
+                **reveal_counts(scored),
             }
 
     async def set_state(
