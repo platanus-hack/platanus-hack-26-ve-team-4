@@ -47,7 +47,7 @@ def _run(
     client: TestClient, environment: str, customer: str, tool: str, arguments: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
     assert client.portal is not None
-    context = _context(environment, customer, f"{tool}-{environment}-{customer}")
+    context = _context(environment, customer, f"{tool[:3]}-{environment[:2]}-{customer[-4:]}")
     return cast(
         tuple[str, dict[str, Any]],
         client.portal.call(_call, _core(client), context, tool, arguments),
