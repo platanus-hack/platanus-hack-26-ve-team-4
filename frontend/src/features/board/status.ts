@@ -20,7 +20,11 @@ export function speakerLabel(kind: SessionKind): string {
   return ATTACK_AGENTS.has(kind) ? "Atacante" : "Participante";
 }
 
-/** Señal del sistema: una herramienta negada por un validador. "rate_limited" (validator null) y "order_exists" (pedido mal escrito) no cuentan, igual que en routing/session_risk.py. */
+/**
+ * Señal del sistema: una herramienta negada por un validador. "rate_limited" (validator null) y
+ * "order_exists" (puede ser un pedido mal escrito) no cuentan. Es una aproximación de vista a
+ * routing/session_risk.py: el tablero no sabe si un pedido inexistente es un error de tipeo.
+ */
 const isRiskDenial = (d: LiveDenial) => d.validator !== null && d.validator !== "order_exists";
 
 /**
