@@ -39,7 +39,7 @@ const TERMINAL = new Set(["evaluated", "inconclusive"]);
 
 export function chatAlias(item: DemoCase, copy: number): string {
   const name = item.persona.split(" ")[0] ?? "";
-  return testAlias(`${item.id} ${name} ${copy}`, item.id);
+  return testAlias(`Auto ${item.id} ${name} ${copy}`, `Auto-${item.id}`);
 }
 
 function pause(ms: number, signal: AbortSignal): Promise<void> {

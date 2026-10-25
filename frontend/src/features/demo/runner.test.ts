@@ -74,6 +74,6 @@ describe("runChat", () => {
   });
 
   it("usa el prefijo reservado de las pruebas internas", () => {
-    expect(chatAlias(caseById("N4-2"), 7)).toBe("Interno-N4-2-Ingrid-7");
+    expect(chatAlias(caseById("N4-2"), 7)).toBe("Interno-Auto-N4-2-Ingrid-7");
   });
 });

@@ -39,7 +39,7 @@ from agent_zero.policies.validator_catalog import OBJECTIVE_CONTROLS
 from agent_zero.prober.campaign_models import CampaignCaseRecord
 from agent_zero.routing.models import Route
 from agent_zero.sessions.models import ArenaSession
-from agent_zero.sessions.reserved_alias import SWARM_PREFIX, TEST_PREFIX
+from agent_zero.sessions.reserved_alias import SWARM_PREFIX, TEST_PREFIX, counts_in_analytics
 from agent_zero.shared.clock import utc_now
 
 PROBER_ALIAS = "Prober"
@@ -303,11 +303,11 @@ def build_board(  # noqa: PLR0913
     patches = PatchIndex.build(data.findings, data.policies)
     live_sessions = [_live_session(g, data, patches) for g in groups[:limit]]
 
-    # Los chats de prueba se muestran pero no mueven las analíticas.
-    counted = [g for g in groups if g.kind != "test"]
+    # Los chats de prueba se muestran pero no mueven las analíticas, salvo los automáticos.
+    counted = [g for g in groups if g.kind != "test" or counts_in_analytics(g.alias)]
     scope: Scope = "all"
     finished = [a for g in counted for a in g.finished]
-    counts = Counter(g.kind for g in counted for _ in g.finished)
+    counts = Counter("swarm" if g.kind == "test" else g.kind for g in counted for _ in g.finished)
     leaked = [a for a in finished if a.outcome is AttemptOutcome.CONFIRMED_VIOLATION]
     by_objective = dict.fromkeys(OBJECTIVE_CONTROLS, 0)
     for objective in (o for a in leaked for o in _violated_objectives(a)):

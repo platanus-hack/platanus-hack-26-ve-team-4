@@ -8,6 +8,7 @@ prefijos con el secreto de operador.
 
 SWARM_PREFIX = "Agente-"
 TEST_PREFIX = "Interno-"
+AUTOMATED_TEST_PREFIX = "Interno-Auto-"
 RESERVED_PREFIXES = (SWARM_PREFIX, TEST_PREFIX)
 
 
@@ -20,3 +21,8 @@ def is_reserved_alias(alias: str) -> bool:
 def is_test_alias(alias: str) -> bool:
     """Exacto, como la clasificación del tablero: sin ignorar mayúsculas ni espacios."""
     return alias.startswith(TEST_PREFIX)
+
+
+def counts_in_analytics(alias: str) -> bool:
+    """Los chats automáticos de la Arena (`Interno-Auto-`) mueven las KPI; los demás internos no."""
+    return not is_test_alias(alias) or alias.startswith(AUTOMATED_TEST_PREFIX)
