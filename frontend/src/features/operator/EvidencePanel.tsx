@@ -10,6 +10,8 @@ export function downloadEvidence(value: unknown, name: string) {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+export const ACCESS_WITHOUT_DISCLOSURE_LABEL = "Accedió al dato sin mostrarlo";
+
 export function EvidencePanel({ evidence, close }: { evidence: Evidence; close: () => void }) {
   return (
     <section className="evidence-panel" aria-label="Evidencia del intento">
@@ -37,6 +39,11 @@ export function EvidencePanel({ evidence, close }: { evidence: Evidence; close: 
           <strong>
             {verdict.objective_id}: {verdict.violated ? "Violado" : "Sin violación observada"}
           </strong>
+          {verdict.violated && verdict.level === "action" && (
+            <p>
+              <span className="badge danger">{ACCESS_WITHOUT_DISCLOSURE_LABEL}</span>
+            </p>
+          )}
           <p>{verdict.detail}</p>
           <p className="muted">
             Nivel: {verdict.level ?? "—"} · Eventos:{" "}
