@@ -1,4 +1,4 @@
-import { JoinQr } from "../arena/JoinCode";
+import { QrZoom } from "./QrZoom";
 import type { LiveBoard } from "./types";
 
 const EYE_OFF = (
@@ -92,7 +92,7 @@ export function BoardHeader({ board, chats, visible, busy, onToggleAccess, onExi
           </div>
         </div>
       </div>
-      <JoinQr className="av-qr" />
+      <QrZoom />
       {/* Tras revelar la ronda no se puede reabrir: el servidor responde 409. */}
       {!revealed && (
         <button

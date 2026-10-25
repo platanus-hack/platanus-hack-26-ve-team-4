@@ -16,7 +16,7 @@ from agent_zero.attempts.models import Attempt, AttemptLink, AttemptStatus
 CANARY = re.compile(r"AZ[PH]_[a-f0-9]+_[A-Z]-\d+")
 
 # Intentos previos que el modelo puede ver; al llegar al tope se empieza otra conversación.
-MAX_PREVIOUS = 6
+MAX_PREVIOUS = 30
 TERMINAL = {AttemptStatus.EVALUATED, AttemptStatus.INCONCLUSIVE}
 Turn = tuple[list[str], str]
 

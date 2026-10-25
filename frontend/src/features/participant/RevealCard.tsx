@@ -45,7 +45,7 @@ export function RevealCard({ session }: { session: ArenaSession }) {
         <li>Te retuvo {formatDuration(card.retained_seconds)}.</li>
         <li>
           {card.post_diversion_steps} pasos de herramientas en {card.post_diversion_attempts}{" "}
-          intentos dentro del señuelo.
+          interacciones dentro del señuelo.
         </li>
         <li>
           Cebos tocados: {card.honeytools_touched.length}

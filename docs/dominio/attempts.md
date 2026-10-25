@@ -34,7 +34,7 @@ Debe enviarse exactamente `message` o `messages`: de uno a cuatro turnos, cada u
 
 `continues` es opcional: el id de un intento anterior de la misma sesión cuya conversación continúa este. Lo usa el chat del participante. Reglas ([conversation.py](../../backend/src/agent_zero/attempts/conversation.py)):
 
-- **Validación:** el intento anterior debe existir en la misma sesión (si no, 404) y estar terminado (si no, 409). Una conversación admite como máximo `MAX_PREVIOUS` = 6 intentos; el siguiente devuelve 409 y el cliente abre otra.
+- **Validación:** el intento anterior debe existir en la misma sesión (si no, 404) y estar terminado (si no, 409). Una conversación admite como máximo `MAX_PREVIOUS` = 30 intentos (subido de 6 el 25-oct para que nadie pierda el hilo, ni en el señuelo; cada turno reenvía los anteriores como texto, así que el costo por respuesta crece con el largo); el siguiente devuelve 409 y el cliente abre otra.
 - **Historial armado por el servidor:** sale de sus filas; el cliente sólo dice a qué intento responde, así que no puede inventar respuestas del asistente. Las respuestas previas van con los canarios redactados (`[referencia]`), igual que las vio el participante.
 - **Ejecución:** `ConversationExecutor.start` antepone los turnos previos como texto: los mensajes del participante con rol `user` y las respuestas con rol `assistant`. Las herramientas de esos turnos no se repiten. La procedencia sólo cuenta lo que escribió el participante, nunca la respuesta previa del asistente.
 - **Almacenamiento:** el enlace se guarda en la tabla `attempt_links` (`attempt_id`, `previous_attempt_id`). Es una tabla nueva, así que `create_all` la crea sin migración; forma parte de `ROUND_TABLES`.

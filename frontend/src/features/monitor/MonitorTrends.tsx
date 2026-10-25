@@ -88,10 +88,10 @@ function TokenBars({ attempts }: { attempts: MonitorAttempt[] }) {
   const measured = attempts.some((attempt) => attempt.usage.measured_calls > 0);
   return (
     <section className="monitor-panel">
-      <h2>Tokens por intento</h2>
+      <h2>Tokens por interacción</h2>
       <p className="muted monitor-small">
-        Entrada + salida de todas las llamadas del intento; los que abren hallazgo suman analizador
-        y parcheador.
+        Entrada + salida de todas las llamadas de la interacción; las que abren hallazgo suman
+        analizador y parcheador.
         {!measured && " El proveedor actual no es LIVE: las cifras no son consumo comercial."}
       </p>
       <div className="monitor-bars">

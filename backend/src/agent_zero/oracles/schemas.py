@@ -22,6 +22,8 @@ class Assessment(BaseModel):
     verdicts: list[OracleVerdict]
     prevented_event_ids: list[int] = Field(default_factory=list)
     detail: str = ""
+    # Señales de intención (oracles/intent_signal.py): auditoría, no cambian el desenlace.
+    signals: list[str] = Field(default_factory=list)
 
 
 class ToolEvidence(BaseModel):

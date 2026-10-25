@@ -106,6 +106,14 @@
   border-radius: 6px;
   font-size: 0.82rem;
 }
+.audit-class {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.audit-armor {
+  color: var(--color-accent);
+}
 .audit-json {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);

@@ -5,6 +5,13 @@ import { arena, attempt, session } from "../../test/fixtures";
 import { AttemptChat } from "./AttemptChat";
 import type { Attempt } from "./types";
 
+// Sin la espera del lote: estas pruebas usan reloj real y miran el envío, no la ventana de 10 s.
+vi.mock("./batch", async (original) => ({
+  ...(await original<typeof import("./batch")>()),
+  BATCH_IDLE_MS: 0,
+  TYPING_DELAY_MS: 0,
+}));
+
 const running = attempt({
   id: "run",
   status: "running",

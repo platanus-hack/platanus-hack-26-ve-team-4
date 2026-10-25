@@ -28,9 +28,12 @@ export function qrCode(url: string | null): { size: number; path: string } | nul
   return { size: size + 8, path: cells.join("") };
 }
 
+/** URL pública a la que apunta el QR de participación. */
+export const joinUrl = () => participantUrl(defaultParticipantUrl());
+
 /** QR compacto para la cabecera de la Arena en vivo; usa la URL pública configurada. */
 export function JoinQr({ className }: { className?: string }) {
-  const url = participantUrl(defaultParticipantUrl());
+  const url = joinUrl();
   const code = useMemo(() => qrCode(url), [url]);
   if (!code) return null;
   return (

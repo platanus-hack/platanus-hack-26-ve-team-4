@@ -76,6 +76,7 @@ def attempt_row(
         "messages": attempt.messages,
         "family": family,
         "family_source": source if family else None,
+        "signals": (attempt.assessment or {}).get("signals", []),
         "finding_id": finding_id,
         "patch": attempt_patch(finding_id, policies),
         "duration_seconds": (attempt.updated_at - attempt.created_at).total_seconds()

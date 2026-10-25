@@ -86,7 +86,7 @@ export function AttemptReplay({
   const empty = graph.nodes.length <= 1;
   return (
     <div className={`monitor-replay ${attempt.route === "honeypot" ? "is-decoy" : ""}`}>
-      <span className="monitor-label">Llamadas a herramientas del intento</span>
+      <span className="monitor-label">Llamadas a herramientas de la interacción</span>
       <article className="replay-side">
         <h3>{attempt.route === "honeypot" ? "Señuelo" : `Política v${attempt.policy_version}`}</h3>
         <p className={`replay-caption replay-caption--${tone}`}>{text}</p>

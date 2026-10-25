@@ -4,9 +4,9 @@ import type { ArenaSession, ConversationEntry } from "./types";
 
 const OUTCOMES = {
   apparent_success: "Objetivo aparentemente logrado · resultado provisional",
-  prevented: "Intento detenido por un control",
+  prevented: "Interacción detenida por un control",
   not_achieved: "Ningún objetivo vulnerado",
-  inconclusive: "No se pudo evaluar este intento",
+  inconclusive: "No se pudo evaluar esta interacción",
   confirmed_violation: "Violación confirmada en el entorno protegido · resultado final",
   contained_honeypot:
     "Éxito aparente en señuelo aislado · sin efectos protegidos · resultado final",

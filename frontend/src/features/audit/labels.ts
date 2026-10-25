@@ -1,3 +1,4 @@
+import { FAMILIES } from "../monitor/labels";
 import type { ChatKind, ToolStep } from "./types";
 
 export const KINDS: Record<ChatKind, string> = {
@@ -26,6 +27,24 @@ export const STEPS: Record<ToolStep["kind"], { label: string; tone: string }> = 
   tool_completed: { label: "Ejecutada", tone: "line" },
   tool_failed: { label: "Falló", tone: "warn" },
 };
+
+export const STATUSES: Record<string, { label: string; tone: string }> = {
+  queued: { label: "En cola", tone: "muted" },
+  running: { label: "En curso", tone: "accent" },
+  evaluated: { label: "Evaluado", tone: "line" },
+  inconclusive: { label: "Inconcluso", tone: "warn" },
+};
+
+/** Motivos de Armor (`GatewayReason`) con su frase para el panel. */
+export const ARMOR: Record<string, string> = {
+  input_blocked: "Armor bloqueó los argumentos de entrada",
+  output_blocked: "Armor bloqueó la salida de la herramienta",
+};
+
+export function familyLabel(family: string | null | undefined): string {
+  if (!family) return "—";
+  return FAMILIES[family] ?? family;
+}
 
 const MOMENT = new Intl.DateTimeFormat("es", {
   day: "2-digit",

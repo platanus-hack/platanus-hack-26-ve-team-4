@@ -36,6 +36,8 @@ export interface MonitorAttempt {
   messages: string[];
   family: string | null;
   family_source: "campaign" | "analyzer" | null;
+  /** Señales de intención (backend: oracles/intent_signal.py); no cambian el desenlace. */
+  signals?: string[];
   finding_id: string | null;
   patch: AttemptPatch | null;
   duration_seconds: number | null;

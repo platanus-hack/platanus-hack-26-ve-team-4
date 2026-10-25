@@ -12,7 +12,7 @@ export const OUTCOMES: Record<string, string> = {
   confirmed_violation: "Violación confirmada",
   contained_honeypot: "Contenido en señuelo",
   prevented: "Detenido",
-  not_achieved: "Objetivo no logrado",
+  not_achieved: "Sin hallazgos",
   inconclusive: "Inconcluso",
   queued: "En cola",
   running: "Ejecutándose",

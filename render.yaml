@@ -47,7 +47,7 @@ services:
       - key: AGENT_ZERO_LLM_MODEL
         value: claude-haiku-5-5
       - key: AGENT_ZERO_LLM_DAILY_USD_LIMIT
-        value: "2.0"
+        value: "15.0"
       - key: AGENT_ZERO_LLM_DAILY_CALL_LIMIT
         value: "5000"
       - key: AGENT_ZERO_LLM_SESSION_CALL_LIMIT

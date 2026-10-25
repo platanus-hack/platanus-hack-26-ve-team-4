@@ -30,14 +30,14 @@ export function AttemptFeed({
     .slice()
     .reverse();
   return (
-    <aside className="monitor-panel" aria-label="Intentos">
+    <aside className="monitor-panel" aria-label="Interacciones">
       <div className="monitor-row">
-        <h2>Intentos</h2>
+        <h2>Interacciones</h2>
         <span className="monitor-label">
           {list.length} de {attempts.length}
         </span>
       </div>
-      <fieldset className="monitor-filters" aria-label="Filtrar intentos">
+      <fieldset className="monitor-filters" aria-label="Filtrar interacciones">
         {FILTERS.map(([key, label]) => (
           <button
             key={key}
@@ -62,21 +62,21 @@ export function AttemptFeed({
               onClick={() => onSelect(attempt.id)}
             >
               <span className="monitor-item-top">
-                <span>
-                  {clock(attempt.created_at)} · {ORIGINS[attempt.origin] ?? attempt.origin} · v
-                  {attempt.policy_version}
+                <span className="monitor-item-time">{clock(attempt.created_at)}</span>
+                <span className="monitor-item-origin">
+                  {ORIGINS[attempt.origin] ?? attempt.origin} · v{attempt.policy_version}
                 </span>
-                <span>{attempt.id.slice(-6)}</span>
+                <span className="monitor-item-id">{attempt.id.slice(-6)}</span>
               </span>
-              <span className="monitor-item-msg">{attempt.messages[0] ?? ""}</span>
-              <span>
-                <span className="monitor-pill">{outcome.label}</span>{" "}
-                <span className="muted monitor-small">{familyOf(attempt)}</span>
+              <span className="monitor-item-msg">{attempt.messages[0] ?? "(sin texto)"}</span>
+              <span className="monitor-item-foot">
+                <span className="monitor-pill">{outcome.label}</span>
+                <span className="monitor-item-family">{familyOf(attempt)}</span>
               </span>
             </button>
           );
         })}
-        {!list.length && <p className="muted monitor-small">Sin intentos con este filtro.</p>}
+        {!list.length && <p className="muted monitor-small">Sin interacciones con este filtro.</p>}
       </div>
     </aside>
   );
